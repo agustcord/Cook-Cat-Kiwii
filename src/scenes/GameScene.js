@@ -208,25 +208,67 @@ export default class GameScene extends Phaser.Scene {
     ];
 
     shapes.forEach((s, index) => {
+      const x = startX;
       const y = startY + index * 45;
+
+      const container = this.add.container(x, y);
+      container.setData('origX', x);
+      container.setData('origY', y);
 
       const btnBg = this.add.graphics();
       btnBg.fillStyle(s.unlocked ? 0xffffff : 0xcccccc, 1);
-      btnBg.fillRoundedRect(startX, y, 110, 36, 8);
+      btnBg.fillRoundedRect(0, 0, 110, 36, 8);
       btnBg.lineStyle(1.5, 0x7f5539, 1);
-      btnBg.strokeRoundedRect(startX, y, 110, 36, 8);
+      btnBg.strokeRoundedRect(0, 0, 110, 36, 8);
+      container.add(btnBg);
 
-      this.add.text(startX + 55, y + 18, s.label, {
+      const btnText = this.add.text(55, 18, s.label, {
         font: '13px "Outfit", sans-serif',
         fill: s.unlocked ? '#582f0e' : '#888888',
         fontWeight: '800'
       }).setOrigin(0.5);
+      container.add(btnText);
 
       if (s.unlocked) {
-        const zone = this.add.rectangle(startX + 55, y + 18, 110, 36, 0x000000, 0).setInteractive({ useHandCursor: true });
-        zone.on('pointerdown', () => {
-          this.currentCookie.shape = s.id;
-          this.updateCookieVisuals();
+        container.setSize(110, 36);
+        // Make interactive and draggable
+        container.setInteractive(new Phaser.Geom.Rectangle(0, 0, 110, 36), Phaser.Geom.Rectangle.Contains);
+        this.input.setDraggable(container);
+
+        container.on('pointerover', () => {
+          btnText.setScale(1.05);
+        });
+        container.on('pointerout', () => {
+          btnText.setScale(1);
+        });
+
+        // Drag handlers
+        container.on('drag', (pointer, dragX, dragY) => {
+          container.x = dragX;
+          container.y = dragY;
+        });
+
+        container.on('dragend', () => {
+          // Check distance to cookie tray (x: 400, y: 510)
+          const dist = Phaser.Math.Distance.Between(container.x + 55, container.y + 18, 400, 510);
+          if (dist < 100) {
+            if (this.currentCookie.base) {
+              this.currentCookie.shape = s.id;
+              this.updateCookieVisuals();
+              this.showFeedbackText(`¡Forma de ${s.label}!`, 400, 200, '#38b000');
+            } else {
+              this.showFeedbackText('¡Primero selecciona la masa!', 400, 200, '#d90429');
+            }
+          }
+
+          // Return transition
+          this.tweens.add({
+            targets: container,
+            x: container.getData('origX'),
+            y: container.getData('origY'),
+            duration: 250,
+            ease: 'Back.out'
+          });
         });
       }
     });
