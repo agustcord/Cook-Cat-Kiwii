@@ -20,8 +20,8 @@ const DAY_CONFIGS = {
       { name: 'Estrella Clásica', base: 'classic', shape: 'star', toppings: ['sprinkles'] },
       { name: 'Corazón Clásico', base: 'classic', shape: 'heart', toppings: ['sprinkles'] },
       { name: 'Corazón de Chocolate', base: 'chocolate', shape: 'heart', toppings: ['sprinkles'] },
-      { name: 'Galleta Gato Kiwi', base: 'classic', shape: 'cat', toppings: ['kiwi'] },
-      { name: 'Estrella de la Casa', base: 'classic', shape: 'star', toppings: ['kiwi'] }
+      { name: 'Galleta Gato Choco', base: 'classic', shape: 'cat', toppings: ['choco'] },
+      { name: 'Estrella de Choco', base: 'classic', shape: 'star', toppings: ['choco'] }
     ]
   },
   3: {
@@ -31,12 +31,12 @@ const DAY_CONFIGS = {
     recipes: [
       { name: 'Estrella Clásica', base: 'classic', shape: 'star', toppings: ['sprinkles'] },
       { name: 'Corazón de Chocolate', base: 'chocolate', shape: 'heart', toppings: ['glazing'] },
-      { name: 'Galleta Gato Kiwi', base: 'classic', shape: 'cat', toppings: ['kiwi'] },
+      { name: 'Galleta Gato Choco', base: 'classic', shape: 'cat', toppings: ['choco'] },
       { name: 'Hueso Saludable', base: 'oat', shape: 'bone', toppings: ['sprinkles'] },
       { name: 'Gato Glaseado', base: 'classic', shape: 'cat', toppings: ['glazing'] },
       { name: 'Doble Choco Hueso', base: 'chocolate', shape: 'bone', toppings: ['sprinkles'] },
-      { name: 'Estrella de la Casa', base: 'classic', shape: 'star', toppings: ['kiwi'] },
-      { name: 'Corazón Kiwi Fit', base: 'oat', shape: 'heart', toppings: ['kiwi'] },
+      { name: 'Estrella de Choco', base: 'classic', shape: 'star', toppings: ['choco'] },
+      { name: 'Corazón Avena Choco', base: 'oat', shape: 'heart', toppings: ['choco'] },
       { name: 'Gato Choco-Fusión', base: 'chocolate', shape: 'cat', toppings: ['glazing'] }
     ]
   }
@@ -309,7 +309,7 @@ export default class GameScene extends Phaser.Scene {
 
     const toppings = [
       { id: 'sprinkles', label: 'Chispas', color: 0xff70a6, unlocked: true },
-      { id: 'kiwi', label: 'Kiwi', color: 0x38b000, unlocked: this.day >= 2 },
+      { id: 'choco', label: 'Choco', color: 0x3d0c00, unlocked: this.day >= 2 },
       { id: 'glazing', label: 'Glaseado', color: 0xff0a54, unlocked: this.day >= 3 }
     ];
 
@@ -397,15 +397,15 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  updateCookieVisuals() {
+  drawCookie() {
     const cg = this.cookieGraphics;
     cg.clear();
 
+    const cookie = this.currentCookie;
+    if (!cookie.base) return;
+
     const trayX = 400;
     const trayY = 510;
-
-    const cookie = this.currentCookie;
-    if (!cookie.base) return; // No cookie started yet
 
     // Determine color by base and bake state
     let color = 0xf5ebe0; // Classic default
@@ -414,7 +414,6 @@ export default class GameScene extends Phaser.Scene {
 
     // Apply color modifications based on baking state
     if (cookie.bakedState === 'baked') {
-      // Golden browner shade
       if (cookie.base === 'classic') color = 0xe6ccb2;
       else if (cookie.base === 'chocolate') color = 0x3d0c00;
       else if (cookie.base === 'oat') color = 0xb79a87;
@@ -423,23 +422,95 @@ export default class GameScene extends Phaser.Scene {
     }
 
     cg.fillStyle(color, 1);
-    cg.lineStyle(2, 0x000000, 1);
+    cg.lineStyle(2, 0x352f44, 1); // Dark brown/lavender soft outlines
 
     // Draw Cookie shape
     if (cookie.shape === 'star') {
-      cg.fillCircle(trayX, trayY, 25); // Star placeholder circle
-      cg.strokeCircle(trayX, trayY, 25);
+      const spikes = 5;
+      const outerRadius = 24;
+      const innerRadius = 10;
+      let rot = Math.PI / 2 * 3;
+      let step = Math.PI / spikes;
+      
+      cg.beginPath();
+      cg.moveTo(trayX + Math.cos(rot) * outerRadius, trayY + Math.sin(rot) * outerRadius);
+      for (let i = 0; i < spikes * 2; i++) {
+        const r = (i % 2 === 0) ? outerRadius : innerRadius;
+        const x = trayX + Math.cos(rot + i * step) * r;
+        const y = trayY + Math.sin(rot + i * step) * r;
+        cg.lineTo(x, y);
+      }
+      cg.closePath();
+      cg.fillPath();
+      cg.strokePath();
     } else if (cookie.shape === 'heart') {
-      cg.fillRect(trayX - 22, trayY - 22, 44, 44); // Heart placeholder square
-      cg.strokeRect(trayX - 22, trayY - 22, 44, 44);
+      cg.fillCircle(trayX - 10, trayY - 6, 12);
+      cg.fillCircle(trayX + 10, trayY - 6, 12);
+      cg.beginPath();
+      cg.moveTo(trayX - 21.5, trayY - 2);
+      cg.lineTo(trayX, trayY + 18);
+      cg.lineTo(trayX + 21.5, trayY - 2);
+      cg.closePath();
+      cg.fillPath();
+
+      cg.strokeCircle(trayX - 10, trayY - 6, 12);
+      cg.strokeCircle(trayX + 10, trayY - 6, 12);
+      cg.beginPath();
+      cg.moveTo(trayX - 21.5, trayY - 2);
+      cg.lineTo(trayX, trayY + 18);
+      cg.lineTo(trayX + 21.5, trayY - 2);
+      cg.strokePath();
+
+      // Mask center
+      cg.fillStyle(color, 1);
+      cg.fillCircle(trayX - 10, trayY - 6, 10.5);
+      cg.fillCircle(trayX + 10, trayY - 6, 10.5);
+      cg.beginPath();
+      cg.moveTo(trayX - 19, trayY - 2);
+      cg.lineTo(trayX, trayY + 15);
+      cg.lineTo(trayX + 19, trayY - 2);
+      cg.closePath();
+      cg.fillPath();
     } else if (cookie.shape === 'cat') {
-      cg.fillCircle(trayX, trayY, 28); // Cat placeholder circle
-      cg.strokeCircle(trayX, trayY, 28);
+      // Left Ear
+      cg.beginPath();
+      cg.moveTo(trayX - 18, trayY - 10);
+      cg.lineTo(trayX - 24, trayY - 28);
+      cg.lineTo(trayX - 4, trayY - 18);
+      cg.closePath();
+      cg.fillPath();
+      cg.strokePath();
+
+      // Right Ear
+      cg.beginPath();
+      cg.moveTo(trayX + 18, trayY - 10);
+      cg.lineTo(trayX + 24, trayY - 28);
+      cg.lineTo(trayX + 4, trayY - 18);
+      cg.closePath();
+      cg.fillPath();
+      cg.strokePath();
+
+      // Main head
+      cg.fillCircle(trayX, trayY - 5, 22);
+      cg.strokeCircle(trayX, trayY - 5, 22);
     } else if (cookie.shape === 'bone') {
-      cg.fillRect(trayX - 30, trayY - 15, 60, 30); // Bone placeholder rect
-      cg.strokeRect(trayX - 30, trayY - 15, 60, 30);
+      cg.fillCircle(trayX - 20, trayY - 10, 8);
+      cg.strokeCircle(trayX - 20, trayY - 10, 8);
+      cg.fillCircle(trayX - 20, trayY + 10, 8);
+      cg.strokeCircle(trayX - 20, trayY + 10, 8);
+
+      cg.fillCircle(trayX + 20, trayY - 10, 8);
+      cg.strokeCircle(trayX + 20, trayY - 10, 8);
+      cg.fillCircle(trayX + 20, trayY + 10, 8);
+      cg.strokeCircle(trayX + 20, trayY + 10, 8);
+
+      cg.fillRect(trayX - 20, trayY - 8, 40, 16);
+      cg.strokeRect(trayX - 20, trayY - 8, 40, 16);
+      
+      cg.fillStyle(color, 1);
+      cg.fillRect(trayX - 18, trayY - 7, 36, 14);
     } else {
-      // No shape yet, just raw blob circle
+      // No shape yet, raw dough blob
       cg.fillCircle(trayX, trayY, 20);
       cg.strokeCircle(trayX, trayY, 20);
     }
@@ -447,17 +518,29 @@ export default class GameScene extends Phaser.Scene {
     // Draw toppings
     if (cookie.toppings && cookie.toppings.length > 0) {
       const top = cookie.toppings[0];
-      let toppingColor = 0xffffff;
-      if (top === 'sprinkles') toppingColor = 0xff70a6; // Pink
-      else if (top === 'kiwi') toppingColor = 0x38b000; // Green
-      else if (top === 'glazing') toppingColor = 0xff0a54; // Bright pink
-
-      cg.fillStyle(toppingColor, 1);
-      // Small decoration dots
-      cg.fillCircle(trayX, trayY, 8);
-      cg.fillCircle(trayX - 10, trayY + 5, 5);
-      cg.fillCircle(trayX + 10, trayY - 5, 5);
+      if (top === 'sprinkles') {
+        cg.fillStyle(0xff70a6, 1); // Pink
+        cg.fillCircle(trayX - 8, trayY - 5, 3);
+        cg.fillStyle(0xffb703, 1); // Yellow
+        cg.fillCircle(trayX + 8, trayY + 5, 3);
+        cg.fillStyle(0x00f5d4, 1); // Blue-green
+        cg.fillCircle(trayX, trayY - 12, 3);
+      } else if (top === 'choco') {
+        cg.fillStyle(0x3d0c00, 1); // Chocolate Chips
+        cg.fillRect(trayX - 6, trayY - 8, 5, 5);
+        cg.fillRect(trayX + 5, trayY + 3, 5, 5);
+        cg.fillRect(trayX - 3, trayY + 6, 5, 5);
+      } else if (top === 'glazing') {
+        cg.fillStyle(0xff0a54, 1); // Glazing
+        cg.fillCircle(trayX, trayY, 10);
+        cg.fillCircle(trayX - 7, trayY + 3, 7);
+        cg.fillCircle(trayX + 7, trayY + 2, 7);
+      }
     }
+  }
+
+  updateCookieVisuals() {
+    this.drawCookie();
   }
 
   spawnCustomer() {
@@ -475,7 +558,7 @@ export default class GameScene extends Phaser.Scene {
     this.currentCustomer = new Customer(
       this, 
       250, 
-      120, 
+      190, 
       this.config,
       () => this.handleCustomerTimeout() // callback when patience runs out
     );

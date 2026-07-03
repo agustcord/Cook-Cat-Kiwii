@@ -34,7 +34,7 @@ export default class Customer {
     // 2. Patience Bar (Background)
     this.patienceBg = this.scene.add.graphics();
     this.patienceBg.fillStyle(0xe0e0e0, 1);
-    this.patienceBg.fillRoundedRect(-50, -80, 100, 12, 4);
+    this.patienceBg.fillRoundedRect(-50, -168, 100, 12, 4);
     this.container.add(this.patienceBg);
 
     // 3. Patience Bar (Active Fill)
@@ -47,19 +47,18 @@ export default class Customer {
     this.bubbleBg.fillStyle(0xffffff, 1);
     this.bubbleBg.lineStyle(3, 0x582f0e, 1);
     // Draw bubble tail and rectangle
-    this.bubbleBg.fillRoundedRect(-85, -190, 170, 90, 15);
-    this.bubbleBg.strokeRoundedRect(-85, -190, 170, 90, 15);
+    this.bubbleBg.fillRoundedRect(-85, -145, 170, 90, 15);
+    this.bubbleBg.strokeRoundedRect(-85, -145, 170, 90, 15);
     
     // Bubble pointer tail
     this.bubbleBg.fillStyle(0xffffff, 1);
-    this.bubbleBg.fillTriangle(0, -95, -10, -105, 10, -105);
-    this.bubbleBg.lineBetween(-10, -105, 0, -95);
-    this.bubbleBg.lineBetween(10, -105, 0, -95);
+    this.bubbleBg.fillTriangle(0, -45, -10, -55, 10, -55);
+    this.bubbleBg.lineBetween(-10, -55, 0, -45);
+    this.bubbleBg.lineBetween(10, -55, 0, -45);
     
     this.container.add(this.bubbleBg);
 
     // 5. Order Contents (Placeholders inside bubble)
-    // Draw representations of required base, shape, and topping
     this.orderVisuals = this.scene.add.graphics();
     this.drawOrderIcons();
     this.container.add(this.orderVisuals);
@@ -72,45 +71,137 @@ export default class Customer {
     const recipe = this.recipe;
     if (!recipe) return;
 
-    // Draw base dough color box
-    let baseColor = 0xffffff;
-    if (recipe.base === 'classic') baseColor = 0xf5ebe0;
-    else if (recipe.base === 'chocolate') baseColor = 0x4f1200;
+    // Center of the thought bubble
+    const cx = 0;
+    const cy = -100;
+
+    // Determine base dough color
+    let baseColor = 0xf5ebe0; // Classic
+    if (recipe.base === 'chocolate') baseColor = 0x4f1200;
     else if (recipe.base === 'oat') baseColor = 0xd5bdaf;
 
     ov.fillStyle(baseColor, 1);
-    ov.lineStyle(1.5, 0x000000, 1);
-    ov.fillRect(-60, -170, 30, 20);
-    ov.strokeRect(-60, -170, 30, 20);
+    ov.lineStyle(2, 0x352f44, 1); // Soft dark outlines
 
-    // Draw cutter shape outline
-    ov.lineStyle(2, 0x582f0e, 1);
+    // Draw Cookie shape
     if (recipe.shape === 'star') {
-      ov.strokeCircle(-10, -160, 10); // Star placeholder circle
+      // 5-pointed star
+      const spikes = 5;
+      const outerRadius = 24;
+      const innerRadius = 10;
+      let rot = Math.PI / 2 * 3;
+      let step = Math.PI / spikes;
+      
+      ov.beginPath();
+      ov.moveTo(cx + Math.cos(rot) * outerRadius, cy + Math.sin(rot) * outerRadius);
+      for (let i = 0; i < spikes * 2; i++) {
+        const r = (i % 2 === 0) ? outerRadius : innerRadius;
+        const x = cx + Math.cos(rot + i * step) * r;
+        const y = cy + Math.sin(rot + i * step) * r;
+        ov.lineTo(x, y);
+      }
+      ov.closePath();
+      ov.fillPath();
+      ov.strokePath();
     } else if (recipe.shape === 'heart') {
-      ov.strokeRect(-20, -170, 20, 20); // Heart placeholder square
+      // Heart using circles and triangle
+      ov.fillCircle(cx - 10, cy - 6, 12);
+      ov.fillCircle(cx + 10, cy - 6, 12);
+      ov.beginPath();
+      ov.moveTo(cx - 21.5, cy - 2);
+      ov.lineTo(cx, cy + 18);
+      ov.lineTo(cx + 21.5, cy - 2);
+      ov.closePath();
+      ov.fillPath();
+
+      ov.strokeCircle(cx - 10, cy - 6, 12);
+      ov.strokeCircle(cx + 10, cy - 6, 12);
+      ov.beginPath();
+      ov.moveTo(cx - 21.5, cy - 2);
+      ov.lineTo(cx, cy + 18);
+      ov.lineTo(cx + 21.5, cy - 2);
+      ov.strokePath();
+
+      // Mask center
+      ov.fillStyle(baseColor, 1);
+      ov.fillCircle(cx - 10, cy - 6, 10.5);
+      ov.fillCircle(cx + 10, cy - 6, 10.5);
+      ov.beginPath();
+      ov.moveTo(cx - 19, cy - 2);
+      ov.lineTo(cx, cy + 15);
+      ov.lineTo(cx + 19, cy - 2);
+      ov.closePath();
+      ov.fillPath();
     } else if (recipe.shape === 'cat') {
-      ov.strokeCircle(-10, -160, 12); // Cat placeholder circle
+      // Cat head outline
+      // Left Ear
+      ov.beginPath();
+      ov.moveTo(cx - 18, cy - 10);
+      ov.lineTo(cx - 24, cy - 28);
+      ov.lineTo(cx - 4, cy - 18);
+      ov.closePath();
+      ov.fillPath();
+      ov.strokePath();
+
+      // Right Ear
+      ov.beginPath();
+      ov.moveTo(cx + 18, cy - 10);
+      ov.lineTo(cx + 24, cy - 28);
+      ov.lineTo(cx + 4, cy - 18);
+      ov.closePath();
+      ov.fillPath();
+      ov.strokePath();
+
+      // Main head
+      ov.fillCircle(cx, cy - 5, 22);
+      ov.strokeCircle(cx, cy - 5, 22);
     } else if (recipe.shape === 'bone') {
-      ov.strokeRect(-20, -170, 20, 10); // Bone placeholder rect
+      // Bone
+      ov.fillCircle(cx - 20, cy - 10, 8);
+      ov.strokeCircle(cx - 20, cy - 10, 8);
+      ov.fillCircle(cx - 20, cy + 10, 8);
+      ov.strokeCircle(cx - 20, cy + 10, 8);
+
+      ov.fillCircle(cx + 20, cy - 10, 8);
+      ov.strokeCircle(cx + 20, cy - 10, 8);
+      ov.fillCircle(cx + 20, cy + 10, 8);
+      ov.strokeCircle(cx + 20, cy + 10, 8);
+
+      ov.fillRect(cx - 20, cy - 8, 40, 16);
+      ov.strokeRect(cx - 20, cy - 8, 40, 16);
+      
+      // Overlap fill
+      ov.fillStyle(baseColor, 1);
+      ov.fillRect(cx - 18, cy - 7, 36, 14);
     }
 
-    // Draw topping indicator
-    let toppingColor = 0x000000;
+    // Draw topping on top
     if (recipe.toppings && recipe.toppings[0]) {
       const top = recipe.toppings[0];
-      if (top === 'sprinkles') toppingColor = 0xff70a6; // Pink sprinkles
-      else if (top === 'kiwi') toppingColor = 0x38b000; // Kiwi green
-      else if (top === 'glazing') toppingColor = 0xff0a54; // Bright glazing pink
-      
-      ov.fillStyle(toppingColor, 1);
-      ov.fillCircle(40, -160, 8);
+      if (top === 'sprinkles') {
+        ov.fillStyle(0xff70a6, 1); // Pink
+        ov.fillCircle(cx - 8, cy - 5, 3);
+        ov.fillStyle(0xffb703, 1); // Yellow
+        ov.fillCircle(cx + 8, cy + 5, 3);
+        ov.fillStyle(0x00f5d4, 1); // Blue-green
+        ov.fillCircle(cx, cy - 12, 3);
+      } else if (top === 'choco') {
+        ov.fillStyle(0x3d0c00, 1); // Chocolate Chips
+        ov.fillRect(cx - 6, cy - 8, 5, 5);
+        ov.fillRect(cx + 5, cy + 3, 5, 5);
+        ov.fillRect(cx - 3, cy + 6, 5, 5);
+      } else if (top === 'glazing') {
+        ov.fillStyle(0xff0a54, 1); // Glazing
+        ov.fillCircle(cx, cy, 10);
+        ov.fillCircle(cx - 7, cy + 3, 7);
+        ov.fillCircle(cx + 7, cy + 2, 7);
+      }
     }
   }
 
   updatePatienceBar() {
     this.patienceFill.clear();
-    const ratio = this.patience / this.maxPatience;
+    const ratio = Math.max(0, Math.min(1, this.patience / this.maxPatience));
     
     // Color transitions: Green -> Yellow -> Red
     let color = 0x38b000; // Green
@@ -118,7 +209,7 @@ export default class Customer {
     else if (ratio < 0.6) color = 0xffb703; // Yellow
 
     this.patienceFill.fillStyle(color, 1);
-    this.patienceFill.fillRoundedRect(-48, -78, 96 * ratio, 8, 3);
+    this.patienceFill.fillRoundedRect(-48, -166, 96 * ratio, 8, 3);
   }
 
   update(time, delta) {
