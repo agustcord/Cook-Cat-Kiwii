@@ -230,27 +230,30 @@ export default class GameScene extends Phaser.Scene {
       container.add(btnText);
 
       if (s.unlocked) {
-        container.setSize(110, 36);
-        // Make interactive and draggable
-        container.setInteractive(new Phaser.Geom.Rectangle(0, 0, 110, 36), Phaser.Geom.Rectangle.Contains);
-        this.input.setDraggable(container);
+        // Create a flat transparent rectangle as the interactive drag zone
+        const dragZone = this.add.rectangle(x + 55, y + 18, 110, 36, 0x000000, 0);
+        dragZone.setInteractive({ useHandCursor: true });
+        this.input.setDraggable(dragZone);
 
-        container.on('pointerover', () => {
+        dragZone.on('pointerover', () => {
           btnText.setScale(1.05);
         });
-        container.on('pointerout', () => {
+        dragZone.on('pointerout', () => {
           btnText.setScale(1);
         });
 
         // Drag handlers
-        container.on('drag', (pointer, dragX, dragY) => {
-          container.x = dragX;
-          container.y = dragY;
+        dragZone.on('drag', (pointer, dragX, dragY) => {
+          dragZone.x = dragX;
+          dragZone.y = dragY;
+          // Shift visual container to follow the drag zone
+          container.x = dragX - 55;
+          container.y = dragY - 18;
         });
 
-        container.on('dragend', () => {
+        dragZone.on('dragend', () => {
           // Check distance to cookie tray (x: 400, y: 510)
-          const dist = Phaser.Math.Distance.Between(container.x + 55, container.y + 18, 400, 510);
+          const dist = Phaser.Math.Distance.Between(dragZone.x, dragZone.y, 400, 510);
           if (dist < 100) {
             if (this.currentCookie.base) {
               this.currentCookie.shape = s.id;
@@ -261,11 +264,17 @@ export default class GameScene extends Phaser.Scene {
             }
           }
 
-          // Return transition
+          // Return transition for both the interactive dragZone and the visual container
           this.tweens.add({
-            targets: container,
-            x: container.getData('origX'),
-            y: container.getData('origY'),
+            targets: [dragZone, container],
+            x: {
+              getStart: (target) => target.x,
+              getEnd: (target) => (target === dragZone ? x + 55 : x)
+            },
+            y: {
+              getStart: (target) => target.y,
+              getEnd: (target) => (target === dragZone ? y + 18 : y)
+            },
             duration: 250,
             ease: 'Back.out'
           });
