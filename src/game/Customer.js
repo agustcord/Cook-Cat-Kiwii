@@ -42,8 +42,19 @@ export default class Customer {
 
     // 3. Patience Bar (Active Fill)
     this.patienceFill = this.scene.add.graphics();
-    this.updatePatienceBar();
     this.container.add(this.patienceFill);
+
+    // Patience Text (Countdown)
+    this.patienceText = this.scene.add.text(0, -162, '', {
+      font: '9px "Outfit", sans-serif',
+      fill: '#ffffff',
+      fontWeight: '800',
+      stroke: '#352f44',
+      strokeThickness: 2
+    }).setOrigin(0.5);
+    this.container.add(this.patienceText);
+
+    this.updatePatienceBar();
 
     // 4. Thought Bubble
     this.bubbleBg = this.scene.add.graphics();
@@ -213,6 +224,10 @@ export default class Customer {
 
     this.patienceFill.fillStyle(color, 1);
     this.patienceFill.fillRoundedRect(-48, -166, 96 * ratio, 8, 3);
+
+    if (this.patienceText) {
+      this.patienceText.setText(`${Math.ceil(this.patience)}s`);
+    }
   }
 
   update(time, delta) {
