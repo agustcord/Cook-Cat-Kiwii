@@ -68,8 +68,28 @@ export default class GameScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    // Draw primary background (wood/cream kitchen theme)
+    // Draw primary background (cream wall)
     this.drawBackground(width, height);
+
+    // Create the customer layer container (behind the counter)
+    this.customerContainer = this.add.container(0, 0);
+
+    // Draw the Wooden Counter and Floor (in front of the customer, behind UI)
+    const counterBg = this.add.graphics();
+    
+    // Wooden Counter (top separating wall and kitchen)
+    counterBg.fillStyle(0xddb892, 1);
+    counterBg.fillRect(0, 240, width, 25);
+    
+    // Kitchen Floor/Table (darker warm tone)
+    counterBg.fillStyle(0xede0d4, 1);
+    counterBg.fillRect(0, 265, width, height - 265);
+
+    // Station dividers
+    counterBg.lineStyle(2, 0xddb892, 0.5);
+    counterBg.lineBetween(200, 265, 200, height);
+    counterBg.lineBetween(400, 265, 400, height);
+    counterBg.lineBetween(600, 265, 600, height);
 
     // Setup HUD (Day, Meta, Coins)
     this.setupHUD(width);
@@ -91,20 +111,6 @@ export default class GameScene extends Phaser.Scene {
     // Wall (soft pastel cream)
     bg.fillStyle(0xfff1e6, 1);
     bg.fillRect(0, 0, width, height);
-
-    // Wooden Counter (top separating wall and kitchen)
-    bg.fillStyle(0xddb892, 1);
-    bg.fillRect(0, 240, width, 25);
-    
-    // Kitchen Floor/Table (darker warm tone)
-    bg.fillStyle(0xede0d4, 1);
-    bg.fillRect(0, 265, width, height - 265);
-
-    // Station dividers
-    bg.lineStyle(2, 0xddb892, 0.5);
-    bg.lineBetween(200, 265, 200, height);
-    bg.lineBetween(400, 265, 400, height);
-    bg.lineBetween(600, 265, 600, height);
   }
 
   setupHUD(width) {
@@ -558,7 +564,7 @@ export default class GameScene extends Phaser.Scene {
     this.currentCustomer = new Customer(
       this, 
       250, 
-      190, 
+      210, 
       this.config,
       () => this.handleCustomerTimeout() // callback when patience runs out
     );

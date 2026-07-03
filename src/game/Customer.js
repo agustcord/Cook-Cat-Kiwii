@@ -18,6 +18,9 @@ export default class Customer {
 
     // Visual elements container
     this.container = this.scene.add.container(x, y);
+    if (this.scene.customerContainer) {
+      this.scene.customerContainer.add(this.container);
+    }
 
     this.createVisuals();
   }
