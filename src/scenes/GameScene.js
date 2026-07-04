@@ -392,9 +392,13 @@ export default class GameScene extends Phaser.Scene {
       if (t.unlocked) {
         const zone = this.add.rectangle(startX + 50, y + 22, 100, 45, 0x000000, 0).setInteractive({ useHandCursor: true });
         zone.on('pointerdown', () => {
-          // Toggle topping (limit to max 1 topping for MVP simplify)
-          this.currentCookie.toppings = [t.id];
-          this.updateCookieVisuals();
+          if (this.currentCookie.base) {
+            // Toggle topping (limit to max 1 topping for MVP simplify)
+            this.currentCookie.toppings = [t.id];
+            this.updateCookieVisuals();
+          } else {
+            this.showFeedbackText('¡Primero selecciona la masa!', 400, 200, '#d90429');
+          }
         });
       }
     });
