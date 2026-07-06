@@ -7,10 +7,17 @@ import SummaryScene from './scenes/SummaryScene.js';
 
 const config = {
   type: Phaser.AUTO,
-  width: 800,
-  height: 600,
+  width: 1024,
+  height: 576,
   parent: 'game-container',
   backgroundColor: '#fff1e6', // Cozy, warm pastel cream base color
+  resolution: window.devicePixelRatio || 1,
+  render: {
+    antialias: true,
+    pixelArt: false,
+    roundPixels: true,
+    transparent: false
+  },
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH

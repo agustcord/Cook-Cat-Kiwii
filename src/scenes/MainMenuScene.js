@@ -9,54 +9,31 @@ export default class MainMenuScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    // Draw background stripes (simple warm graphics)
-    const bgGraphics = this.add.graphics();
-    bgGraphics.fillStyle(0xffe5d9, 1); // Soft peach
-    bgGraphics.fillRect(0, 0, width, height);
+    // Draw the full-screen menu background image
+    this.add.image(width / 2, height / 2, 'menu_bg').setDisplaySize(width, height);
 
-    // Title text
+    // Title text with white stroke and shadow for high legibility
     this.add.text(width / 2, height / 4, 'Kiwipaw Bakehouse', {
       font: '54px "Outfit", sans-serif',
       fill: '#582f0e',
+      stroke: '#ffffff',
+      strokeThickness: 8,
+      shadow: { color: '#000000', fill: false, offsetX: 2, offsetY: 2, blur: 4 },
       fontWeight: '800'
     }).setOrigin(0.5);
 
     this.add.text(width / 2, height / 4 + 55, 'El gato Kiwi repostero para CrazyGames', {
       font: '18px "Outfit", sans-serif',
       fill: '#7f5539',
+      stroke: '#ffffff',
+      strokeThickness: 4,
+      shadow: { color: '#000000', fill: false, offsetX: 1, offsetY: 1, blur: 2 },
       fontWeight: '600'
     }).setOrigin(0.5);
 
-    // Cute Kiwi cat placeholder graphics
-    const catX = width / 2;
-    const catY = height / 2 + 15;
-
-    // Body
-    bgGraphics.fillStyle(0xddb892, 1); // Light pastel brown
-    bgGraphics.fillCircle(catX, catY, 55);
-
-    // Ears
-    bgGraphics.fillStyle(0xb79ced, 1); // Purple pastel accents for ears
-    bgGraphics.fillTriangle(catX - 45, catY - 35, catX - 25, catY - 20, catX - 55, catY - 5);
-    bgGraphics.fillTriangle(catX + 45, catY - 35, catX + 25, catY - 20, catX + 55, catY - 5);
-    
-    // Inner ears
-    bgGraphics.fillStyle(0xffcad4, 1); // Pink inner ear
-    bgGraphics.fillTriangle(catX - 40, catY - 30, catX - 27, catY - 18, catX - 47, catY - 8);
-    bgGraphics.fillTriangle(catX + 40, catY - 30, catX + 27, catY - 18, catX + 47, catY - 8);
-
-    // Eyes
-    bgGraphics.fillStyle(0x3d3d3d, 1);
-    bgGraphics.fillCircle(catX - 20, catY - 10, 6);
-    bgGraphics.fillCircle(catX + 20, catY - 10, 6);
-    
-    // Snout / Nose
-    bgGraphics.fillStyle(0xd62828, 1); // Red kiwi seed nose
-    bgGraphics.fillTriangle(catX, catY, catX - 5, catY - 6, catX + 5, catY - 6);
-
     // Play Button Box
     const btnX = width / 2 - 110;
-    const btnY = height / 2 + 110;
+    const btnY = height / 2 + 130;
     const btnW = 220;
     const btnH = 60;
 

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Kiwipaw Bakehouse — Generador de Assets</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #fff1e6;
+      --panel-color: #ffffff;
+      --text-main: #582f0e;
+      --text-muted: #7f5539;
+      --accent: #b7b7a4;
+      --accent-hover: #a3a380;
+      --star-color: #ffb703;
+      --heart-color: #ff70a6;
+      --cat-color: #00f5d4;
+      --fish-color: #ff9f1c;
+      --border-radius: 20px;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: var(--panel-color);
+      padding: 30px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 10px 30px rgba(88, 47, 14, 0.08);
+      border: 4px solid #ddb892;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 32px;
+      font-weight: 800;
+      margin-top: 0;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 16px;
+      margin-bottom: 30px;
+    }
+
+    .token-box {
+      background: #f7e1d7;
+      padding: 15px 20px;
+      border-radius: 12px;
+      margin-bottom: 35px;
+      border: 2px dashed var(--text-muted);
+    }
+
+    .token-box label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .token-box input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ddb892;
+      font-family: monospace;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 20px;
+      border-bottom: 3px solid #ede0d4;
+      padding-bottom: 8px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .card {
+      background: #fff8f2;
+      border: 2px solid #ede0d4;
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 15px rgba(88, 47, 14, 0.05);
+    }
+
+    .card-title {
+      font-weight: 800;
+      font-size: 18px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .preview-box {
+      width: 150px;
+      height: 150px;
+      border-radius: 12px;
+      background: #ede0d4;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 2px solid #ddb892;
+      position: relative;
+    }
+
+    .preview-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .placeholder-text {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 10px;
+    }
+
+    .btn {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      text-transform: uppercase;
+      transition: filter 0.2s, transform 0.1s;
+      color: white;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn:hover {
+      filter: brightness(0.9);
+    }
+
+    .btn-heart { background-color: var(--heart-color); }
+    .btn-cat { background-color: var(--cat-color); color: #352f44; }
+    .btn-fish { background-color: var(--fish-color); }
+
+    .loader {
+      border: 4px solid #ede0d4;
+      border-top: 4px solid var(--text-main);
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      position: absolute;
+      display: none;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .status-text {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 8px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .instructions {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.6;
+      border-left: 5px solid var(--text-muted);
+    }
+
+    .instructions ol {
+      margin: 0;
+      padding-left: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Kiwipaw Bakehouse</h1>
+    <div class="subtitle">Generador de Galletas Limpias (FLUX.1-schnell por Hugging Face)</div>
+
+    <!-- Token Configuration -->
+    <div class="token-box">
+      <label for="hf-token">Tu Hugging Face API Token (Pre-completado):</label>
+      <input type="password" id="hf-token" value="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">
+    </div>
+
+    <!-- FASE 1: MASAS CRUDAS -->
+    <div class="section-title">🍪 Fase 1: Masas Crudas Modeladas (Sin Detalles)</div>
+    <div class="grid">
+      
+      <!-- Heart Card -->
+      <div class="card" id="card-heart">
+        <div class="card-title" style="color: var(--heart-color);">Corazón Crudo</div>
+        <div class="preview-box">
+          <div class="loader" id="loader-heart"></div>
+          <img id="img-heart" style="display:none;" />
+          <div class="placeholder-text" id="text-heart">Sin previsualizar</div>
+        </div>
+        <button class="btn btn-heart" onclick="generateAsset('heart', 'raw')">Generar Corazón</button>
+        <div class="status-text" id="status-heart">Listo</div>
+      </div>
+
+      <!-- Cat Card -->
+      <div class="card" id="card-cat">
+        <div class="card-title" style="color: #00bfa6;">Gato Crudo</div>
+        <div class="preview-box">
+          <div class="loader" id="loader-cat"></div>
+          <img id="img-cat" style="display:none;" />
+          <div class="placeholder-text" id="text-cat">Sin previsualizar</div>
+        </div>
+        <button class="btn btn-cat" onclick="generateAsset('cat', 'raw')">Generar Gato</button>
+        <div class="status-text" id="status-cat">Listo</div>
+      </div>
+
+      <!-- Fish Card -->
+      <div class="card" id="card-fish">
+        <div class="card-title" style="color: var(--fish-color);">Pez Crudo</div>
+        <div class="preview-box">
+          <div class="loader" id="loader-fish"></div>
+          <img id="img-fish" style="display:none;" />
+          <div class="placeholder-text" id="text-fish">Sin previsualizar</div>
+        </div>
+        <button class="btn btn-fish" onclick="generateAsset('fish', 'raw')">Generar Pez</button>
+        <div class="status-text" id="status-fish">Listo</div>
+      </div>
+
+    </div>
+
+    <!-- FASE 2: CLIENTES -->
+    <div class="section-title">👤 Fase 2: Clientes Chibi (Para Día 3)</div>
+    <div class="grid">
+      <!-- Gamer Card -->
+      <div class="card" id="card-gamer">
+        <div class="card-title" style="color: #7209b7;">Cliente Gamer</div>
+        <div class="preview-box">
+          <div class="loader" id="loader-gamer"></div>
+          <img id="img-gamer" style="display:none;" />
+          <div class="placeholder-text" id="text-gamer">Sin previsualizar</div>
+        </div>
+        <button class="btn btn-cat" style="background-color: #7209b7; color: white;" onclick="generateAsset('gamer', 'char')">Generar Gamer</button>
+        <div class="status-text" id="status-gamer">Listo</div>
+      </div>
+    </div>
+
+    <!-- INSTRUCTIONS -->
+    <div class="section-title">📋 Instrucciones de Uso:</div>
+    <div class="instructions">
+      <ol>
+        <li>Haz clic en <strong>Generar [Forma/Gamer]</strong> para conectarte directamente con el servidor de Hugging Face.</li>
+        <li>El navegador descargará automáticamente el archivo de imagen con el nombre correcto.</li>
+        <li><strong>Importante</strong>: Mueve los archivos descargados a la carpeta temporal de la conversación activa: <br>
+            <code>C:\Users\Jonatan Agustín\.gemini\antigravity\brain\ab05ab45-a515-4bb6-bd98-976a4c3a6829\</code>
+        </li>
+        <li>Avísame cuando los hayas guardado allí y yo me encargaré de aplicarles la transparencia e integrarlos.</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    const prompts = {
+      heart: {
+        raw: "A plain unbaked raw cookie in a perfect heart shape, made of creamy-beige cookie dough. The top surface must be completely empty and smooth with NO chocolate chips, NO toppings, NO decorations, and NO sprinkles. Flat 2D vector style, clean medium-thick dark brown outlines (#4e3629), soft desaturated pastel cream color. Chibi cartoon/kawaii style, plain solid white background. No frames, no borders."
+      },
+      cat: {
+        raw: "A plain unbaked raw cookie in a cute cat-head shape with pointed ears, made of creamy-beige cookie dough. The top surface must be completely empty and smooth with NO eyes, NO whiskers, NO face, NO chocolate chips, and NO toppings. Flat 2D vector style, clean medium-thick dark brown outlines (#4e3629), soft desaturated pastel cream color. Chibi cartoon/kawaii style, plain solid white background. No frames, no borders."
+      },
+      fish: {
+        raw: "A plain unbaked raw cookie in a cute fish shape, made of creamy-beige cookie dough. The top surface must be completely empty and smooth with NO eyes, NO scales, NO details, NO chocolate chips, and NO toppings. Flat 2D vector style, clean medium-thick dark brown outlines (#4e3629), soft desaturated pastel cream color. Chibi cartoon/kawaii style, plain solid white background. No frames, no borders."
+      },
+      gamer: {
+        char: "A cute Chibi cartoon 2D gamer boy with large gaming headphones over his ears, holding a handheld console, wearing cozy clothes. Cute 2D vector style, clean medium-thick dark brown outlines (#4e3629), soft desaturated pastel colors, front-facing. Plain solid white background. No frames, no borders, no text."
+      }
+    };
+
+    async function generateAsset(shape, state) {
+      const token = document.getElementById('hf-token').value.trim();
+      const loader = document.getElementById(`loader-${shape}`);
+      const img = document.getElementById(`img-${shape}`);
+      const txt = document.getElementById(`text-${shape}`);
+      const status = document.getElementById(`status-${shape}`);
+
+      if (!token) {
+        alert('Por favor ingresa un token de API de Hugging Face.');
+        return;
+      }
+
+      // UI state loading
+      loader.style.display = 'block';
+      img.style.display = 'none';
+      txt.style.display = 'none';
+      status.innerText = 'Conectando con FLUX...';
+
+      try {
+        const response = await fetch(
+          "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
+          {
+            headers: { 
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+            method: "POST",
+            body: JSON.stringify({ inputs: prompts[shape][state] }),
+          }
+        );
+
+        if (!response.ok) {
+          let errMsg = `Error ${response.status}: ${response.statusText}`;
+          try {
+            const errJson = await response.json();
+            if (errJson.error) {
+              errMsg = errJson.error;
+            }
+          } catch(e) {}
+          throw new Error(errMsg);
+        }
+
+        const blob = await response.blob();
+        const objectURL = URL.createObjectURL(blob);
+
+        // Update UI with preview
+        loader.style.display = 'none';
+        img.src = objectURL;
+        img.style.display = 'block';
+        status.innerText = '¡Generado! Descargando...';
+
+        // Trigger automatic download
+        const a = document.createElement('a');
+        a.href = objectURL;
+        if (shape === 'gamer') {
+          a.download = `customer_5_draft.png`;
+        } else {
+          a.download = `cookie_${shape}_${state}_draft.png`;
+        }
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        status.innerText = 'Completado y Descargado';
+
+      } catch (err) {
+        loader.style.display = 'none';
+        txt.style.display = 'block';
+        txt.innerText = 'Error al generar';
+        
+        let displayError = err.message;
+        if (displayError.includes("is currently loading")) {
+          displayError = "El modelo se está iniciando en Hugging Face. Por favor, espera 15 segundos y vuelve a pulsar el botón.";
+        }
+        
+        status.innerText = displayError;
+        alert("ERROR DEL GENERADOR:\n" + displayError);
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>

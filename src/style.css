@@ -32,4 +32,9 @@ canvas {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   border-radius: 12px;
   touch-action: none;
+  /* Force high-quality image interpolation when CSS scales the canvas */
+  image-rendering: auto;
+  image-rendering: smooth;
+  image-rendering: high-quality;
+  -ms-interpolation-mode: bicubic;
 }

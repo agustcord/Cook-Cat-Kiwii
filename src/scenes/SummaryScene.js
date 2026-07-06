@@ -65,7 +65,7 @@ export default class SummaryScene extends Phaser.Scene {
     };
 
     if (this.success) {
-      if (this.day < 3) {
+      if (this.day < 4) {
         btnTextString = 'SIGUIENTE DÍA';
         nextSceneCallback = () => {
           this.scene.start('GameScene', { day: this.day + 1, coins: this.coins });
