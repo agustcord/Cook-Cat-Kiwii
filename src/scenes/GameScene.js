@@ -254,11 +254,11 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createDoughButtons(startX, startY) {
-    this.add.text(startX, startY - 35, '1. Masa', {
-      font: '16px "Outfit", sans-serif',
-      fill: '#582f0e',
-      fontWeight: '800'
-    });
+    const { masaLabel } = UI_CONFIG;
+    this.add.image(masaLabel.x, masaLabel.y, 'masa_label')
+      .setDisplaySize(masaLabel.width, masaLabel.height)
+      .setOrigin(0.5)
+      .setDepth(1);
 
     const bases = [
       { id: 'classic', label: 'Clásica', color: 0xf5ebe0, unlocked: true },
@@ -277,7 +277,9 @@ export default class GameScene extends Phaser.Scene {
       const y = startY + 45 + index * 80;
 
       // Dough source image (stays in place, always visible)
-      const doughImg = this.add.image(x, y, 'dough_' + b.id).setDisplaySize(doughSize, doughSize);
+      const doughImg = this.add.image(x, y, 'dough_' + b.id)
+        .setDisplaySize(doughSize, doughSize)
+        .setDepth(2);
       if (!b.unlocked) {
         doughImg.setTint(0x777777);
         doughImg.setAlpha(0.4);
@@ -349,11 +351,11 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createShapeButtons(startX, startY) {
-    this.add.text(startX, startY - 25, '2. Forma', {
-      font: '16px "Outfit", sans-serif',
-      fill: '#582f0e',
-      fontWeight: '800'
-    });
+    const { formaLabel } = UI_CONFIG;
+    this.add.image(formaLabel.x, formaLabel.y, 'forma_label')
+      .setDisplaySize(formaLabel.width, formaLabel.height)
+      .setOrigin(0.5)
+      .setDepth(1);
 
     const shapes = [
       { id: 'star', label: 'Estrella', unlocked: true },
@@ -367,7 +369,7 @@ export default class GameScene extends Phaser.Scene {
       const x = startX - 5 + index * 60;
       const y = startY + 45;
 
-      const container = this.add.container(x, y);
+      const container = this.add.container(x, y).setDepth(2);
       container.setData('origX', x);
       container.setData('origY', y);
 
@@ -435,8 +437,8 @@ export default class GameScene extends Phaser.Scene {
             duration: 250,
             ease: 'Back.out',
             onComplete: () => {
-              container.setDepth(0);
-              dragZone.setDepth(0);
+              container.setDepth(2);
+              dragZone.setDepth(2);
             }
           });
         });
@@ -448,17 +450,17 @@ export default class GameScene extends Phaser.Scene {
     this.ovenX = startX + 55;
     this.ovenY = startY - 40;
     // Oven Image placed higher (startY - 40, which is Y = 295). Starts with oven OFF
-    this.ovenImage = this.add.image(this.ovenX, this.ovenY, 'oven_off');
+    this.ovenImage = this.add.image(this.ovenX, this.ovenY, 'oven_off').setDepth(2);
 
     // ENCENDER Button (placed below the oven at startY + 45)
-    const btnBg = this.add.graphics();
+    const btnBg = this.add.graphics().setDepth(2);
     btnBg.fillStyle(0x7f5539, 1);
     btnBg.fillRoundedRect(startX, startY + 45, 110, 35, 8);
     this.ovenBtnText = this.add.text(startX + 55, startY + 62, 'ENCENDER', {
       font: '13px "Outfit", sans-serif',
       fill: '#fff1e6',
       fontWeight: '800'
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setDepth(2);
 
     this.ovenZone = this.add.rectangle(startX + 55, startY + 62, 110, 35, 0x000000, 0).setInteractive({ useHandCursor: true });
     this.ovenZone.on('pointerdown', () => {
@@ -469,8 +471,8 @@ export default class GameScene extends Phaser.Scene {
     this.ovenBarX = startX - 20;
     this.ovenBarY = startY + 95;
 
-    this.ovenBarBg = this.add.graphics();
-    this.ovenBarFill = this.add.graphics();
+    this.ovenBarBg = this.add.graphics().setDepth(2);
+    this.ovenBarFill = this.add.graphics().setDepth(2);
     this.drawOvenBarBackground();
   }
 
@@ -561,11 +563,11 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createToppingButtons(startX, startY) {
-    this.add.text(startX, startY - 25, '4. Decorar', {
-      font: '16px "Outfit", sans-serif',
-      fill: '#582f0e',
-      fontWeight: '800'
-    });
+    const { toppingLabel } = UI_CONFIG;
+    this.add.image(toppingLabel.x, toppingLabel.y, 'topping_label')
+      .setDisplaySize(toppingLabel.width, toppingLabel.height)
+      .setOrigin(0.5)
+      .setDepth(1);
 
     const toppings = [
       { id: 'sprinkles', label: 'Chispas', color: 0xff70a6, unlocked: true },
@@ -581,7 +583,7 @@ export default class GameScene extends Phaser.Scene {
       const y = startY + index * 80 + 42;
 
       // Topping Jar sprite (stays in place as reference)
-      const jarSource = this.add.image(x, y, 'topping_' + t.id).setDisplaySize(jarSize, jarSize);
+      const jarSource = this.add.image(x, y, 'topping_' + t.id).setDisplaySize(jarSize, jarSize).setDepth(2);
       if (!t.unlocked) {
         jarSource.setTint(0x777777);
         jarSource.setAlpha(0.4);
@@ -669,7 +671,7 @@ export default class GameScene extends Phaser.Scene {
     const trayY = this.trayY;
 
     // Draw tray plate placeholder
-    const trayBg = this.add.graphics();
+    const trayBg = this.add.graphics().setDepth(2);
     trayBg.fillStyle(0xcccccc, 1); // Metallic tray
     trayBg.fillRoundedRect(trayX - 100, trayY - 45, 200, 90, 10);
     trayBg.lineStyle(3, 0x999999, 1);
@@ -678,8 +680,8 @@ export default class GameScene extends Phaser.Scene {
 
 
     // Placeholders for cookie graphics (initialized with a dummy valid texture to set correct bounds)
-    this.cookieSprite = this.add.image(trayX, trayY, 'cookie_star_classic_baked').setVisible(false).setDepth(2);
-    this.doughSprite = this.add.image(trayX, trayY, 'dough_classic').setVisible(false).setDepth(1);
+    this.cookieSprite = this.add.image(trayX, trayY, 'cookie_star_classic_baked').setVisible(false).setDepth(3);
+    this.doughSprite = this.add.image(trayX, trayY, 'dough_classic').setVisible(false).setDepth(2);
     
     // Make the cookie interactive and draggable
     this.cookieSprite.setInteractive({ useHandCursor: true });
@@ -733,7 +735,7 @@ export default class GameScene extends Phaser.Scene {
         duration: 200,
         ease: 'Power2',
         onComplete: () => {
-          this.cookieSprite.setDepth(2);
+          this.cookieSprite.setDepth(3);
           this.updateCookieVisuals();
         }
       });

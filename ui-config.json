@@ -2,17 +2,17 @@
   "daySign": {
     "width": 180,
     "height": 120,
-    "x": 30,
-    "y": 40,
+    "x": -15,
+    "y": 70,
     "textFontSize": 24,
-    "textOffsetY": 8
+    "textOffsetY": 0
   },
   "coinsSign": {
-    "width": 220,
-    "height": 120,
-    "x": 512,
-    "y": 40,
-    "textFontSize": 24,
+    "width": 280,
+    "height": 150,
+    "x": 725,
+    "y": 70,
+    "textFontSize":18,
     "textOffsetY": 8
   },
   "metaSign": {
@@ -20,7 +20,25 @@
     "height": 150,
     "x": 1024,
     "y": 70,
-    "textFontSize": 28,
+    "textFontSize": 22,
     "textOffsetY": 10
+  },
+  "masaLabel": {
+    "width": 90,
+    "height": 50,
+    "x": 80,
+    "y": 285
+  },
+  "formaLabel": {
+    "width": 70,
+    "height": 66,
+    "x": 270,
+    "y": 285
+  },
+  "toppingLabel": {
+    "width": 75,
+    "height": 65,
+    "x": 942,
+    "y": 285
   }
 }

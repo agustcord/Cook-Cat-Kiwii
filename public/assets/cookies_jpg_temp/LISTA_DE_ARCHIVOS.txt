@@ -1,0 +1,110 @@
+
+================================================================================
+LISTA DE GALLETAS CRUDAS Y QUEMADAS CON TOPPINGS (72 archivos)
+================================================================================
+Carpeta donde guardar los JPGs: cookies_jpg_temp/
+--------------------------------------------------------------------------------
+
+FORMATOS DE NOMBRE:
+cookie_{forma}_{base}_{estado}_{topping}.jpg
+
+DONDE:
+- forma: star, heart, cat, fish
+- base: classic, chocolate, oat
+- estado: raw, burnt
+- topping: sprinkles, choco, glazing
+
+================================================================================
+1. GALLETAS CRUDAS (raw) CON TOPPINGS
+================================================================================
+
+cookie_star_classic_raw_sprinkles.jpg
+cookie_star_classic_raw_choco.jpg
+cookie_star_classic_raw_glazing.jpg
+cookie_star_chocolate_raw_sprinkles.jpg
+cookie_star_chocolate_raw_choco.jpg
+cookie_star_chocolate_raw_glazing.jpg
+cookie_star_oat_raw_sprinkles.jpg
+cookie_star_oat_raw_choco.jpg
+cookie_star_oat_raw_glazing.jpg
+
+cookie_heart_classic_raw_sprinkles.jpg
+cookie_heart_classic_raw_choco.jpg
+cookie_heart_classic_raw_glazing.jpg
+cookie_heart_chocolate_raw_sprinkles.jpg
+cookie_heart_chocolate_raw_choco.jpg
+cookie_heart_chocolate_raw_glazing.jpg
+cookie_heart_oat_raw_sprinkles.jpg
+cookie_heart_oat_raw_choco.jpg
+cookie_heart_oat_raw_glazing.jpg
+
+cookie_cat_classic_raw_sprinkles.jpg
+cookie_cat_classic_raw_choco.jpg
+cookie_cat_classic_raw_glazing.jpg
+cookie_cat_chocolate_raw_sprinkles.jpg
+cookie_cat_chocolate_raw_choco.jpg
+cookie_cat_chocolate_raw_glazing.jpg
+cookie_cat_oat_raw_sprinkles.jpg
+cookie_cat_oat_raw_choco.jpg
+cookie_cat_oat_raw_glazing.jpg
+
+cookie_fish_classic_raw_sprinkles.jpg
+cookie_fish_classic_raw_choco.jpg
+cookie_fish_classic_raw_glazing.jpg
+cookie_fish_chocolate_raw_sprinkles.jpg
+cookie_fish_chocolate_raw_choco.jpg
+cookie_fish_chocolate_raw_glazing.jpg
+cookie_fish_oat_raw_sprinkles.jpg
+cookie_fish_oat_raw_choco.jpg
+cookie_fish_oat_raw_glazing.jpg
+
+================================================================================
+2. GALLETAS QUEMADAS (burnt) CON TOPPINGS
+================================================================================
+
+cookie_star_classic_burnt_sprinkles.jpg
+cookie_star_classic_burnt_choco.jpg
+cookie_star_classic_burnt_glazing.jpg
+cookie_star_chocolate_burnt_sprinkles.jpg
+cookie_star_chocolate_burnt_choco.jpg
+cookie_star_chocolate_burnt_glazing.jpg
+cookie_star_oat_burnt_sprinkles.jpg
+cookie_star_oat_burnt_choco.jpg
+cookie_star_oat_burnt_glazing.jpg
+
+cookie_heart_classic_burnt_sprinkles.jpg
+cookie_heart_classic_burnt_choco.jpg
+cookie_heart_classic_burnt_glazing.jpg
+cookie_heart_chocolate_burnt_sprinkles.jpg
+cookie_heart_chocolate_burnt_choco.jpg
+cookie_heart_chocolate_burnt_glazing.jpg
+cookie_heart_oat_burnt_sprinkles.jpg
+cookie_heart_oat_burnt_choco.jpg
+cookie_heart_oat_burnt_glazing.jpg
+
+cookie_cat_classic_burnt_sprinkles.jpg
+cookie_cat_classic_burnt_choco.jpg
+cookie_cat_classic_burnt_glazing.jpg
+cookie_cat_chocolate_burnt_sprinkles.jpg
+cookie_cat_chocolate_burnt_choco.jpg
+cookie_cat_chocolate_burnt_glazing.jpg
+cookie_cat_oat_burnt_sprinkles.jpg
+cookie_cat_oat_burnt_choco.jpg
+cookie_cat_oat_burnt_glazing.jpg
+
+cookie_fish_classic_burnt_sprinkles.jpg
+cookie_fish_classic_burnt_choco.jpg
+cookie_fish_classic_burnt_glazing.jpg
+cookie_fish_chocolate_burnt_sprinkles.jpg
+cookie_fish_chocolate_burnt_choco.jpg
+cookie_fish_chocolate_burnt_glazing.jpg
+cookie_fish_oat_burnt_sprinkles.jpg
+cookie_fish_oat_burnt_choco.jpg
+cookie_fish_oat_burnt_glazing.jpg
+
+================================================================================
+NOTA IMPORTANTE:
+- La lógica actual del juego NO necesita estas galletas!
+- Solo se muestran toppings en galletas horneadas (baked)
+- Si quieres usarlas, habría que modificar GameScene.js
+================================================================================

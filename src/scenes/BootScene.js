@@ -36,6 +36,9 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('day_sign_empty', 'assets/ui/day_sign_empty.png?v=1');
     this.load.image('coins_sign_empty', 'assets/ui/coins_sign_empty.png?v=1');
     this.load.image('meta_sign_empty', 'assets/ui/meta_sign_empty.png?v=7');
+    this.load.image('masa_label', 'assets/ui/masa_label.png?v=1');
+    this.load.image('forma_label', 'assets/ui/forma_label.png?v=1');
+    this.load.image('topping_label', 'assets/ui/topping_label.png?v=1');
 
     // Preload customer sprites (served from public/ with cache buster v8)
     this.load.image('customer_1', 'assets/customers/customer_1.png?v=8');
