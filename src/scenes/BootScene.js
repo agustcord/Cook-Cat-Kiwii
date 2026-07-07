@@ -31,6 +31,9 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('menu_bg', 'assets/Cat_chef_behind_counter_202607051008.jpeg');
     this.load.image('cat_paw_open', 'assets/cat_paw_open.png');
     this.load.image('cat_paw_closed', 'assets/cat_paw_closed.png');
+    
+    // Preload UI assets
+    this.load.image('meta_sign_empty', 'assets/ui/meta_sign_empty.png?v=7');
 
     // Preload customer sprites (served from public/ with cache buster v8)
     this.load.image('customer_1', 'assets/customers/customer_1.png?v=8');
@@ -55,20 +58,32 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('topping_choco', 'assets/stations/topping_choco.png?v=8');
     this.load.image('topping_glazing', 'assets/stations/topping_glazing.png?v=8');
 
-    // Preload all combinations of cookies (raw, baked, burnt)
+    // Preload all combinations of cookies (raw, baked, burnt) with and without toppings
     const shapes = ['star', 'heart', 'cat', 'fish'];
     const bases = ['classic', 'chocolate', 'oat'];
     const toppingsList = ['sprinkles', 'choco', 'glazing'];
 
     shapes.forEach(shape => {
       bases.forEach(base => {
-        // Raw cookie
+        // Raw cookie (no topping)
         const keyRaw = `cookie_${shape}_${base}_raw`;
         this.load.image(keyRaw, `assets/cookies/${keyRaw}.png?v=8`);
+        
+        // Raw cookies (with toppings)
+        toppingsList.forEach(topping => {
+          const keyRawTopped = `cookie_${shape}_${base}_raw_${topping}`;
+          this.load.image(keyRawTopped, `assets/cookies/${keyRawTopped}.png?v=8`);
+        });
 
-        // Burnt cookie
+        // Burnt cookie (no topping)
         const keyBurnt = `cookie_${shape}_${base}_burnt`;
         this.load.image(keyBurnt, `assets/cookies/${keyBurnt}.png?v=8`);
+        
+        // Burnt cookies (with toppings)
+        toppingsList.forEach(topping => {
+          const keyBurntTopped = `cookie_${shape}_${base}_burnt_${topping}`;
+          this.load.image(keyBurntTopped, `assets/cookies/${keyBurntTopped}.png?v=8`);
+        });
 
         // Untopped baked cookie
         const keyNoTopping = `cookie_${shape}_${base}_baked`;

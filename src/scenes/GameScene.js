@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
 import Cookie from '../game/Cookie.js';
 import Customer from '../game/Customer.js';
+import UI_CONFIG from '../../ui-config.json';
 
 const DAY_CONFIGS = {
   1: {
     meta: 100,
-    patienceTime: 35,
+    patienceTime: 40,
     maxCustomers: 3,
     bakeMin: 5.5,
     bakeMax: 7.5,
@@ -16,7 +17,7 @@ const DAY_CONFIGS = {
   },
   2: {
     meta: 150,
-    patienceTime: 30,
+    patienceTime: 35,
     maxCustomers: 4,
     bakeMin: 6.0,
     bakeMax: 7.5,
@@ -30,7 +31,7 @@ const DAY_CONFIGS = {
   },
   3: {
     meta: 200,
-    patienceTime: 26,
+    patienceTime: 30,
     maxCustomers: 4,
     bakeMin: 6.5,
     bakeMax: 7.5,
@@ -47,7 +48,7 @@ const DAY_CONFIGS = {
   },
   4: {
     meta: 300,
-    patienceTime: 22,
+    patienceTime: 28,
     maxCustomers: 5,
     bakeMin: 7.0,
     bakeMax: 7.5,
@@ -198,26 +199,38 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setupHUD(width) {
-    // Day indicator
+    // Day indicator (keep simple for now)
     this.add.text(20, 15, `DÍA ${this.day}`, {
       font: '24px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800'
     });
 
-    // Coins counter
+    // Coins counter (keep simple for now)
     this.coinsText = this.add.text(width / 2, 15, `Monedas: ${this.coins}`, {
       font: '24px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800'
     }).setOrigin(0.5, 0);
 
-    // Meta target indicator
-    this.add.text(width - 20, 15, `Meta: ${this.config.meta}`, {
-      font: '20px "Outfit", sans-serif',
-      fill: '#7f5539',
-      fontWeight: '600'
-    }).setOrigin(1, 0);
+    // Meta target indicator WITH DECORATIVE SIGN - USES UI CONFIG!
+    let { metaSign } = UI_CONFIG;
+    
+    // Let the user set x as "width" to use the full screen width
+    const finalX = metaSign.x === "width" ? width : metaSign.x;
+    
+    // 1. Draw the sign background image
+    this.add.image(finalX, metaSign.y, 'meta_sign_empty')
+      .setDisplaySize(metaSign.width, metaSign.height)
+      .setOrigin(1, 0.5);
+    
+    // 2. Draw the dynamic text OVER the sign, perfectly centered
+    const textX = finalX - metaSign.width / 2;
+    this.metaText = this.add.text(textX, metaSign.y + metaSign.textOffsetY, `Meta: ${this.config.meta}`, {
+      font: `${metaSign.textFontSize}px "Outfit", sans-serif`,
+      fill: '#582f0e',
+      fontWeight: '800'
+    }).setOrigin(0.5, 0.5);
   }
 
   createStations(width, height) {
@@ -619,20 +632,16 @@ export default class GameScene extends Phaser.Scene {
           const dist = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, this.trayX, this.trayY);
 
           if (dist < 120) {
-            // Apply all the same validations as before
-            if (this.isBaking || this.isCookieInOven) {
-              this.showFeedbackText('¡La galleta está en el horno!', this.trayX, 200, '#d90429');
-            } else if (!this.currentCookie.base) {
-              this.showFeedbackText('¡Primero selecciona la masa!', this.trayX, 200, '#d90429');
-            } else if (this.currentCookie.bakedState === 'raw') {
-              this.showFeedbackText('¡Primero debes hornear la galleta!', this.trayX, 200, '#d90429');
-            } else if (this.currentCookie.bakedState === 'burnt') {
-              this.showFeedbackText('¡La galleta está quemada! Haz una nueva.', this.trayX, 200, '#d90429');
-            } else {
-              this.currentCookie.toppings = [t.id];
-              this.updateCookieVisuals();
-            }
-          }
+        // Apply validations (allow toppings on all cookie states)
+        if (this.isBaking || this.isCookieInOven) {
+          this.showFeedbackText('¡La galleta está en el horno!', this.trayX, 200, '#d90429');
+        } else if (!this.currentCookie.base) {
+          this.showFeedbackText('¡Primero selecciona la masa!', this.trayX, 200, '#d90429');
+        } else {
+          this.currentCookie.toppings = [t.id];
+          this.updateCookieVisuals();
+        }
+      }
 
           // Destroy the clone and restore source
           jarClone.destroy();
@@ -796,9 +805,9 @@ export default class GameScene extends Phaser.Scene {
 
     // If a shape has been cut, display the correct cookie sprite
     if (this.cookieSprite) {
-      // Construct asset key based on shape, base, state, and toppings
+      // Construct asset key based on shape, base, state, and toppings (for all states)
       let key = `cookie_${cookie.shape}_${cookie.base}_${cookie.bakedState}`;
-      if (cookie.bakedState === 'baked' && cookie.toppings && cookie.toppings[0]) {
+      if (cookie.toppings && cookie.toppings[0]) {
         key += `_${cookie.toppings[0]}`;
       }
 
