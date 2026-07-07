@@ -199,32 +199,38 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setupHUD(width) {
-    // Day indicator (keep simple for now)
-    this.add.text(20, 15, `DÍA ${this.day}`, {
-      font: '24px "Outfit", sans-serif',
-      fill: '#582f0e',
-      fontWeight: '800'
-    });
-
-    // Coins counter (keep simple for now)
-    this.coinsText = this.add.text(width / 2, 15, `Monedas: ${this.coins}`, {
-      font: '24px "Outfit", sans-serif',
-      fill: '#582f0e',
-      fontWeight: '800'
-    }).setOrigin(0.5, 0);
-
-    // Meta target indicator WITH DECORATIVE SIGN - USES UI CONFIG!
-    let { metaSign } = UI_CONFIG;
+    // Day indicator WITH DECORATIVE SIGN!
+    const { daySign } = UI_CONFIG;
+    this.add.image(daySign.x, daySign.y, 'day_sign_empty')
+      .setDisplaySize(daySign.width, daySign.height)
+      .setOrigin(0, 0.5);
     
-    // Let the user set x as "width" to use the full screen width
+    this.add.text(daySign.x + daySign.width / 2, daySign.y + daySign.textOffsetY, `DÍA ${this.day}`, {
+      font: `${daySign.textFontSize}px "Outfit", sans-serif`,
+      fill: '#582f0e',
+      fontWeight: '800'
+    }).setOrigin(0.5, 0.5);
+
+    // Coins counter WITH DECORATIVE SIGN!
+    const { coinsSign } = UI_CONFIG;
+    this.add.image(coinsSign.x, coinsSign.y, 'coins_sign_empty')
+      .setDisplaySize(coinsSign.width, coinsSign.height)
+      .setOrigin(0.5, 0.5);
+    
+    this.coinsText = this.add.text(coinsSign.x, coinsSign.y + coinsSign.textOffsetY, `Monedas: ${this.coins}`, {
+      font: `${coinsSign.textFontSize}px "Outfit", sans-serif`,
+      fill: '#582f0e',
+      fontWeight: '800'
+    }).setOrigin(0.5, 0.5);
+
+    // Meta target indicator WITH DECORATIVE SIGN!
+    let { metaSign } = UI_CONFIG;
     const finalX = metaSign.x === "width" ? width : metaSign.x;
     
-    // 1. Draw the sign background image
     this.add.image(finalX, metaSign.y, 'meta_sign_empty')
       .setDisplaySize(metaSign.width, metaSign.height)
       .setOrigin(1, 0.5);
     
-    // 2. Draw the dynamic text OVER the sign, perfectly centered
     const textX = finalX - metaSign.width / 2;
     this.metaText = this.add.text(textX, metaSign.y + metaSign.textOffsetY, `Meta: ${this.config.meta}`, {
       font: `${metaSign.textFontSize}px "Outfit", sans-serif`,

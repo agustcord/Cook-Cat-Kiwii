@@ -1,10 +1,26 @@
 {
+  "daySign": {
+    "width": 180,
+    "height": 120,
+    "x": 30,
+    "y": 40,
+    "textFontSize": 24,
+    "textOffsetY": 8
+  },
+  "coinsSign": {
+    "width": 220,
+    "height": 120,
+    "x": 512,
+    "y": 40,
+    "textFontSize": 24,
+    "textOffsetY": 8
+  },
   "metaSign": {
     "width": 280,
     "height": 150,
     "x": 1024,
-    "y": 50,
-    "textFontSize": 25,
+    "y": 70,
+    "textFontSize": 28,
     "textOffsetY": 10
   }
 }

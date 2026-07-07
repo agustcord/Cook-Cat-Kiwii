@@ -33,6 +33,8 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('cat_paw_closed', 'assets/cat_paw_closed.png');
     
     // Preload UI assets
+    this.load.image('day_sign_empty', 'assets/ui/day_sign_empty.png?v=1');
+    this.load.image('coins_sign_empty', 'assets/ui/coins_sign_empty.png?v=1');
     this.load.image('meta_sign_empty', 'assets/ui/meta_sign_empty.png?v=7');
 
     // Preload customer sprites (served from public/ with cache buster v8)
