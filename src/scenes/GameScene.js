@@ -124,7 +124,8 @@ export default class GameScene extends Phaser.Scene {
     
     // Time-based oven state
     this.isBaking = false;
-    this.isCookieInOven = false;
+    this.cookiesInOven = []; // Holds Cookie instances currently in the oven
+    this.deliveryTrayCookies = []; // Holds Cookie instances currently on the delivery tray
     this.ovenTimeElapsed = 0;
   }
 
@@ -159,6 +160,9 @@ export default class GameScene extends Phaser.Scene {
 
     // Create Cookie Tray (Preparation Area)
     this.createCookieTray(width, height);
+
+    // Create Delivery Tray (Serving Area)
+    this.createDeliveryTray();
 
     // Spawn first customer
     this.time.delayedCall(1000, () => {
@@ -410,12 +414,8 @@ export default class GameScene extends Phaser.Scene {
           );
 
           if (dist < 120) {
-            if (this.isBaking || this.isCookieInOven) {
-              this.showFeedbackText('¡La galleta está en el horno!', this.trayX, 200, '#d90429');
-            } else {
-              this.currentCookie.base = b.id;
-              this.updateCookieVisuals();
-            }
+            this.currentCookie.base = b.id;
+            this.updateCookieVisuals();
           }
 
           // Destroy the portion sprite
@@ -495,9 +495,7 @@ export default class GameScene extends Phaser.Scene {
           // Check distance to cookie tray (x: trayX, y: trayY)
           const dist = Phaser.Math.Distance.Between(dragZone.x, dragZone.y, this.trayX, this.trayY);
           if (dist < 100) {
-            if (this.isBaking || this.isCookieInOven) {
-              this.showFeedbackText('¡La galleta está en el horno!', this.trayX, 200, '#d90429');
-            } else if (this.currentCookie.base) {
+            if (this.currentCookie.base) {
               this.currentCookie.shape = s.id;
               this.updateCookieVisuals();
               this.showFeedbackText(`¡Forma de ${s.label}!`, this.trayX, 200, '#38b000');
@@ -533,8 +531,14 @@ export default class GameScene extends Phaser.Scene {
     this.ovenX = startX + 55;
     this.ovenY = startY - 40;
     // Oven Image placed higher (startY - 40, which is Y = 295). Starts with oven OFF
-    this.ovenImage = this.add.image(this.ovenX, this.ovenY, 'oven_off').setDepth(2);
-
+    this.ovenImage = this.add.image(this.ovenX, this.ovenY, 'oven_off')
+      .setDepth(2)
+      .setInteractive({ useHandCursor: true });
+    
+    this.ovenImage.on('pointerdown', () => {
+      this.handleOvenImageClick();
+    });
+ 
     // ENCENDER Button (placed below the oven at startY + 45)
     const btnBg = this.add.graphics().setDepth(2);
     btnBg.fillStyle(0x7f5539, 1);
@@ -544,30 +548,25 @@ export default class GameScene extends Phaser.Scene {
       fill: '#fff1e6',
       fontWeight: '800'
     }).setOrigin(0.5).setDepth(2);
-
+ 
     this.ovenZone = this.add.rectangle(startX + 55, startY + 62, 110, 35, 0x000000, 0).setInteractive({ useHandCursor: true });
     this.ovenZone.on('pointerdown', () => {
       this.handleOvenClick();
     });
-
+ 
     // Timing Bar (placed below the button at startY + 95)
     this.ovenBarX = startX - 20;
     this.ovenBarY = startY + 95;
-
+ 
     this.ovenBarBg = this.add.graphics().setDepth(2);
     this.ovenBarFill = this.add.graphics().setDepth(2);
     this.drawOvenBarBackground();
   }
-
+ 
   handleOvenClick() {
-    if (!this.currentCookie.isDeliverable()) {
-      this.showFeedbackText('¡Elige masa y forma primero!', this.trayX, 200, '#d90429');
-      return;
-    }
-
     if (!this.isBaking) {
-      if (!this.isCookieInOven) {
-        this.showFeedbackText('¡Arrastra la galleta al horno!', this.trayX, 200, '#d90429');
+      if (this.cookiesInOven.length === 0) {
+        this.showFeedbackText('¡El horno está vacío!', this.trayX, 200, '#d90429');
         return;
       }
       // Start baking
@@ -580,24 +579,32 @@ export default class GameScene extends Phaser.Scene {
     } else {
       // Stop baking and evaluate time
       this.isBaking = false;
-      this.isCookieInOven = false; // Cookie is retrieved from the oven back to the tray
       this.ovenBtnText.setText('ENCENDER');
       this.ovenImage.setTexture('oven_off'); // Switch back to unlit oven
       
       const bakeMin = this.config.bakeMin || 4.0;
       const bakeMax = this.config.bakeMax || 8.0;
-
-      if (this.ovenTimeElapsed < bakeMin) {
-        this.currentCookie.bakedState = 'raw';
-        this.showFeedbackText('¡Sigue cruda! 🥣', this.trayX, 200, '#ffb703');
-      } else if (this.ovenTimeElapsed <= bakeMax) {
-        this.currentCookie.bakedState = 'baked';
-        this.showFeedbackText('¡Horneado Perfecto! 🍪✨', this.trayX, 200, '#38b000');
-      } else {
-        this.currentCookie.bakedState = 'burnt';
-        this.showFeedbackText('¡Se ha quemado! 😭🔥', this.trayX, 200, '#d90429');
+ 
+      let state = 'raw';
+      let feedback = '¡Sigue cruda! 🥣';
+      let color = '#ffb703';
+ 
+      if (this.ovenTimeElapsed >= bakeMin && this.ovenTimeElapsed <= bakeMax) {
+        state = 'baked';
+        feedback = '¡Horneado Perfecto! 🍪✨';
+        color = '#38b000';
+      } else if (this.ovenTimeElapsed > bakeMax) {
+        state = 'burnt';
+        feedback = '¡Se ha quemado! 😭🔥';
+        color = '#d90429';
       }
-
+ 
+      // Update state for all cookies currently in the oven
+      this.cookiesInOven.forEach(cookie => {
+        cookie.bakedState = state;
+      });
+ 
+      this.showFeedbackText(feedback, this.trayX, 200, color);
       this.ovenBarFill.clear();
       this.updateCookieVisuals();
     }
@@ -724,9 +731,7 @@ export default class GameScene extends Phaser.Scene {
 
           if (dist < 120) {
         // Apply validations (allow toppings on all cookie states)
-        if (this.isBaking || this.isCookieInOven) {
-          this.showFeedbackText('¡La galleta está en el horno!', this.trayX, 200, '#d90429');
-        } else if (!this.currentCookie.base) {
+        if (!this.currentCookie.base) {
           this.showFeedbackText('¡Primero selecciona la masa!', this.trayX, 200, '#d90429');
         } else {
           this.currentCookie.toppings = [t.id];
@@ -782,9 +787,9 @@ export default class GameScene extends Phaser.Scene {
 
       // Check distance to oven to apply drop-target highlight
       const dist = Phaser.Math.Distance.Between(dragX, clampedY, this.ovenX, this.ovenY);
-      if (dist < 120 && !this.isBaking && !this.isCookieInOven && this.currentCookie.shape) {
-        this.ovenImage.setScale(1.04); // Just a little bit larger
-        this.ovenImage.setTint(0xfff2e6); // Very soft warm cream glow (no cold blue)
+      if (dist < 120 && !this.isBaking && this.cookiesInOven.length < 3 && this.currentCookie.shape) {
+        this.ovenImage.setScale(1.04);
+        this.ovenImage.setTint(0xfff2e6);
       } else {
         this.ovenImage.setScale(1.0);
         this.ovenImage.clearTint();
@@ -799,29 +804,61 @@ export default class GameScene extends Phaser.Scene {
       // Check distance from cookie to oven center (this.ovenX, this.ovenY)
       const dist = Phaser.Math.Distance.Between(this.cookieSprite.x, this.cookieSprite.y, this.ovenX, this.ovenY);
       
-      if (dist < 120) {
-        if (this.isBaking || this.isCookieInOven) {
-          this.showFeedbackText('¡El horno ya está ocupado!', this.trayX, 200, '#d90429');
-        } else if (!this.currentCookie.shape) {
-          this.showFeedbackText('¡Primero corta la forma!', this.trayX, 200, '#d90429');
-        } else {
-          this.isCookieInOven = true;
-          this.showFeedbackText('¡Galleta en el horno! Presiona ENCENDER. 💡', this.trayX, 200, '#38b000');
-        }
-      }
+      if (dist < 120 && !this.isBaking && this.cookiesInOven.length < 3 && this.currentCookie.shape) {
+        // Drop successfully into oven!
+        // Clone cookie
+        const cookieToOven = new Cookie();
+        cookieToOven.base = this.currentCookie.base;
+        cookieToOven.shape = this.currentCookie.shape;
+        cookieToOven.bakedState = this.currentCookie.bakedState;
+        cookieToOven.toppings = [...this.currentCookie.toppings];
+        this.cookiesInOven.push(cookieToOven);
+        
+        this.currentCookie.reset();
 
-      // Tween back to tray position
-      this.tweens.add({
-        targets: this.cookieSprite,
-        x: this.trayX,
-        y: this.trayY,
-        duration: 200,
-        ease: 'Power2',
-        onComplete: () => {
-          this.cookieSprite.setDepth(3);
-          this.updateCookieVisuals();
+        this.showFeedbackText(`Galleta introducida (${this.cookiesInOven.length}/3)`, this.trayX, 200, '#38b000');
+
+        // Play shrink and fade animation into the oven center
+        this.tweens.add({
+          targets: this.cookieSprite,
+          x: this.ovenX,
+          y: this.ovenY,
+          scale: 0.1,
+          alpha: 0,
+          duration: 300,
+          onComplete: () => {
+            this.cookieSprite.setScale(1.0);
+            this.cookieSprite.setAlpha(1);
+            this.cookieSprite.setVisible(false);
+            this.cookieSprite.x = this.trayX;
+            this.cookieSprite.y = this.trayY;
+            this.updateCookieVisuals();
+          }
+        });
+      } else {
+        // Did not drop or failed: tween back to tray normally
+        if (dist < 120) {
+          if (this.isBaking) {
+            this.showFeedbackText('¡El horno está encendido!', this.trayX, 200, '#d90429');
+          } else if (this.cookiesInOven.length >= 3) {
+            this.showFeedbackText('¡El horno está lleno! (Máx 3)', this.trayX, 200, '#d90429');
+          } else if (!this.currentCookie.shape) {
+            this.showFeedbackText('¡Primero corta la forma!', this.trayX, 200, '#d90429');
+          }
         }
-      });
+        
+        this.tweens.add({
+          targets: this.cookieSprite,
+          x: this.trayX,
+          y: this.trayY,
+          duration: 200,
+          ease: 'Power2',
+          onComplete: () => {
+            this.cookieSprite.setDepth(3);
+            this.updateCookieVisuals();
+          }
+        });
+      }
     });
 
     this.updateCookieVisuals();
@@ -838,29 +875,15 @@ export default class GameScene extends Phaser.Scene {
 
     const resetZone = this.add.rectangle(this.trayX - 150, trayY, 60, 30, 0x000000, 0).setInteractive({ useHandCursor: true });
     resetZone.on('pointerdown', () => {
-      this.currentCookie.reset();
-      this.isCookieInOven = false;
-      this.isBaking = false;
-      this.ovenImage.setTexture('oven_off');
-      this.ovenBtnText.setText('ENCENDER');
-      this.ovenBarFill.clear();
-      this.updateCookieVisuals();
-      this.showFeedbackText('¡Bandeja Limpia!', this.trayX, 200, '#d90429');
-    });
-
-    // Deliver Button (makes it easy to test on touch without drag if needed)
-    const deliverBg = this.add.graphics();
-    deliverBg.fillStyle(0x38b000, 1);
-    deliverBg.fillRoundedRect(this.trayX + 120, trayY - 15, 75, 30, 8);
-    this.add.text(this.trayX + 157, trayY, 'ENTREGAR', {
-      font: '11px "Outfit", sans-serif',
-      fill: '#fff1e6',
-      fontWeight: '800'
-    }).setOrigin(0.5);
-
-    const deliverZone = this.add.rectangle(this.trayX + 157, trayY, 75, 30, 0x000000, 0).setInteractive({ useHandCursor: true });
-    deliverZone.on('pointerdown', () => {
-      this.deliverCookie();
+      if (this.currentCookie.base || this.currentCookie.shape) {
+        this.coins = Math.max(0, this.coins - 5);
+        this.coinsText.setText(`Monedas: ${this.coins}`);
+        this.currentCookie.reset();
+        this.updateCookieVisuals();
+        this.showFeedbackText('-5 Monedas (Desperdicio) 🗑️', this.trayX, 200, '#d90429');
+      } else {
+        this.showFeedbackText('¡Bandeja ya limpia!', this.trayX, 200, '#d90429');
+      }
     });
   }
 
@@ -870,11 +893,6 @@ export default class GameScene extends Phaser.Scene {
     }
     if (this.cookieSprite) {
       this.cookieSprite.setVisible(false);
-    }
-
-    // Hide cookie from tray if it is inside the oven (baking or waiting)
-    if (this.isBaking || this.isCookieInOven) {
-      return;
     }
 
     const cookie = this.currentCookie;
@@ -944,83 +962,117 @@ export default class GameScene extends Phaser.Scene {
   deliverCookie() {
     if (!this.currentCustomer) return;
 
-    if (this.isBaking || this.isCookieInOven) {
-      this.showFeedbackText('¡La galleta está en el horno!', 512, 200, '#d90429');
+    if (this.deliveryTrayCookies.length === 0) {
+      this.showFeedbackText('¡La bandeja de entrega está vacía!', this.trayX, 200, '#d90429');
       return;
     }
 
-    if (!this.currentCookie.isDeliverable()) {
-      this.showFeedbackText('¡La galleta no está lista!', 512, 200, '#d90429');
-      return;
-    }
+    const recipe = this.currentCustomer.recipe;
+    const requested = this.currentCustomer.requestedQuantity;
+    const accumulated = this.currentCustomer.acceptedCookies || [];
+    const newDelivered = this.deliveryTrayCookies;
+    const totalCount = accumulated.length + newDelivered.length;
 
-    const similarity = this.currentCookie.getSimilarityPercentage(this.currentCustomer.recipe);
-    const tolerance = this.currentCustomer.toleranceThreshold;
+    // Check if we delivered fewer cookies than requested
+    if (totalCount < requested) {
+      // Roll for tolerance based on customer personality
+      const ACCEPTANCE_PROBS = {
+        1: 0.80, // Dormilón
+        2: 0.20, // Oficinista
+        3: 0.90, // Abuelita
+        4: 0.70, // Estudiante
+        5: 0.00  // Gamer
+      };
+      const acceptProb = ACCEPTANCE_PROBS[this.currentCustomer.customerId] || 0.70;
+      const isAccepted = Math.random() < acceptProb;
 
-    if (similarity >= tolerance) {
-      // 1. ACCEPTED (similarity >= tolerance)
-      const isPerfect = similarity === 100;
-      let feedback = '';
-      let color = '';
+      if (isAccepted) {
+        // Customer accepts the partial delivery and leaves early.
+        let totalReward = 0;
+        let anyPerfect = false;
+        const allCookies = accumulated.concat(newDelivered);
+        
+        allCookies.forEach(cookie => {
+          const sim = cookie.getSimilarityPercentage(recipe);
+          if (sim === 100) anyPerfect = true;
+          totalReward += Math.round(60 * (sim / 100));
+        });
 
-      if (isPerfect) {
-        const perfectTexts = [
-          '¡PERFECTO! 🍪✨',
-          '¡Espectacular! 😍',
-          '¡Receta Perfecta! 🌟',
-          '¡Obra Maestra! 🏆',
-          '¡Exquisito! 💖'
-        ];
-        feedback = perfectTexts[Math.floor(Math.random() * perfectTexts.length)];
-        color = '#38b000';
-        this.triggerConfetti();
+        this.coins += totalReward;
+        this.coinsText.setText(`Monedas: ${this.coins}`);
+        this.showFeedbackText(`¡Aceptado parcialmente! 👍 +${totalReward} Monedas`, this.trayX, 200, '#38b000');
+
+        if (anyPerfect) {
+          this.triggerConfetti();
+        }
+
+        // Clean up
+        this.deliveryTrayCookies = [];
+        this.drawDeliveryTray();
+        this.currentCustomer.destroy();
+        this.currentCustomer = null;
+
+        this.time.delayedCall(1500, () => {
+          this.spawnCustomer();
+        });
       } else {
-        const acceptTexts = [
-          '¡Aceptable! 👍',
-          '¡Se puede mejorar!',
-          '¡Mmm, sabe bien! 🙂',
-          '¡Casi perfecta! 🌟',
-          '¡Buen intento!'
-        ];
-        feedback = acceptTexts[Math.floor(Math.random() * acceptTexts.length)];
-        color = '#ffb703';
+        // Customer rejects the partial delivery and stays
+        // Transfer new cookies to customer's accumulated list
+        this.currentCustomer.acceptedCookies = accumulated.concat(newDelivered);
+        this.currentCustomer.updateProgress(this.currentCustomer.acceptedCookies.length);
+        this.deliveryTrayCookies = [];
+        this.drawDeliveryTray();
+
+        this.showFeedbackText(`¡Incompleto! Faltan ${requested - totalCount} galletas 😟`, this.trayX, 200, '#d90429');
+      }
+    } else {
+      // Delivered quantity is equal or greater than requested (totalCount >= requested)
+      const allCookies = accumulated.concat(newDelivered);
+
+      // Sort all cookies by similarity percentage descending, to evaluate the best ones
+      allCookies.sort((a, b) => b.getSimilarityPercentage(recipe) - a.getSimilarityPercentage(recipe));
+
+      // Calculate coins for the best 'requested' cookies
+      let totalReward = 0;
+      let anyPerfect = false;
+      for (let i = 0; i < requested; i++) {
+        const sim = allCookies[i].getSimilarityPercentage(recipe);
+        if (sim === 100) anyPerfect = true;
+        totalReward += Math.round(60 * (sim / 100));
       }
 
-      // Add flat reward of 60 coins
-      const reward = 60;
-      this.coins += reward;
+      // Calculate penalty for excess cookies
+      const excessCount = totalCount - requested;
+      const wastePenalty = excessCount * 15;
+
+      this.coins = Math.max(0, this.coins + totalReward - wastePenalty);
       this.coinsText.setText(`Monedas: ${this.coins}`);
-      this.showFeedbackText(feedback, this.trayX, 200, color);
 
-      // Reset baking/cookie states
-      this.currentCookie.reset();
-      this.updateCookieVisuals();
+      if (excessCount > 0) {
+        this.showFeedbackText(`¡Pedido completo! +${totalReward} (Exceso: -${wastePenalty}) 🗑️`, this.trayX, 200, '#ffb703');
+      } else {
+        const avgSim = totalReward / (requested * 60);
+        let feedback = '¡Pedido completado! 👍';
+        let color = '#38b000';
+        if (anyPerfect && avgSim >= 0.95) {
+          feedback = '¡ENTREGA PERFECTA! 🍪✨';
+          this.triggerConfetti();
+        } else if (avgSim < 0.6) {
+          feedback = '¡Aceptable! 😐';
+          color = '#ffb703';
+        }
+        this.showFeedbackText(`${feedback} +${totalReward} Monedas`, this.trayX, 200, color);
+      }
 
-      // Destroy active customer and queue next
+      // Clean up and spawn next
+      this.deliveryTrayCookies = [];
+      this.drawDeliveryTray();
       this.currentCustomer.destroy();
       this.currentCustomer = null;
 
       this.time.delayedCall(1500, () => {
         this.spawnCustomer();
       });
-    } else {
-      // 2. REJECTED (similarity < tolerance)
-      const rejectTexts = [
-        '¡Rechazada! ❌',
-        '¡Vuelve a intentarlo!',
-        '¡Uups! No es lo que pedí... ❌',
-        '¡Rehacer galleta! 😟',
-        '¡Galleta equivocada! 😟'
-      ];
-      const feedback = rejectTexts[Math.floor(Math.random() * rejectTexts.length)];
-      
-      this.showFeedbackText(feedback, this.trayX, 200, '#d90429');
-
-      // Clear the cookie on the tray so the player can remake it
-      this.currentCookie.reset();
-      this.updateCookieVisuals();
-      
-      // Note: The customer is NOT destroyed, they stay and their patience bar keeps running
     }
   }
 
@@ -1269,5 +1321,144 @@ export default class GameScene extends Phaser.Scene {
       console.log('--- NUEVO UI CONFIG ---');
       console.log(jsonStr);
     }
+  }
+
+  createDeliveryTray() {
+    this.deliveryTrayX = 512;
+    this.deliveryTrayY = 370;
+
+    // Draw the wooden tray background
+    this.deliveryTrayBg = this.add.graphics();
+    
+    // Draw a nice rounded rectangle tray with a brown border
+    this.deliveryTrayBg.fillStyle(0xe6ccb2, 1);
+    this.deliveryTrayBg.lineStyle(3, 0x7f5539, 1);
+    this.deliveryTrayBg.fillRoundedRect(this.deliveryTrayX - 100, this.deliveryTrayY - 25, 200, 50, 8);
+    this.deliveryTrayBg.strokeRoundedRect(this.deliveryTrayX - 100, this.deliveryTrayY - 25, 200, 50, 8);
+    this.deliveryTrayBg.setDepth(1);
+
+    // Text label on the tray
+    this.deliveryTrayLabel = this.add.text(this.deliveryTrayX, this.deliveryTrayY - 33, 'BANDEJA DE ENTREGA', {
+      font: '9px "Outfit", sans-serif',
+      fill: '#7f5539',
+      fontWeight: '800'
+    }).setOrigin(0.5).setDepth(2);
+
+    // Group or list to hold the rendered cookie sprites on the tray
+    this.deliveryTraySprites = [];
+    
+    // Trash button to the left (X = 380, Y = 370)
+    const trashBg = this.add.graphics().setDepth(2);
+    trashBg.fillStyle(0xd90429, 1);
+    trashBg.fillRoundedRect(this.deliveryTrayX - 145, this.deliveryTrayY - 15, 35, 30, 8);
+    this.deliveryTrashText = this.add.text(this.deliveryTrayX - 127, this.deliveryTrayY, '🗑️', {
+      font: '14px "Outfit", sans-serif',
+      fill: '#ffffff'
+    }).setOrigin(0.5).setDepth(2);
+    
+    this.deliveryTrashZone = this.add.rectangle(this.deliveryTrayX - 127, this.deliveryTrayY, 35, 30, 0x000000, 0)
+      .setInteractive({ useHandCursor: true });
+    this.deliveryTrashZone.on('pointerdown', () => {
+      this.trashDeliveryTray();
+    });
+
+    // Deliver button to the right (X = 644, Y = 370)
+    const deliverBg = this.add.graphics().setDepth(2);
+    deliverBg.fillStyle(0x38b000, 1);
+    deliverBg.fillRoundedRect(this.deliveryTrayX + 110, this.deliveryTrayY - 15, 75, 30, 8);
+    this.add.text(this.deliveryTrayX + 147, this.deliveryTrayY, 'ENTREGAR', {
+      font: '11px "Outfit", sans-serif',
+      fill: '#fff1e6',
+      fontWeight: '800'
+    }).setOrigin(0.5).setDepth(2);
+
+    this.deliveryDeliverZone = this.add.rectangle(this.deliveryTrayX + 147, this.deliveryTrayY, 75, 30, 0x000000, 0)
+      .setInteractive({ useHandCursor: true });
+    this.deliveryDeliverZone.on('pointerdown', () => {
+      this.deliverCookie();
+    });
+  }
+
+  drawDeliveryTray() {
+    // Clear old sprites
+    this.deliveryTraySprites.forEach(sprite => sprite.destroy());
+    this.deliveryTraySprites = [];
+
+    // Draw cookies in a horizontal row on the tray
+    const count = this.deliveryTrayCookies.length;
+    if (count === 0) return;
+
+    const spacing = 35;
+    const startX = this.deliveryTrayX - ((count - 1) * spacing) / 2;
+
+    this.deliveryTrayCookies.forEach((cookie, index) => {
+      let key = `cookie_${cookie.shape}_${cookie.base}_${cookie.bakedState}`;
+      if (cookie.toppings && cookie.toppings[0]) {
+        key += `_${cookie.toppings[0]}`;
+      }
+
+      const x = startX + index * spacing;
+      const y = this.deliveryTrayY;
+
+      const sprite = this.add.image(x, y, key).setDisplaySize(40, 40).setDepth(2);
+      this.deliveryTraySprites.push(sprite);
+    });
+  }
+
+  trashDeliveryTray() {
+    const count = this.deliveryTrayCookies.length;
+    if (count === 0) return;
+
+    // Cost: -5 coins per cookie
+    const penalty = count * 5;
+    this.coins = Math.max(0, this.coins - penalty);
+    this.coinsText.setText(`Monedas: ${this.coins}`);
+
+    this.deliveryTrayCookies = [];
+    this.drawDeliveryTray();
+    
+    this.showFeedbackText(`-${penalty} Monedas (Desperdicio) 🗑️`, this.deliveryTrayX, 200, '#d90429');
+  }
+
+  handleOvenImageClick() {
+    if (this.isBaking) {
+      this.showFeedbackText('¡El horno está encendido!', this.ovenX, 200, '#d90429');
+      return;
+    }
+    if (this.cookiesInOven.length === 0) {
+      this.showFeedbackText('¡El horno está vacío!', this.ovenX, 200, '#d90429');
+      return;
+    }
+
+    // Move all cookies from oven to delivery tray together
+    this.cookiesInOven.forEach((cookie, index) => {
+      let key = `cookie_${cookie.shape}_${cookie.base}_${cookie.bakedState}`;
+      if (cookie.toppings && cookie.toppings[0]) {
+        key += `_${cookie.toppings[0]}`;
+      }
+
+      // Spawn a temporary cookie image for the flight animation
+      const flightSprite = this.add.image(this.ovenX, this.ovenY, key)
+        .setDisplaySize(50, 50)
+        .setDepth(100);
+
+      // Tween to the delivery tray position
+      this.tweens.add({
+        targets: flightSprite,
+        x: this.deliveryTrayX,
+        y: this.deliveryTrayY,
+        scale: 0.8,
+        duration: 350 + index * 100,
+        ease: 'Cubic.out',
+        onComplete: () => {
+          flightSprite.destroy();
+          this.deliveryTrayCookies.push(cookie);
+          this.drawDeliveryTray();
+        }
+      });
+    });
+
+    this.cookiesInOven = [];
+    this.showFeedbackText('¡Retirando galletas!', this.ovenX, 200, '#38b000');
   }
 }

@@ -16,6 +16,21 @@ export default class Customer {
     const badDayChance = badDayProbabilities[day] || 0.50;
     this.isBadDay = Math.random() < badDayChance;
 
+    // Roll for requested cookie quantity (1 to 5) based on day progress and personality
+    const capD = Math.min(5, 1 + day);
+    const QUANTITY_RANGES = {
+      1: { min: 1, max: 3 }, // Dormilón
+      2: { min: 2, max: 4 }, // Oficinista
+      3: { min: 3, max: 5 }, // Abuelita
+      4: { min: 1, max: 2 }, // Estudiante
+      5: { min: 2, max: 5 }  // Gamer
+    };
+    const range = QUANTITY_RANGES[this.customerId] || { min: 1, max: 2 };
+    const rawQuantity = Phaser.Math.Between(range.min, range.max);
+    this.requestedQuantity = Math.max(1, Math.min(rawQuantity, capD));
+    this.receivedCookiesCount = 0;
+    this.acceptedCookies = [];
+
     // Patience multipliers based on customerId (Personalities)
     const MULTIPLIERS = {
       1: 1.20,  // Dormilón (Muy Paciente)
@@ -104,6 +119,16 @@ export default class Customer {
 
     // 5. Order Contents (Image representing the correctly baked recipe)
     this.drawOrderImage();
+
+    // 6. Delivery progress text
+    this.progressText = this.scene.add.text(0, 140, `Pedido: 0 / ${this.requestedQuantity}`, {
+      font: '12px "Outfit", sans-serif',
+      fill: '#582f0e',
+      fontWeight: '800',
+      backgroundColor: '#f5ebe0',
+      padding: { x: 8, y: 4 }
+    }).setOrigin(0.5);
+    this.container.add(this.progressText);
   }
 
   drawOrderImage() {
@@ -124,6 +149,32 @@ export default class Customer {
     const orderSprite = this.scene.add.image(cx, cy, key);
     orderSprite.setDisplaySize(70, 70);
     this.container.add(orderSprite);
+
+    // If quantity is more than 1, draw a small xQ badge at the bottom-right of the cookie image
+    if (this.requestedQuantity > 1) {
+      // Draw a small background circle for the badge
+      const badgeBg = this.scene.add.graphics();
+      badgeBg.fillStyle(0xd90429, 1); // Red badge
+      badgeBg.lineStyle(1.5, 0xffffff, 1);
+      badgeBg.fillCircle(cx + 25, cy + 25, 12);
+      badgeBg.strokeCircle(cx + 25, cy + 25, 12);
+      this.container.add(badgeBg);
+
+      // Draw the text
+      const badgeText = this.scene.add.text(cx + 25, cy + 25, `x${this.requestedQuantity}`, {
+        font: '10px "Outfit", sans-serif',
+        fill: '#ffffff',
+        fontWeight: '800'
+      }).setOrigin(0.5);
+      this.container.add(badgeText);
+    }
+  }
+
+  updateProgress(newCount) {
+    this.receivedCookiesCount = newCount;
+    if (this.progressText) {
+      this.progressText.setText(`Pedido: ${this.receivedCookiesCount} / ${this.requestedQuantity}`);
+    }
   }
 
   updatePatienceBar() {
