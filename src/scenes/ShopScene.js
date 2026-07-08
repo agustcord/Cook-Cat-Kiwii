@@ -48,9 +48,9 @@ export default class ShopScene extends Phaser.Scene {
     // Buyable Items Configuration
     const items = [
       // MOLDES (Unlock)
-      { type: 'mold', id: 'heart', name: 'Molde Corazón', cost: 60, desc: 'Desbloqueo Permanente' },
-      { type: 'mold', id: 'cat', name: 'Molde Gato', cost: 90, desc: 'Desbloqueo Permanente' },
-      { type: 'mold', id: 'fish', name: 'Molde Pez', cost: 120, desc: 'Desbloqueo Permanente' },
+      { type: 'mold', id: 'heart', name: 'Molde Corazón', cost: 60, desc: '' },
+      { type: 'mold', id: 'cat', name: 'Molde Gato', cost: 90, desc: '' },
+      { type: 'mold', id: 'fish', name: 'Molde Pez', cost: 120, desc: '' },
 
       // MASAS (Consumables x5)
       { type: 'dough', id: 'classic', name: 'Masa Clásica', cost: 10, desc: 'Pack de 5 unidades' },
@@ -58,7 +58,7 @@ export default class ShopScene extends Phaser.Scene {
       { type: 'dough', id: 'oat', name: 'Masa Avena', cost: 20, desc: 'Pack de 5 unidades' },
 
       // TOPPINGS (Consumables x5)
-      { type: 'topping', id: 'sprinkles', name: 'Chispas de Azúcar', cost: 10, desc: 'Pack de 5 unidades' },
+      { type: 'topping', id: 'sprinkles', name: 'Chispas Azúcar', cost: 10, desc: 'Pack de 5 unidades' },
       { type: 'topping', id: 'choco', name: 'Chispas Choco', cost: 15, desc: 'Pack de 5 unidades' },
       { type: 'topping', id: 'glazing', name: 'Glaseado Dulce', cost: 20, desc: 'Pack de 5 unidades' }
     ];
@@ -70,10 +70,10 @@ export default class ShopScene extends Phaser.Scene {
       topping: { title: 'TOPPINGS (Packs x5)', x: 844 }
     };
 
-    // Draw Column Headers
+    // Draw Column Headers (lowered to 160 to avoid card overlap)
     Object.keys(columns).forEach(key => {
       const col = columns[key];
-      this.add.text(col.x, 185, col.title, {
+      this.add.text(col.x, 160, col.title, {
         font: '16px "Outfit", sans-serif',
         fill: '#7f5539',
         fontWeight: '800'
@@ -91,7 +91,7 @@ export default class ShopScene extends Phaser.Scene {
       const index = colCounters[colKey]++;
 
       const x = col.x;
-      const y = 230 + index * 95;
+      const y = 240 + index * 95; // Adjusted starting Y to 240 to clear headers
 
       // Draw background card for item
       const card = this.add.graphics();
@@ -100,26 +100,66 @@ export default class ShopScene extends Phaser.Scene {
       card.lineStyle(2, 0xddb892, 1);
       card.strokeRoundedRect(x - 150, y - 40, 300, 80, 10);
 
-      // Item Name
-      const nameTxt = this.add.text(x - 135, y - 28, item.name, {
-        font: '15px "Outfit", sans-serif',
-        fill: '#582f0e',
-        fontWeight: '800'
-      });
+      // Draw premium white circular background for the icon
+      const iconCircle = this.add.graphics();
+      iconCircle.fillStyle(0xffffff, 1);
+      iconCircle.fillCircle(x - 110, y, 25);
+      iconCircle.lineStyle(1.5, 0xddb892, 1);
+      iconCircle.strokeCircle(x - 110, y, 25);
 
-      // Item Description
-      const descTxt = this.add.text(x - 135, y - 8, item.desc, {
-        font: '11px "Outfit", sans-serif',
-        fill: '#b5838d',
-        fontWeight: '600'
-      });
+      // Draw item icon sprite inside the circle
+      let iconTexture = '';
+      let iconScale = 1.0;
+      if (item.type === 'mold') {
+        iconTexture = 'shape_' + item.id;
+        iconScale = 0.75;
+      } else if (item.type === 'dough') {
+        iconTexture = 'dough_' + item.id;
+        iconScale = 0.55;
+      } else if (item.type === 'topping') {
+        iconTexture = 'topping_' + item.id;
+        iconScale = 0.55;
+      }
+      
+      const itemIcon = this.add.image(x - 110, y, iconTexture);
+      itemIcon.setScale(iconScale);
 
-      // Stock / Status indicator text
-      const statusTxt = this.add.text(x - 135, y + 10, this.getStatusString(item), {
-        font: '12px "Outfit", sans-serif',
-        fill: '#7f5539',
-        fontWeight: '700'
-      });
+      // Render Item details
+      let nameTxt, descTxt, statusTxt;
+      
+      if (item.type === 'mold') {
+        // Molds: omit description, center name and status vertically
+        nameTxt = this.add.text(x - 70, y - 18, item.name, {
+          font: '15px "Outfit", sans-serif',
+          fill: '#582f0e',
+          fontWeight: '800'
+        });
+
+        statusTxt = this.add.text(x - 70, y + 6, this.getStatusString(item), {
+          font: '12px "Outfit", sans-serif',
+          fill: '#7f5539',
+          fontWeight: '700'
+        });
+      } else {
+        // Doughs & Toppings: render name, pack description, and status
+        nameTxt = this.add.text(x - 70, y - 28, item.name, {
+          font: '15px "Outfit", sans-serif',
+          fill: '#582f0e',
+          fontWeight: '800'
+        });
+
+        descTxt = this.add.text(x - 70, y - 8, item.desc, {
+          font: '11px "Outfit", sans-serif',
+          fill: '#b5838d',
+          fontWeight: '600'
+        });
+
+        statusTxt = this.add.text(x - 70, y + 10, this.getStatusString(item), {
+          font: '12px "Outfit", sans-serif',
+          fill: '#7f5539',
+          fontWeight: '700'
+        });
+      }
 
       // Buy Button container
       const btnW = 90;
@@ -176,7 +216,7 @@ export default class ShopScene extends Phaser.Scene {
 
           // Visual pop effect
           this.tweens.add({
-            targets: [nameTxt, statusTxt],
+            targets: [nameTxt, statusTxt, itemIcon],
             scale: 1.1,
             duration: 80,
             yoyo: true,
