@@ -834,30 +834,6 @@ export default class GameScene extends Phaser.Scene {
     trayBg.lineStyle(3, 0x999999, 1);
     trayBg.strokeRoundedRect(trayX - 100, trayY - 45, 200, 90, 10);
 
-    // Reset button
-    const resetBg = this.add.graphics().setDepth(2);
-    resetBg.fillStyle(0x7f5539, 1);
-    resetBg.fillRoundedRect(this.trayX - 180, trayY - 15, 60, 30, 8);
-    this.add.text(this.trayX - 150, trayY, 'TIRAR', {
-      font: '11px "Outfit", sans-serif',
-      fill: '#fff1e6',
-      fontWeight: '800'
-    }).setOrigin(0.5).setDepth(3);
-
-    const resetZone = this.add.rectangle(this.trayX - 150, trayY, 60, 30, 0x000000, 0).setInteractive({ useHandCursor: true }).setDepth(4);
-    resetZone.on('pointerdown', () => {
-      if (this.prepTrayCookies && this.prepTrayCookies.length > 0) {
-        const count = this.prepTrayCookies.length;
-        const penalty = count * 5;
-        this.coins = Math.max(0, this.coins - penalty);
-        this.coinsText.setText(`Monedas: ${this.coins}`);
-        this.prepTrayCookies = [];
-        this.updateCookieVisuals();
-        this.showFeedbackText(`-${penalty} Monedas (Desperdicio) 🗑️`, this.trayX, 200, '#d90429');
-      } else {
-        this.showFeedbackText('¡Bandeja ya limpia!', this.trayX, 200, '#d90429');
-      }
-    });
 
     this.prepTraySprites = [];
   }
@@ -913,8 +889,8 @@ export default class GameScene extends Phaser.Scene {
           sprite.x = dragX;
           sprite.y = Math.max(180, dragY);
 
-          // Check if hovering over trash bin (X: 330, Y: 440)
-          const distToTrash = Phaser.Math.Distance.Between(dragX, Math.max(180, dragY), 330, 440);
+          // Check if hovering over trash bin
+          const distToTrash = Phaser.Math.Distance.Between(dragX, Math.max(180, dragY), this.trashBinX, this.trashBinY);
           if (distToTrash < 70) {
             if (!this.trashHighlighted) {
               this.trashHighlighted = true;
@@ -948,7 +924,7 @@ export default class GameScene extends Phaser.Scene {
 
           const distOven = Phaser.Math.Distance.Between(sprite.x, sprite.y, this.ovenX, this.ovenY);
           const distDelivery = Phaser.Math.Distance.Between(sprite.x, sprite.y, this.deliveryTrayX, this.deliveryTrayY);
-          const distTrash = Phaser.Math.Distance.Between(sprite.x, sprite.y, 330, 440);
+          const distTrash = Phaser.Math.Distance.Between(sprite.x, sprite.y, this.trashBinX, this.trashBinY);
 
           const cookieIdx = sprite.getData('cookieIndex');
           const cookieInstance = this.prepTrayCookies[cookieIdx];
@@ -959,13 +935,13 @@ export default class GameScene extends Phaser.Scene {
             this.coinsText.setText(`Monedas: ${this.coins}`);
             this.prepTrayCookies.splice(cookieIdx, 1);
             this.updateCookieVisuals();
-            this.showFeedbackText('-5 Monedas (Desperdicio) 🗑️', 330, 390, '#d90429');
+            this.showFeedbackText('-5 Monedas (Desperdicio) 🗑️', this.trashBinX, this.trashBinY - 50, '#d90429');
 
             // Play vacuum fade/shrink animation
             this.tweens.add({
               targets: sprite,
-              x: 330,
-              y: 440,
+              x: this.trashBinX,
+              y: this.trashBinY,
               scale: 0.1,
               alpha: 0,
               duration: 200,
@@ -1517,8 +1493,8 @@ export default class GameScene extends Phaser.Scene {
         });
       }
 
-      // Check distance to trash bin (X: 330, Y: 440)
-      const distToTrash = Phaser.Math.Distance.Between(dragX, clampedY, 330, 440);
+      // Check distance to trash bin
+      const distToTrash = Phaser.Math.Distance.Between(dragX, clampedY, this.trashBinX, this.trashBinY);
       if (distToTrash < 70) {
         if (!this.trashHighlighted) {
           this.trashHighlighted = true;
@@ -1635,7 +1611,7 @@ export default class GameScene extends Phaser.Scene {
           this.coinsText.setText(`Monedas: ${this.coins}`);
           this.deliveryTrayCookies = [];
           this.drawDeliveryTray();
-          this.showFeedbackText(`-${penalty} Monedas (Desperdicio) 🗑️`, 330, 390, '#d90429');
+          this.showFeedbackText(`-${penalty} Monedas (Desperdicio) 🗑️`, this.trashBinX, this.trashBinY - 50, '#d90429');
         }
       }
 
@@ -1778,7 +1754,7 @@ export default class GameScene extends Phaser.Scene {
 
   createTrashBin() {
     this.trashBinX = 330;
-    this.trashBinY = 440;
+    this.trashBinY = 470;
 
     // Create a container for the trash bin so we can scale the whole thing easily!
     this.trashContainer = this.add.container(this.trashBinX, this.trashBinY).setDepth(2);
