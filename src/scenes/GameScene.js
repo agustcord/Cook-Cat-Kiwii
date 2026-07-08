@@ -164,6 +164,9 @@ export default class GameScene extends Phaser.Scene {
     // Create Delivery Tray (Serving Area)
     this.createDeliveryTray();
 
+    // Create Trash Bin (Disposal Area)
+    this.createTrashBin();
+
     // Spawn first customer
     this.time.delayedCall(1000, () => {
       this.spawnCustomer();
@@ -909,16 +912,72 @@ export default class GameScene extends Phaser.Scene {
         sprite.on('drag', (pointer, dragX, dragY) => {
           sprite.x = dragX;
           sprite.y = Math.max(180, dragY);
+
+          // Check if hovering over trash bin (X: 330, Y: 440)
+          const distToTrash = Phaser.Math.Distance.Between(dragX, Math.max(180, dragY), 330, 440);
+          if (distToTrash < 70) {
+            if (!this.trashHighlighted) {
+              this.trashHighlighted = true;
+              this.tweens.add({
+                targets: this.trashContainer,
+                scale: 1.15,
+                duration: 100
+              });
+              if (this.trashIconText) this.trashIconText.setTint(0xff6b6b);
+            }
+          } else {
+            if (this.trashHighlighted) {
+              this.trashHighlighted = false;
+              this.tweens.add({
+                targets: this.trashContainer,
+                scale: 1.0,
+                duration: 100
+              });
+              if (this.trashIconText) this.trashIconText.clearTint();
+            }
+          }
         });
 
         sprite.on('dragend', () => {
+          // Reset highlights
+          if (this.trashHighlighted) {
+            this.trashHighlighted = false;
+            if (this.trashContainer) this.trashContainer.setScale(1.0);
+            if (this.trashIconText) this.trashIconText.clearTint();
+          }
+
           const distOven = Phaser.Math.Distance.Between(sprite.x, sprite.y, this.ovenX, this.ovenY);
           const distDelivery = Phaser.Math.Distance.Between(sprite.x, sprite.y, this.deliveryTrayX, this.deliveryTrayY);
+          const distTrash = Phaser.Math.Distance.Between(sprite.x, sprite.y, 330, 440);
 
           const cookieIdx = sprite.getData('cookieIndex');
           const cookieInstance = this.prepTrayCookies[cookieIdx];
 
-          // 1. Drop on Delivery Tray
+          // 1. Drop on Trash Bin
+          if (distTrash < 70) {
+            this.coins = Math.max(0, this.coins - 5);
+            this.coinsText.setText(`Monedas: ${this.coins}`);
+            this.prepTrayCookies.splice(cookieIdx, 1);
+            this.updateCookieVisuals();
+            this.showFeedbackText('-5 Monedas (Desperdicio) 🗑️', 330, 390, '#d90429');
+
+            // Play vacuum fade/shrink animation
+            this.tweens.add({
+              targets: sprite,
+              x: 330,
+              y: 440,
+              scale: 0.1,
+              alpha: 0,
+              duration: 200,
+              onComplete: () => {
+                sprite.destroy();
+                this.updateCookieVisuals();
+              }
+            });
+            return;
+          }
+
+          // 2. Drop on Delivery Tray
           if (distDelivery < 100) {
             if (!cookieInstance.shape) {
               this.showFeedbackText('¡Primero corta la forma!', this.trayX, 200, '#d90429');
@@ -932,7 +991,7 @@ export default class GameScene extends Phaser.Scene {
             }
           }
 
-          // 2. Drop on Oven (only if shaped, oven has space, and not baking)
+          // 3. Drop on Oven (only if shaped, oven has space, and not baking)
           if (distOven < 120) {
             if (this.isBaking) {
               this.showFeedbackText('¡El horno está encendido!', this.trayX, 200, '#d90429');
@@ -1419,21 +1478,6 @@ export default class GameScene extends Phaser.Scene {
     // Group or list to hold the rendered cookie sprites on the tray
     this.deliveryTraySprites = [];
     
-    // Trash button to the left (X = 380, Y = 370)
-    const trashBg = this.add.graphics().setDepth(2);
-    trashBg.fillStyle(0xd90429, 1);
-    trashBg.fillRoundedRect(this.deliveryTrayX - 145, this.deliveryTrayY - 15, 35, 30, 8);
-    this.deliveryTrashText = this.add.text(this.deliveryTrayX - 127, this.deliveryTrayY, '🗑️', {
-      font: '14px "Outfit", sans-serif',
-      fill: '#ffffff'
-    }).setOrigin(0.5).setDepth(2);
-    
-    this.deliveryTrashZone = this.add.rectangle(this.deliveryTrayX - 127, this.deliveryTrayY, 35, 30, 0x000000, 0)
-      .setInteractive({ useHandCursor: true });
-    this.deliveryTrashZone.on('pointerdown', () => {
-      this.trashDeliveryTray();
-    });
-
     // Make the delivery tray draggable via an invisible interactive zone
     this.deliveryDragZone = this.add.rectangle(this.deliveryTrayX, this.deliveryTrayY, 200, 50, 0x000000, 0.01)
       .setInteractive({ useHandCursor: true })
@@ -1441,9 +1485,9 @@ export default class GameScene extends Phaser.Scene {
     this.input.setDraggable(this.deliveryDragZone);
 
     this.customerHighlighted = false;
+    this.trashHighlighted = false;
 
     this.deliveryDragZone.on('dragstart', () => {
-      console.log('[DEBUG] dragstart: deliveryDragZone');
       this.deliveryDragZone.setDepth(1000);
       this.deliveryTrayLabel.setDepth(1001);
       this.deliveryTraySprites.forEach(s => s.setDepth(1002));
@@ -1473,51 +1517,92 @@ export default class GameScene extends Phaser.Scene {
         });
       }
 
-      // Check distance to the customer (centered at 512, 230)
-      if (this.currentCustomer && this.currentCustomer.sprite) {
-        const distToCustomer = Phaser.Math.Distance.Between(dragX, clampedY, 512, 230);
-        if (distToCustomer < 130) {
-          if (!this.customerHighlighted) {
-            this.customerHighlighted = true;
-            
-            // Pop the tray slightly to show it's ready to drop
-            this.tweens.add({
-              targets: this.deliveryDragZone,
-              scale: 1.06,
-              duration: 100
-            });
+      // Check distance to trash bin (X: 330, Y: 440)
+      const distToTrash = Phaser.Math.Distance.Between(dragX, clampedY, 330, 440);
+      if (distToTrash < 70) {
+        if (!this.trashHighlighted) {
+          this.trashHighlighted = true;
+          this.tweens.add({
+            targets: this.trashContainer,
+            scale: 1.15,
+            duration: 100
+          });
+          if (this.trashIconText) this.trashIconText.setTint(0xff6b6b);
+        }
 
-            // Start a gentle hop animation on the customer container (representing happy anticipation!)
-            this.currentCustomerBounceTween = this.tweens.add({
-              targets: this.currentCustomer.container,
-              y: 230 - 15,
-              duration: 200,
-              yoyo: true,
-              repeat: -1,
-              ease: 'Cubic.easeOut'
-            });
+        // Clean customer highlight if active
+        if (this.customerHighlighted) {
+          this.customerHighlighted = false;
+          this.tweens.add({
+            targets: this.deliveryDragZone,
+            scale: 1.0,
+            duration: 100
+          });
+          if (this.currentCustomerBounceTween) {
+            this.currentCustomerBounceTween.stop();
+            this.currentCustomerBounceTween = null;
           }
-        } else {
-          if (this.customerHighlighted) {
-            this.customerHighlighted = false;
-            
-            this.tweens.add({
-              targets: this.deliveryDragZone,
-              scale: 1.0,
-              duration: 100
-            });
+          this.tweens.add({
+            targets: this.currentCustomer.container,
+            y: 230,
+            duration: 150,
+            ease: 'Back.easeOut'
+          });
+        }
+      } else {
+        if (this.trashHighlighted) {
+          this.trashHighlighted = false;
+          this.tweens.add({
+            targets: this.trashContainer,
+            scale: 1.0,
+            duration: 100
+          });
+          if (this.trashIconText) this.trashIconText.clearTint();
+        }
 
-            // Stop the hop animation and return container to original Y
-            if (this.currentCustomerBounceTween) {
-              this.currentCustomerBounceTween.stop();
-              this.currentCustomerBounceTween = null;
+        // Check distance to the customer (centered at 512, 230)
+        if (this.currentCustomer && this.currentCustomer.sprite) {
+          const distToCustomer = Phaser.Math.Distance.Between(dragX, clampedY, 512, 230);
+          if (distToCustomer < 130) {
+            if (!this.customerHighlighted) {
+              this.customerHighlighted = true;
+              
+              this.tweens.add({
+                targets: this.deliveryDragZone,
+                scale: 1.06,
+                duration: 100
+              });
+
+              this.currentCustomerBounceTween = this.tweens.add({
+                targets: this.currentCustomer.container,
+                y: 230 - 15,
+                duration: 200,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Cubic.easeOut'
+              });
             }
-            this.tweens.add({
-              targets: this.currentCustomer.container,
-              y: 230,
-              duration: 150,
-              ease: 'Back.easeOut'
-            });
+          } else {
+            if (this.customerHighlighted) {
+              this.customerHighlighted = false;
+              
+              this.tweens.add({
+                targets: this.deliveryDragZone,
+                scale: 1.0,
+                duration: 100
+              });
+
+              if (this.currentCustomerBounceTween) {
+                this.currentCustomerBounceTween.stop();
+                this.currentCustomerBounceTween = null;
+              }
+              this.tweens.add({
+                targets: this.currentCustomer.container,
+                y: 230,
+                duration: 150,
+                ease: 'Back.easeOut'
+              });
+            }
           }
         }
       }
@@ -1535,6 +1620,23 @@ export default class GameScene extends Phaser.Scene {
       }
       if (this.currentCustomer && this.currentCustomer.container) {
         this.currentCustomer.container.y = 230;
+      }
+
+      // Check if dropped on trash
+      if (this.trashHighlighted) {
+        this.trashHighlighted = false;
+        if (this.trashContainer) this.trashContainer.setScale(1.0);
+        if (this.trashIconText) this.trashIconText.clearTint();
+
+        const count = this.deliveryTrayCookies.length;
+        if (count > 0) {
+          const penalty = count * 5;
+          this.coins = Math.max(0, this.coins - penalty);
+          this.coinsText.setText(`Monedas: ${this.coins}`);
+          this.deliveryTrayCookies = [];
+          this.drawDeliveryTray();
+          this.showFeedbackText(`-${penalty} Monedas (Desperdicio) 🗑️`, 330, 390, '#d90429');
+        }
       }
 
       if (this.customerHighlighted) {
@@ -1610,20 +1712,6 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  trashDeliveryTray() {
-    const count = this.deliveryTrayCookies.length;
-    if (count === 0) return;
-
-    // Cost: -5 coins per cookie
-    const penalty = count * 5;
-    this.coins = Math.max(0, this.coins - penalty);
-    this.coinsText.setText(`Monedas: ${this.coins}`);
-
-    this.deliveryTrayCookies = [];
-    this.drawDeliveryTray();
-    
-    this.showFeedbackText(`-${penalty} Monedas (Desperdicio) 🗑️`, this.deliveryTrayX, 200, '#d90429');
-  }
 
   handleOvenImageClick() {
     if (this.isBaking) {
@@ -1686,5 +1774,46 @@ export default class GameScene extends Phaser.Scene {
     if (this.ovenExtractBtnText) {
       this.ovenExtractBtnText.setAlpha(enabled ? 1.0 : 0.5);
     }
+  }
+
+  createTrashBin() {
+    this.trashBinX = 330;
+    this.trashBinY = 440;
+
+    // Create a container for the trash bin so we can scale the whole thing easily!
+    this.trashContainer = this.add.container(this.trashBinX, this.trashBinY).setDepth(2);
+
+    this.trashBinGraphics = this.add.graphics();
+    // Draw body (around 0,0)
+    this.trashBinGraphics.fillStyle(0x6c757d, 1); // Steel grey
+    this.trashBinGraphics.lineStyle(3, 0x495057, 1);
+    this.trashBinGraphics.fillRoundedRect(-22, -18, 44, 48, 6);
+    this.trashBinGraphics.strokeRoundedRect(-22, -18, 44, 48, 6);
+    
+    // Draw silver lid
+    this.trashBinGraphics.fillStyle(0xced4da, 1);
+    this.trashBinGraphics.fillRoundedRect(-25, -25, 50, 9, 3);
+    this.trashBinGraphics.strokeRoundedRect(-25, -25, 50, 9, 3);
+    
+    // Handle
+    this.trashBinGraphics.fillStyle(0x495057, 1);
+    this.trashBinGraphics.fillRect(-6, -30, 12, 5);
+
+    this.trashContainer.add(this.trashBinGraphics);
+
+    // Trash can text icon
+    this.trashIconText = this.add.text(0, 8, '🗑️', {
+      font: '18px "Outfit", sans-serif',
+      fill: '#ffffff'
+    }).setOrigin(0.5);
+    this.trashContainer.add(this.trashIconText);
+
+    // Label under the trash bin
+    this.trashLabel = this.add.text(0, 39, 'BASURA', {
+      font: '9px "Outfit", sans-serif',
+      fill: '#495057',
+      fontWeight: '800'
+    }).setOrigin(0.5);
+    this.trashContainer.add(this.trashLabel);
   }
 }
