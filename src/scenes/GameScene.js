@@ -928,10 +928,10 @@ export default class GameScene extends Phaser.Scene {
 
     // If there is a base selected but no shape has been cut yet
     if (!cookie.shape) {
-      if (this.doughSprite) {
-        this.doughSprite.setTexture('dough_' + cookie.base);
-        this.doughSprite.setDisplaySize(60, 60);
-        this.doughSprite.setVisible(true);
+      if (this.cookieSprite) {
+        this.cookieSprite.setTexture('dough_' + cookie.base);
+        this.cookieSprite.setDisplaySize(60, 60);
+        this.cookieSprite.setVisible(true);
       }
       return;
     }
@@ -1126,7 +1126,7 @@ export default class GameScene extends Phaser.Scene {
       fontWeight: '800',
       stroke: '#ffffff',
       strokeThickness: 4
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setDepth(15000);
 
     // Simple tween animation (fly up and fade out)
     this.tweens.add({
