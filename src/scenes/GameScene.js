@@ -540,16 +540,16 @@ export default class GameScene extends Phaser.Scene {
     });
  
     // ENCENDER Button (placed below the oven at startY + 45)
-    const btnBg = this.add.graphics().setDepth(2);
+    const btnBg = this.add.graphics().setDepth(10);
     btnBg.fillStyle(0x7f5539, 1);
     btnBg.fillRoundedRect(startX, startY + 45, 110, 35, 8);
     this.ovenBtnText = this.add.text(startX + 55, startY + 62, 'ENCENDER', {
       font: '13px "Outfit", sans-serif',
       fill: '#fff1e6',
       fontWeight: '800'
-    }).setOrigin(0.5).setDepth(2);
+    }).setOrigin(0.5).setDepth(11);
  
-    this.ovenZone = this.add.rectangle(startX + 55, startY + 62, 110, 35, 0x000000, 0).setInteractive({ useHandCursor: true });
+    this.ovenZone = this.add.rectangle(startX + 55, startY + 62, 110, 35, 0x000000, 0).setInteractive({ useHandCursor: true }).setDepth(12);
     this.ovenZone.on('pointerdown', () => {
       this.handleOvenClick();
     });
