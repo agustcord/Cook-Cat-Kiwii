@@ -241,7 +241,8 @@ export default class GameScene extends Phaser.Scene {
       { key: 'metaSign', bg: this.metaSignImage, text: this.metaText, textOffsetX: -metaSign.width / 2, textOffsetY: metaSign.textOffsetY },
       { key: 'masaLabel', bg: this.masaLabelImage, text: null },
       { key: 'formaLabel', bg: this.formaLabelImage, text: null },
-      { key: 'toppingLabel', bg: this.toppingLabelImage, text: null }
+      { key: 'toppingLabel', bg: this.toppingLabelImage, text: null },
+      { key: 'deliveryTray', bg: this.deliveryDragZone, text: this.deliveryTrayLabel, textOffsetX: 0, textOffsetY: -33 }
     ];
 
     // Setup drag events for UI elements (only active in editor mode)
@@ -256,6 +257,32 @@ export default class GameScene extends Phaser.Scene {
         // Update background position
         gameObject.x = dragX;
         gameObject.y = dragY;
+
+        // Custom updates for specialized stations
+        if (element.key === 'formaLabel') {
+          // Move the cutters (shape buttons) dynamically!
+          if (this.shapeContainers && this.shapeDragZones) {
+            this.shapeContainers.forEach((container, index) => {
+              const sx = dragX - 93 + index * 60;
+              const sy = dragY + 58;
+              container.x = sx;
+              container.y = sy;
+              container.setData('origX', sx);
+              container.setData('origY', sy);
+              
+              const dragZone = this.shapeDragZones[index];
+              if (dragZone) {
+                dragZone.x = sx + 29;
+                dragZone.y = sy + 29;
+              }
+            });
+          }
+        } else if (element.key === 'deliveryTray') {
+          this.deliveryTrayX = dragX;
+          this.deliveryTrayY = dragY;
+          this.drawDeliveryTrayBg(0xccffcc); // Draw highlighted color while dragging
+          this.drawDeliveryTray(); // Redraw cookies in new location
+        }
 
         // If there's associated text, update it using its offset
         if (element.text) {
@@ -334,7 +361,8 @@ export default class GameScene extends Phaser.Scene {
     this.createDoughButtons(45, 310);
 
     // Column 2: Estación de Forma (Cortadores)
-    this.createShapeButtons(185, 310);
+    const { formaLabel } = UI_CONFIG;
+    this.createShapeButtons(formaLabel.x - 88, formaLabel.y + 13);
 
     // Column 3: Horno (Oven minigame)
     this.createOvenStation(725, 310);
@@ -450,6 +478,9 @@ export default class GameScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(1);
 
+    this.shapeContainers = [];
+    this.shapeDragZones = [];
+
     const shapes = [
       { id: 'star', label: 'Estrella', unlocked: true },
       { id: 'heart', label: 'Corazón', unlocked: true },
@@ -465,6 +496,7 @@ export default class GameScene extends Phaser.Scene {
       const container = this.add.container(x, y).setDepth(2);
       container.setData('origX', x);
       container.setData('origY', y);
+      this.shapeContainers.push(container);
 
       // Cutter Image (116x116 texture displayed at 58x58 — 2x downscale for HiDPI)
       const shapeSprite = this.add.image(29, 29, 'shape_' + s.id).setDisplaySize(58, 58);
@@ -479,6 +511,7 @@ export default class GameScene extends Phaser.Scene {
         const dragZone = this.add.rectangle(x + 29, y + 29, 58, 58, 0x000000, 0);
         dragZone.setInteractive({ useHandCursor: true });
         this.input.setDraggable(dragZone);
+        this.shapeDragZones.push(dragZone);
 
         dragZone.on('pointerover', () => {
           shapeSprite.setDisplaySize(64, 64);
@@ -1331,14 +1364,26 @@ export default class GameScene extends Phaser.Scene {
       if (this.isEditorMode) {
         element.bg.setInteractive({ useHandCursor: true });
         this.input.setDraggable(element.bg);
-        // Highlight elements slightly in editor mode so user knows they are editable
-        element.bg.setTint(0xffcccc);
+        if (element.bg.setTint) element.bg.setTint(0xffcccc);
       } else {
-        element.bg.disableInteractive();
-        this.input.setDraggable(element.bg, false);
-        element.bg.clearTint();
+        if (element.key === 'deliveryTray') {
+          // Keep it interactive and draggable for gameplay
+          element.bg.setInteractive({ useHandCursor: true });
+          this.input.setDraggable(element.bg, true);
+        } else {
+          element.bg.disableInteractive();
+          this.input.setDraggable(element.bg, false);
+        }
+        if (element.bg.clearTint) element.bg.clearTint();
       }
     });
+
+    // Update delivery tray background color
+    if (this.isEditorMode) {
+      this.drawDeliveryTrayBg(0xffcccc);
+    } else {
+      this.drawDeliveryTrayBg();
+    }
 
     this.showFeedbackText(
       this.isEditorMode ? 'Modo Editor Activo 🛠️' : 'Modo Juego Activo 🎮',
@@ -1351,12 +1396,22 @@ export default class GameScene extends Phaser.Scene {
   selectElement(element) {
     // Clear previous selection tint
     if (this.selectedEditorElement) {
-      this.selectedEditorElement.bg.setTint(0xffcccc);
+      if (this.selectedEditorElement.bg.setTint) {
+        this.selectedEditorElement.bg.setTint(0xffcccc);
+      }
+      if (this.selectedEditorElement.key === 'deliveryTray') {
+        this.drawDeliveryTrayBg(0xffcccc);
+      }
     }
 
     this.selectedEditorElement = element;
     if (element) {
-      element.bg.setTint(0x38b000); // Green tint for selected element
+      if (element.bg.setTint) {
+        element.bg.setTint(0x38b000); // Green tint for selected element
+      }
+      if (element.key === 'deliveryTray') {
+        this.drawDeliveryTrayBg(0xccffcc); // Green highlight for delivery tray background
+      }
       this.showFeedbackText(`Seleccionado: ${element.key}`, this.cameras.main.width / 2, 100, '#38b000');
     }
   }
@@ -1378,6 +1433,11 @@ export default class GameScene extends Phaser.Scene {
       el.textOffsetX = newWidth / 2;
     } else if (el.key === 'metaSign') {
       el.textOffsetX = -newWidth / 2;
+    } else if (el.key === 'deliveryTray') {
+      this.deliveryTrayWidth = newWidth;
+      this.deliveryTrayHeight = newHeight;
+      this.drawDeliveryTrayBg(0xccffcc);
+      this.drawDeliveryTray();
     }
 
     // Reposition text if present
@@ -1431,18 +1491,15 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createDeliveryTray() {
-    this.deliveryTrayX = 512;
-    this.deliveryTrayY = 370;
+    const { deliveryTray } = UI_CONFIG;
+    this.deliveryTrayX = deliveryTray ? deliveryTray.x : 512;
+    this.deliveryTrayY = deliveryTray ? deliveryTray.y : 370;
+    this.deliveryTrayWidth = deliveryTray ? deliveryTray.width : 200;
+    this.deliveryTrayHeight = deliveryTray ? deliveryTray.height : 50;
 
     // Draw the wooden tray background
-    this.deliveryTrayBg = this.add.graphics();
-    
-    // Draw a nice rounded rectangle tray with a brown border
-    this.deliveryTrayBg.fillStyle(0xe6ccb2, 1);
-    this.deliveryTrayBg.lineStyle(3, 0x7f5539, 1);
-    this.deliveryTrayBg.fillRoundedRect(this.deliveryTrayX - 100, this.deliveryTrayY - 25, 200, 50, 8);
-    this.deliveryTrayBg.strokeRoundedRect(this.deliveryTrayX - 100, this.deliveryTrayY - 25, 200, 50, 8);
-    this.deliveryTrayBg.setDepth(1);
+    this.deliveryTrayBg = this.add.graphics().setDepth(1);
+    this.drawDeliveryTrayBg();
 
     // Text label on the tray
     this.deliveryTrayLabel = this.add.text(this.deliveryTrayX, this.deliveryTrayY - 33, 'BANDEJA DE ENTREGA', {
@@ -1455,7 +1512,7 @@ export default class GameScene extends Phaser.Scene {
     this.deliveryTraySprites = [];
     
     // Make the delivery tray draggable via an invisible interactive zone
-    this.deliveryDragZone = this.add.rectangle(this.deliveryTrayX, this.deliveryTrayY, 200, 50, 0x000000, 0.01)
+    this.deliveryDragZone = this.add.rectangle(this.deliveryTrayX, this.deliveryTrayY, this.deliveryTrayWidth, this.deliveryTrayHeight, 0x000000, 0.01)
       .setInteractive({ useHandCursor: true })
       .setDepth(15);
     this.input.setDraggable(this.deliveryDragZone);
@@ -1464,12 +1521,14 @@ export default class GameScene extends Phaser.Scene {
     this.trashHighlighted = false;
 
     this.deliveryDragZone.on('dragstart', () => {
+      if (this.isEditorMode) return;
       this.deliveryDragZone.setDepth(1000);
       this.deliveryTrayLabel.setDepth(1001);
       this.deliveryTraySprites.forEach(s => s.setDepth(1002));
     });
 
     this.deliveryDragZone.on('drag', (pointer, dragX, dragY) => {
+      if (this.isEditorMode) return;
       // Limit Y-axis to counter and customer area
       const clampedY = Math.max(160, Math.min(450, dragY));
       this.deliveryDragZone.x = dragX;
@@ -1585,6 +1644,7 @@ export default class GameScene extends Phaser.Scene {
     });
 
     this.deliveryDragZone.on('dragend', () => {
+      if (this.isEditorMode) return;
       this.deliveryDragZone.setScale(1.0);
       this.deliveryDragZone.setDepth(15);
       this.deliveryTrayLabel.setDepth(2);
@@ -1658,6 +1718,22 @@ export default class GameScene extends Phaser.Scene {
         }
       });
     });
+  }
+
+  drawDeliveryTrayBg(highlightColor = null) {
+    this.deliveryTrayBg.clear();
+    if (highlightColor !== null) {
+      this.deliveryTrayBg.fillStyle(highlightColor, 1);
+    } else {
+      this.deliveryTrayBg.fillStyle(0xe6ccb2, 1);
+    }
+    this.deliveryTrayBg.lineStyle(3, 0x7f5539, 1);
+    
+    // Draw relative to deliveryTrayX and Y using dynamic width and height
+    const w = this.deliveryTrayWidth;
+    const h = this.deliveryTrayHeight;
+    this.deliveryTrayBg.fillRoundedRect(this.deliveryTrayX - w / 2, this.deliveryTrayY - h / 2, w, h, 8);
+    this.deliveryTrayBg.strokeRoundedRect(this.deliveryTrayX - w / 2, this.deliveryTrayY - h / 2, w, h, 8);
   }
 
   drawDeliveryTray() {

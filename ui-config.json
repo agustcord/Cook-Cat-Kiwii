@@ -40,5 +40,11 @@
     "height": 65,
     "x": 968,
     "y": 295
+  },
+  "deliveryTray": {
+    "width": 200,
+    "height": 50,
+    "x": 512,
+    "y": 370
   }
 }
