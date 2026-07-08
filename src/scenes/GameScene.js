@@ -1435,7 +1435,7 @@ export default class GameScene extends Phaser.Scene {
     });
 
     // Make the delivery tray draggable via an invisible interactive zone
-    this.deliveryDragZone = this.add.rectangle(this.deliveryTrayX, this.deliveryTrayY, 200, 50, 0x000000, 0)
+    this.deliveryDragZone = this.add.rectangle(this.deliveryTrayX, this.deliveryTrayY, 200, 50, 0x000000, 0.01)
       .setInteractive({ useHandCursor: true })
       .setDepth(15);
     this.input.setDraggable(this.deliveryDragZone);
@@ -1443,6 +1443,7 @@ export default class GameScene extends Phaser.Scene {
     this.customerHighlighted = false;
 
     this.deliveryDragZone.on('dragstart', () => {
+      console.log('[DEBUG] dragstart: deliveryDragZone');
       this.deliveryDragZone.setDepth(1000);
       this.deliveryTrayLabel.setDepth(1001);
       this.deliveryTraySprites.forEach(s => s.setDepth(1002));
@@ -1475,8 +1476,10 @@ export default class GameScene extends Phaser.Scene {
       // Check distance to the customer (centered at 512, 230)
       if (this.currentCustomer && this.currentCustomer.sprite) {
         const distToCustomer = Phaser.Math.Distance.Between(dragX, clampedY, 512, 230);
+        console.log('[DEBUG] drag: distToCustomer =', distToCustomer, 'clampedY =', clampedY);
         if (distToCustomer < 130) {
           if (!this.customerHighlighted) {
+            console.log('[DEBUG] drag: highlight customer');
             this.customerHighlighted = true;
             // Customer outline/glow effect via scale and tint
             this.currentCustomer.sprite.setScale(1.1);
@@ -1491,6 +1494,7 @@ export default class GameScene extends Phaser.Scene {
           }
         } else {
           if (this.customerHighlighted) {
+            console.log('[DEBUG] drag: unhighlight customer');
             this.customerHighlighted = false;
             this.currentCustomer.sprite.setScale(1.0);
             this.currentCustomer.sprite.clearTint();
@@ -1502,6 +1506,8 @@ export default class GameScene extends Phaser.Scene {
             });
           }
         }
+      } else {
+        console.log('[DEBUG] drag: currentCustomer or sprite missing', !!this.currentCustomer, !!(this.currentCustomer && this.currentCustomer.sprite));
       }
     });
 

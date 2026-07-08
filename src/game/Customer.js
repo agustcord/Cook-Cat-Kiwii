@@ -75,9 +75,10 @@ export default class Customer {
 
   createVisuals() {
     // 1. Draw customer character (uses the preloaded PNG sprite)
-    const customerSprite = this.scene.add.image(0, 40, 'customer_' + this.customerId);
-    customerSprite.setDisplaySize(180, 180);
-    this.container.add(customerSprite);
+    this.customerSprite = this.scene.add.image(0, 40, 'customer_' + this.customerId);
+    this.customerSprite.setDisplaySize(180, 180);
+    this.container.add(this.customerSprite);
+    this.sprite = this.customerSprite;
 
     // 2. Patience Bar (Background)
     this.patienceBg = this.scene.add.graphics();
