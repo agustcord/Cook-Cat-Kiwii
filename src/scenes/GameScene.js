@@ -80,7 +80,6 @@ export default class GameScene extends Phaser.Scene {
     // Core game state variables
     this.customersSpawned = 0;
     this.currentCustomer = null;
-    this.currentCookie = new Cookie();
     
     // Generate unique, non-repeating customer sequence for the day
     let availablePool = [1, 2, 3, 4, 5];
@@ -415,8 +414,15 @@ export default class GameScene extends Phaser.Scene {
           );
 
           if (dist < 120) {
-            this.currentCookie.base = b.id;
-            this.updateCookieVisuals();
+            if (this.prepTrayCookies.length < 3) {
+              const newCookie = new Cookie();
+              newCookie.base = b.id;
+              this.prepTrayCookies.push(newCookie);
+              this.updateCookieVisuals();
+              this.showFeedbackText(`¡Masa de ${b.label}!`, this.trayX, 200, '#38b000');
+            } else {
+              this.showFeedbackText('¡Mesa llena! (Máx 3)', this.trayX, 200, '#d90429');
+            }
           }
 
           // Destroy the portion sprite
@@ -493,14 +499,30 @@ export default class GameScene extends Phaser.Scene {
         });
 
         dragZone.on('dragend', () => {
-          // Check distance to cookie tray (x: trayX, y: trayY)
-          const dist = Phaser.Math.Distance.Between(dragZone.x, dragZone.y, this.trayX, this.trayY);
-          if (dist < 100) {
-            if (this.currentCookie.base) {
-              this.currentCookie.shape = s.id;
-              this.updateCookieVisuals();
-              this.showFeedbackText(`¡Forma de ${s.label}!`, this.trayX, 200, '#38b000');
-            } else {
+          // Find closest cookie in prepTrayCookies that doesn't have a shape yet
+          let closestCookie = null;
+          let minDist = 99999;
+          const count = this.prepTrayCookies.length;
+          const spacing = 35;
+          const startX = this.trayX - ((count - 1) * spacing) / 2;
+
+          this.prepTrayCookies.forEach((cookie, index) => {
+            const cx = startX + index * spacing;
+            const cy = this.trayY;
+            const dist = Phaser.Math.Distance.Between(dragZone.x, dragZone.y, cx, cy);
+            if (dist < 120 && dist < minDist) {
+              minDist = dist;
+              closestCookie = cookie;
+            }
+          });
+
+          if (closestCookie) {
+            closestCookie.shape = s.id;
+            this.updateCookieVisuals();
+            this.showFeedbackText(`¡Forma de ${s.label}!`, this.trayX, 200, '#38b000');
+          } else {
+            const distToTrayCenter = Phaser.Math.Distance.Between(dragZone.x, dragZone.y, this.trayX, this.trayY);
+            if (distToTrayCenter < 120) {
               this.showFeedbackText('¡Primero selecciona la masa!', this.trayX, 200, '#d90429');
             }
           }
@@ -754,19 +776,32 @@ export default class GameScene extends Phaser.Scene {
           const dist = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, this.trayX, this.trayY);
 
           if (dist < 120) {
-            // Apply validations (allow toppings on all cookie states)
-            if (this.prepTrayCookies && this.prepTrayCookies.length > 0) {
-              this.prepTrayCookies.forEach(c => {
-                c.toppings = [t.id];
-              });
+            // Find closest cookie on preparation tray
+            let closestCookie = null;
+            let minDist = 99999;
+            const count = this.prepTrayCookies.length;
+            const spacing = 35;
+            const startX = this.trayX - ((count - 1) * spacing) / 2;
+
+            this.prepTrayCookies.forEach((cookie, index) => {
+              const cx = startX + index * spacing;
+              const cy = this.trayY;
+              const distCookie = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, cx, cy);
+              if (distCookie < 120 && distCookie < minDist) {
+                minDist = distCookie;
+                closestCookie = cookie;
+              }
+            });
+
+            if (closestCookie) {
+              closestCookie.toppings = [t.id];
               this.updateCookieVisuals();
               this.showFeedbackText(`¡Añadido ${t.label}! ✨`, this.trayX, 200, '#38b000');
-            } else if (!this.currentCookie.base) {
-              this.showFeedbackText('¡Primero selecciona la masa!', this.trayX, 200, '#d90429');
             } else {
-              this.currentCookie.toppings = [t.id];
-              this.updateCookieVisuals();
-              this.showFeedbackText(`¡Añadido ${t.label}! ✨`, this.trayX, 200, '#38b000');
+              const distToTrayCenter = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, this.trayX, this.trayY);
+              if (distToTrayCenter < 120) {
+                this.showFeedbackText('¡Primero selecciona la masa!', this.trayX, 200, '#d90429');
+              }
             }
           }
 
@@ -796,158 +831,17 @@ export default class GameScene extends Phaser.Scene {
     trayBg.lineStyle(3, 0x999999, 1);
     trayBg.strokeRoundedRect(trayX - 100, trayY - 45, 200, 90, 10);
 
-
-
-    // Placeholders for cookie graphics (initialized with a dummy valid texture to set correct bounds)
-    this.cookieSprite = this.add.image(trayX, trayY, 'cookie_star_classic_baked').setVisible(false).setDepth(3);
-    this.doughSprite = this.add.image(trayX, trayY, 'dough_classic').setVisible(false).setDepth(2);
-    
-    // Make the cookie interactive and draggable
-    this.cookieSprite.setInteractive({ useHandCursor: true });
-    this.input.setDraggable(this.cookieSprite);
-
-    this.cookieSprite.on('dragstart', () => {
-      // Bring cookie to top depth while dragging
-      this.cookieSprite.setDepth(1000);
-    });
-
-    this.cookieSprite.on('drag', (pointer, dragX, dragY) => {
-      const clampedY = Math.max(180, dragY);
-      this.cookieSprite.x = dragX;
-      this.cookieSprite.y = clampedY;
-
-      // If we have prepTraySprites, make them follow the drag
-      if (this.prepTraySprites && this.prepTraySprites.length > 0) {
-        const count = this.prepTraySprites.length;
-        const spacing = 35;
-        const startX = dragX - ((count - 1) * spacing) / 2;
-        this.prepTraySprites.forEach((sprite, index) => {
-          sprite.x = startX + index * spacing;
-          sprite.y = clampedY;
-        });
-      }
-
-      // Check distance to oven to apply drop-target highlight
-      const dist = Phaser.Math.Distance.Between(dragX, clampedY, this.ovenX, this.ovenY);
-      if (dist < 120 && !this.isBaking && this.cookiesInOven.length < 3 && this.currentCookie.shape && this.prepTrayCookies.length === 0) {
-        this.ovenImage.setScale(1.04);
-        this.ovenImage.setTint(0xfff2e6);
-      } else {
-        this.ovenImage.setScale(1.0);
-        this.ovenImage.clearTint();
-      }
-    });
-
-    this.cookieSprite.on('dragend', () => {
-      // Restore oven default visual state
-      this.ovenImage.setScale(1.0);
-      this.ovenImage.clearTint();
-
-      const dist = Phaser.Math.Distance.Between(this.cookieSprite.x, this.cookieSprite.y, this.ovenX, this.ovenY);
-      const distToDelivery = Phaser.Math.Distance.Between(this.cookieSprite.x, this.cookieSprite.y, this.deliveryTrayX, this.deliveryTrayY);
-
-      // 1. Drop on Delivery Tray
-      if (distToDelivery < 100) {
-        if (this.prepTrayCookies && this.prepTrayCookies.length > 0) {
-          // Transfer all from prep tray to delivery tray
-          this.prepTrayCookies.forEach(c => {
-            this.deliveryTrayCookies.push(c);
-          });
-          this.prepTrayCookies = [];
-          this.drawDeliveryTray();
-          this.updateCookieVisuals();
-          this.showFeedbackText('¡Galletas listas para entrega! 📦', this.deliveryTrayX, 200, '#38b000');
-          return;
-        } else if (this.currentCookie.shape) {
-          // Move single cookie from prep to delivery tray
-          const cookieToDelivery = new Cookie();
-          cookieToDelivery.base = this.currentCookie.base;
-          cookieToDelivery.shape = this.currentCookie.shape;
-          cookieToDelivery.bakedState = this.currentCookie.bakedState;
-          cookieToDelivery.toppings = [...this.currentCookie.toppings];
-          
-          this.deliveryTrayCookies.push(cookieToDelivery);
-          this.currentCookie.reset();
-          this.drawDeliveryTray();
-          this.updateCookieVisuals();
-          this.showFeedbackText('¡Galleta lista para entrega! 📦', this.deliveryTrayX, 200, '#38b000');
-          return;
-        }
-      }
-
-      // 2. Drop on Oven (only if not baking, oven not full, shape cut, and no cooked cookies in prep tray)
-      if (dist < 120 && !this.isBaking && this.cookiesInOven.length < 3 && this.currentCookie.shape && this.prepTrayCookies.length === 0) {
-        // Drop successfully into oven!
-        const cookieToOven = new Cookie();
-        cookieToOven.base = this.currentCookie.base;
-        cookieToOven.shape = this.currentCookie.shape;
-        cookieToOven.bakedState = this.currentCookie.bakedState;
-        cookieToOven.toppings = [...this.currentCookie.toppings];
-        this.cookiesInOven.push(cookieToOven);
-        this.updateExtractButtonState();
-        
-        this.currentCookie.reset();
-
-        this.showFeedbackText(`Galleta introducida (${this.cookiesInOven.length}/3)`, this.trayX, 200, '#38b000');
-
-        // Play shrink and fade animation into the oven center
-        this.tweens.add({
-          targets: this.cookieSprite,
-          x: this.ovenX,
-          y: this.ovenY,
-          scale: 0.1,
-          alpha: 0,
-          duration: 300,
-          onComplete: () => {
-            this.cookieSprite.setScale(1.0);
-            this.cookieSprite.setAlpha(1);
-            this.cookieSprite.setVisible(false);
-            this.cookieSprite.x = this.trayX;
-            this.cookieSprite.y = this.trayY;
-            this.updateCookieVisuals();
-          }
-        });
-      } else {
-        // Did not drop or failed: tween back to tray normally
-        if (dist < 120) {
-          if (this.isBaking) {
-            this.showFeedbackText('¡El horno está encendido!', this.trayX, 200, '#d90429');
-          } else if (this.cookiesInOven.length >= 3) {
-            this.showFeedbackText('¡El horno está lleno! (Máx 3)', this.trayX, 200, '#d90429');
-          } else if (!this.currentCookie.shape) {
-            this.showFeedbackText('¡Primero corta la forma!', this.trayX, 200, '#d90429');
-          } else if (this.prepTrayCookies.length > 0) {
-            this.showFeedbackText('¡Esas galletas ya están cocidas!', this.trayX, 200, '#d90429');
-          }
-        }
-        
-        this.tweens.add({
-          targets: this.cookieSprite,
-          x: this.trayX,
-          y: this.trayY,
-          duration: 200,
-          ease: 'Power2',
-          onComplete: () => {
-            this.cookieSprite.setDepth(3);
-            this.updateCookieVisuals();
-          }
-        });
-      }
-    });
-
-    this.updateCookieVisuals();
-
     // Reset button
-    const resetBg = this.add.graphics();
+    const resetBg = this.add.graphics().setDepth(2);
     resetBg.fillStyle(0x7f5539, 1);
     resetBg.fillRoundedRect(this.trayX - 180, trayY - 15, 60, 30, 8);
     this.add.text(this.trayX - 150, trayY, 'TIRAR', {
       font: '11px "Outfit", sans-serif',
       fill: '#fff1e6',
       fontWeight: '800'
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setDepth(3);
 
-    const resetZone = this.add.rectangle(this.trayX - 150, trayY, 60, 30, 0x000000, 0).setInteractive({ useHandCursor: true });
+    const resetZone = this.add.rectangle(this.trayX - 150, trayY, 60, 30, 0x000000, 0).setInteractive({ useHandCursor: true }).setDepth(4);
     resetZone.on('pointerdown', () => {
       if (this.prepTrayCookies && this.prepTrayCookies.length > 0) {
         const count = this.prepTrayCookies.length;
@@ -957,16 +851,12 @@ export default class GameScene extends Phaser.Scene {
         this.prepTrayCookies = [];
         this.updateCookieVisuals();
         this.showFeedbackText(`-${penalty} Monedas (Desperdicio) 🗑️`, this.trayX, 200, '#d90429');
-      } else if (this.currentCookie.base || this.currentCookie.shape) {
-        this.coins = Math.max(0, this.coins - 5);
-        this.coinsText.setText(`Monedas: ${this.coins}`);
-        this.currentCookie.reset();
-        this.updateCookieVisuals();
-        this.showFeedbackText('-5 Monedas (Desperdicio) 🗑️', this.trayX, 200, '#d90429');
       } else {
         this.showFeedbackText('¡Bandeja ya limpia!', this.trayX, 200, '#d90429');
       }
     });
+
+    this.prepTraySprites = [];
   }
 
   drawCookie() {
@@ -976,77 +866,120 @@ export default class GameScene extends Phaser.Scene {
     }
     this.prepTraySprites = [];
 
-    if (this.doughSprite) {
-      this.doughSprite.setVisible(false);
-    }
-    if (this.cookieSprite) {
-      this.cookieSprite.setVisible(false);
-    }
-
     // If we have cookies in prepTrayCookies, draw them in a row
     if (this.prepTrayCookies && this.prepTrayCookies.length > 0) {
       const count = this.prepTrayCookies.length;
-      const spacing = 35;
+      const spacing = 45;
       const startX = this.trayX - ((count - 1) * spacing) / 2;
 
       this.prepTrayCookies.forEach((cookie, index) => {
-        let key = `cookie_${cookie.shape}_${cookie.base}_${cookie.bakedState}`;
-        if (cookie.toppings && cookie.toppings[0]) {
-          key += `_${cookie.toppings[0]}`;
+        let key = '';
+        let isShaped = !!cookie.shape;
+
+        if (isShaped) {
+          key = `cookie_${cookie.shape}_${cookie.base}_${cookie.bakedState}`;
+          if (cookie.toppings && cookie.toppings[0]) {
+            key += `_${cookie.toppings[0]}`;
+          }
+        } else {
+          key = `dough_${cookie.base}`;
+        }
+
+        // Check if texture exists, fallback to standard dough if not
+        if (!this.textures.exists(key)) {
+          key = `dough_${cookie.base}`;
         }
 
         const x = startX + index * spacing;
         const y = this.trayY;
 
-        const sprite = this.add.image(x, y, key).setDisplaySize(50, 50).setDepth(3);
+        const size = isShaped ? 55 : 45;
+        const sprite = this.add.image(x, y, key).setDisplaySize(size, size).setDepth(3);
+        sprite.setInteractive({ useHandCursor: true });
+        this.input.setDraggable(sprite);
+
+        sprite.setData('cookieIndex', index);
+        sprite.setData('origX', x);
+        sprite.setData('origY', y);
+
+        sprite.on('dragstart', () => {
+          sprite.setDepth(1000);
+        });
+
+        sprite.on('drag', (pointer, dragX, dragY) => {
+          sprite.x = dragX;
+          sprite.y = Math.max(180, dragY);
+        });
+
+        sprite.on('dragend', () => {
+          const distOven = Phaser.Math.Distance.Between(sprite.x, sprite.y, this.ovenX, this.ovenY);
+          const distDelivery = Phaser.Math.Distance.Between(sprite.x, sprite.y, this.deliveryTrayX, this.deliveryTrayY);
+
+          const cookieIdx = sprite.getData('cookieIndex');
+          const cookieInstance = this.prepTrayCookies[cookieIdx];
+
+          // 1. Drop on Delivery Tray
+          if (distDelivery < 100) {
+            if (!cookieInstance.shape) {
+              this.showFeedbackText('¡Primero corta la forma!', this.trayX, 200, '#d90429');
+            } else {
+              this.deliveryTrayCookies.push(cookieInstance);
+              this.prepTrayCookies.splice(cookieIdx, 1);
+              this.drawDeliveryTray();
+              this.updateCookieVisuals();
+              this.showFeedbackText('¡Galleta lista para entrega! 📦', this.deliveryTrayX, 200, '#38b000');
+              return;
+            }
+          }
+
+          // 2. Drop on Oven (only if shaped, oven has space, and not baking)
+          if (distOven < 120) {
+            if (this.isBaking) {
+              this.showFeedbackText('¡El horno está encendido!', this.trayX, 200, '#d90429');
+            } else if (this.cookiesInOven.length >= 3) {
+              this.showFeedbackText('¡El horno está lleno! (Máx 3)', this.trayX, 200, '#d90429');
+            } else if (!cookieInstance.shape) {
+              this.showFeedbackText('¡Primero corta la forma!', this.trayX, 200, '#d90429');
+            } else {
+              // Valid drop in oven!
+              this.cookiesInOven.push(cookieInstance);
+              this.prepTrayCookies.splice(cookieIdx, 1);
+              this.updateExtractButtonState();
+              this.showFeedbackText(`Galleta introducida (${this.cookiesInOven.length}/3) 🍪`, this.trayX, 200, '#38b000');
+
+              // Play shrink and fade animation
+              this.tweens.add({
+                targets: sprite,
+                x: this.ovenX,
+                y: this.ovenY,
+                scale: 0.1,
+                alpha: 0,
+                duration: 300,
+                onComplete: () => {
+                  sprite.destroy();
+                  this.updateCookieVisuals();
+                }
+              });
+              return;
+            }
+          }
+
+          // Failed or non-target drop: tween back to home
+          this.tweens.add({
+            targets: sprite,
+            x: sprite.getData('origX'),
+            y: sprite.getData('origY'),
+            duration: 200,
+            ease: 'Power2',
+            onComplete: () => {
+              sprite.setDepth(3);
+              this.updateCookieVisuals();
+            }
+          });
+        });
+
         this.prepTraySprites.push(sprite);
       });
-
-      // Also make a main invisible cookieSprite at the center of the tray draggable
-      if (this.cookieSprite) {
-        this.cookieSprite.setTexture('cookie_star_classic_baked'); // Dummy texture
-        this.cookieSprite.setDisplaySize(70, 70);
-        this.cookieSprite.setAlpha(0.01); // Almost invisible but draggable
-        this.cookieSprite.setVisible(true);
-        this.cookieSprite.x = this.trayX;
-        this.cookieSprite.y = this.trayY;
-      }
-      return;
-    }
-
-    const cookie = this.currentCookie;
-
-    // If there is no base selected, show nothing
-    if (!cookie.base) {
-      return;
-    }
-
-    // If there is a base selected but no shape has been cut yet
-    if (!cookie.shape) {
-      if (this.cookieSprite) {
-        this.cookieSprite.setTexture('dough_' + cookie.base);
-        this.cookieSprite.setDisplaySize(60, 60);
-        this.cookieSprite.setAlpha(1.0);
-        this.cookieSprite.setVisible(true);
-      }
-      return;
-    }
-
-    // If a shape has been cut, display the correct cookie sprite
-    if (this.cookieSprite) {
-      // Construct asset key based on shape, base, state, and toppings (for all states)
-      let key = `cookie_${cookie.shape}_${cookie.base}_${cookie.bakedState}`;
-      if (cookie.toppings && cookie.toppings[0]) {
-        key += `_${cookie.toppings[0]}`;
-      }
-
-      // Verify the texture exists before setting it (safety check)
-      if (this.textures.exists(key)) {
-        this.cookieSprite.setTexture(key);
-        this.cookieSprite.setDisplaySize(70, 70);
-        this.cookieSprite.setAlpha(1.0);
-        this.cookieSprite.setVisible(true);
-      }
     }
   }
 
@@ -1501,20 +1434,128 @@ export default class GameScene extends Phaser.Scene {
       this.trashDeliveryTray();
     });
 
-    // Deliver button to the right (X = 644, Y = 370)
-    const deliverBg = this.add.graphics().setDepth(2);
-    deliverBg.fillStyle(0x38b000, 1);
-    deliverBg.fillRoundedRect(this.deliveryTrayX + 110, this.deliveryTrayY - 15, 75, 30, 8);
-    this.add.text(this.deliveryTrayX + 147, this.deliveryTrayY, 'ENTREGAR', {
-      font: '11px "Outfit", sans-serif',
-      fill: '#fff1e6',
-      fontWeight: '800'
-    }).setOrigin(0.5).setDepth(2);
+    // Make the delivery tray draggable via an invisible interactive zone
+    this.deliveryDragZone = this.add.rectangle(this.deliveryTrayX, this.deliveryTrayY, 200, 50, 0x000000, 0)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(15);
+    this.input.setDraggable(this.deliveryDragZone);
 
-    this.deliveryDeliverZone = this.add.rectangle(this.deliveryTrayX + 147, this.deliveryTrayY, 75, 30, 0x000000, 0)
-      .setInteractive({ useHandCursor: true });
-    this.deliveryDeliverZone.on('pointerdown', () => {
-      this.deliverCookie();
+    this.customerHighlighted = false;
+
+    this.deliveryDragZone.on('dragstart', () => {
+      this.deliveryDragZone.setDepth(1000);
+      this.deliveryTrayLabel.setDepth(1001);
+      this.deliveryTraySprites.forEach(s => s.setDepth(1002));
+    });
+
+    this.deliveryDragZone.on('drag', (pointer, dragX, dragY) => {
+      // Limit Y-axis to counter and customer area
+      const clampedY = Math.max(160, Math.min(450, dragY));
+      this.deliveryDragZone.x = dragX;
+      this.deliveryDragZone.y = clampedY;
+
+      // Translate the graphics object using x/y offsets
+      this.deliveryTrayBg.x = dragX - this.deliveryTrayX;
+      this.deliveryTrayBg.y = clampedY - this.deliveryTrayY;
+
+      this.deliveryTrayLabel.x = dragX;
+      this.deliveryTrayLabel.y = clampedY - 33;
+
+      // Translate all cookie sprites on the tray
+      const count = this.deliveryTrayCookies.length;
+      if (count > 0) {
+        const spacing = 35;
+        const startX = dragX - ((count - 1) * spacing) / 2;
+        this.deliveryTraySprites.forEach((sprite, index) => {
+          sprite.x = startX + index * spacing;
+          sprite.y = clampedY;
+        });
+      }
+
+      // Check distance to the customer (centered at 512, 230)
+      if (this.currentCustomer && this.currentCustomer.sprite) {
+        const distToCustomer = Phaser.Math.Distance.Between(dragX, clampedY, 512, 230);
+        if (distToCustomer < 130) {
+          if (!this.customerHighlighted) {
+            this.customerHighlighted = true;
+            // Customer outline/glow effect via scale and tint
+            this.currentCustomer.sprite.setScale(1.1);
+            this.currentCustomer.sprite.setTint(0xcaffbf); // Soft pastel green tint
+            
+            // Pop the tray slightly to show it's ready to drop
+            this.tweens.add({
+              targets: this.deliveryDragZone,
+              scale: 1.1,
+              duration: 100
+            });
+          }
+        } else {
+          if (this.customerHighlighted) {
+            this.customerHighlighted = false;
+            this.currentCustomer.sprite.setScale(1.0);
+            this.currentCustomer.sprite.clearTint();
+            
+            this.tweens.add({
+              targets: this.deliveryDragZone,
+              scale: 1.0,
+              duration: 100
+            });
+          }
+        }
+      }
+    });
+
+    this.deliveryDragZone.on('dragend', () => {
+      this.deliveryDragZone.setScale(1.0);
+      this.deliveryDragZone.setDepth(15);
+      this.deliveryTrayLabel.setDepth(2);
+
+      if (this.customerHighlighted) {
+        this.customerHighlighted = false;
+        if (this.currentCustomer && this.currentCustomer.sprite) {
+          this.currentCustomer.sprite.setScale(1.0);
+          this.currentCustomer.sprite.clearTint();
+        }
+        
+        // Deliver!
+        this.deliverCookie();
+      }
+
+      // Tween back to counter center
+      this.tweens.add({
+        targets: [this.deliveryDragZone, this.deliveryTrayLabel],
+        x: this.deliveryTrayX,
+        y: {
+          getStart: (target) => target.y,
+          getEnd: (target) => (target === this.deliveryDragZone ? this.deliveryTrayY : this.deliveryTrayY - 33)
+        },
+        duration: 250,
+        ease: 'Cubic.out',
+        onUpdate: () => {
+          this.deliveryTrayBg.x = this.deliveryDragZone.x - this.deliveryTrayX;
+          this.deliveryTrayBg.y = this.deliveryDragZone.y - this.deliveryTrayY;
+          // Redraw sprites dynamic positions
+          const count = this.deliveryTrayCookies.length;
+          if (count > 0) {
+            const spacing = 35;
+            const startX = this.deliveryDragZone.x - ((count - 1) * spacing) / 2;
+            this.deliveryTraySprites.forEach((sprite, index) => {
+              sprite.x = startX + index * spacing;
+              sprite.y = this.deliveryDragZone.y;
+            });
+          }
+        },
+        onComplete: () => {
+          // Reset offsets
+          this.deliveryTrayBg.x = 0;
+          this.deliveryTrayBg.y = 0;
+          this.deliveryDragZone.x = this.deliveryTrayX;
+          this.deliveryDragZone.y = this.deliveryTrayY;
+          this.deliveryTrayLabel.x = this.deliveryTrayX;
+          this.deliveryTrayLabel.y = this.deliveryTrayY - 33;
+          this.drawDeliveryTray();
+        }
+      });
     });
   }
 
@@ -1523,12 +1564,14 @@ export default class GameScene extends Phaser.Scene {
     this.deliveryTraySprites.forEach(sprite => sprite.destroy());
     this.deliveryTraySprites = [];
 
-    // Draw cookies in a horizontal row on the tray
+    // Draw cookies in a horizontal row on the tray relative to the drag zone's current position
     const count = this.deliveryTrayCookies.length;
     if (count === 0) return;
 
     const spacing = 35;
-    const startX = this.deliveryTrayX - ((count - 1) * spacing) / 2;
+    const trayX = this.deliveryDragZone ? this.deliveryDragZone.x : this.deliveryTrayX;
+    const trayY = this.deliveryDragZone ? this.deliveryDragZone.y : this.deliveryTrayY;
+    const startX = trayX - ((count - 1) * spacing) / 2;
 
     this.deliveryTrayCookies.forEach((cookie, index) => {
       let key = `cookie_${cookie.shape}_${cookie.base}_${cookie.bakedState}`;
@@ -1537,9 +1580,9 @@ export default class GameScene extends Phaser.Scene {
       }
 
       const x = startX + index * spacing;
-      const y = this.deliveryTrayY;
+      const y = trayY;
 
-      const sprite = this.add.image(x, y, key).setDisplaySize(40, 40).setDepth(2);
+      const sprite = this.add.image(x, y, key).setDisplaySize(40, 40).setDepth(14);
       this.deliveryTraySprites.push(sprite);
     });
   }
