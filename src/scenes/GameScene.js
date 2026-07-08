@@ -530,6 +530,9 @@ export default class GameScene extends Phaser.Scene {
   createOvenStation(startX, startY) {
     this.ovenX = startX + 55;
     this.ovenY = startY - 40;
+    this.ovenStartX = startX;
+    this.ovenStartY = startY;
+
     // Oven Image placed higher (startY - 40, which is Y = 295). Starts with oven OFF
     this.ovenImage = this.add.image(this.ovenX, this.ovenY, 'oven_off')
       .setDepth(2)
@@ -561,6 +564,24 @@ export default class GameScene extends Phaser.Scene {
     this.ovenBarBg = this.add.graphics().setDepth(2);
     this.ovenBarFill = this.add.graphics().setDepth(2);
     this.drawOvenBarBackground();
+
+    // SACAR Button (placed below the Timing Bar at startY + 125)
+    this.ovenExtractBtnBg = this.add.graphics().setDepth(10);
+    this.ovenExtractBtnText = this.add.text(startX + 55, startY + 140, 'SACAR GALLETAS', {
+      font: '11px "Outfit", sans-serif',
+      fill: '#fff1e6',
+      fontWeight: '800'
+    }).setOrigin(0.5).setDepth(11);
+
+    this.ovenExtractZone = this.add.rectangle(startX + 55, startY + 140, 110, 30, 0x000000, 0)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(12);
+
+    this.ovenExtractZone.on('pointerdown', () => {
+      this.handleOvenImageClick();
+    });
+
+    this.updateExtractButtonState();
   }
  
   handleOvenClick() {
@@ -576,6 +597,7 @@ export default class GameScene extends Phaser.Scene {
       this.ovenBarFill.clear();
       this.ovenImage.setTexture('oven_on'); // Switch to lit oven
       this.updateCookieVisuals();
+      this.updateExtractButtonState();
     } else {
       // Stop baking and evaluate time
       this.isBaking = false;
@@ -607,6 +629,7 @@ export default class GameScene extends Phaser.Scene {
       this.showFeedbackText(feedback, this.trayX, 200, color);
       this.ovenBarFill.clear();
       this.updateCookieVisuals();
+      this.updateExtractButtonState();
     }
   }
 
@@ -813,6 +836,7 @@ export default class GameScene extends Phaser.Scene {
         cookieToOven.bakedState = this.currentCookie.bakedState;
         cookieToOven.toppings = [...this.currentCookie.toppings];
         this.cookiesInOven.push(cookieToOven);
+        this.updateExtractButtonState();
         
         this.currentCookie.reset();
 
@@ -1460,5 +1484,24 @@ export default class GameScene extends Phaser.Scene {
 
     this.cookiesInOven = [];
     this.showFeedbackText('¡Retirando galletas!', this.ovenX, 200, '#38b000');
+    this.updateExtractButtonState();
+  }
+
+  drawOvenExtractBtn(enabled) {
+    this.ovenExtractBtnBg.clear();
+    if (enabled) {
+      this.ovenExtractBtnBg.fillStyle(0xd48c47, 1); // Nice warm orange-brown
+    } else {
+      this.ovenExtractBtnBg.fillStyle(0x7f5539, 0.4); // Semi-transparent disabled state
+    }
+    this.ovenExtractBtnBg.fillRoundedRect(this.ovenStartX, this.ovenStartY + 125, 110, 30, 8);
+  }
+
+  updateExtractButtonState() {
+    const enabled = !this.isBaking && this.cookiesInOven && this.cookiesInOven.length > 0;
+    this.drawOvenExtractBtn(enabled);
+    if (this.ovenExtractBtnText) {
+      this.ovenExtractBtnText.setAlpha(enabled ? 1.0 : 0.5);
+    }
   }
 }
