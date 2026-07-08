@@ -1476,38 +1476,50 @@ export default class GameScene extends Phaser.Scene {
       // Check distance to the customer (centered at 512, 230)
       if (this.currentCustomer && this.currentCustomer.sprite) {
         const distToCustomer = Phaser.Math.Distance.Between(dragX, clampedY, 512, 230);
-        console.log('[DEBUG] drag: distToCustomer =', distToCustomer, 'clampedY =', clampedY);
         if (distToCustomer < 130) {
           if (!this.customerHighlighted) {
-            console.log('[DEBUG] drag: highlight customer');
             this.customerHighlighted = true;
-            // Customer outline/glow effect via scale and tint
-            this.currentCustomer.sprite.setScale(1.1);
-            this.currentCustomer.sprite.setTint(0xcaffbf); // Soft pastel green tint
             
             // Pop the tray slightly to show it's ready to drop
             this.tweens.add({
               targets: this.deliveryDragZone,
-              scale: 1.1,
+              scale: 1.06,
               duration: 100
+            });
+
+            // Start a gentle hop animation on the customer container (representing happy anticipation!)
+            this.currentCustomerBounceTween = this.tweens.add({
+              targets: this.currentCustomer.container,
+              y: 230 - 15,
+              duration: 200,
+              yoyo: true,
+              repeat: -1,
+              ease: 'Cubic.easeOut'
             });
           }
         } else {
           if (this.customerHighlighted) {
-            console.log('[DEBUG] drag: unhighlight customer');
             this.customerHighlighted = false;
-            this.currentCustomer.sprite.setScale(1.0);
-            this.currentCustomer.sprite.clearTint();
             
             this.tweens.add({
               targets: this.deliveryDragZone,
               scale: 1.0,
               duration: 100
             });
+
+            // Stop the hop animation and return container to original Y
+            if (this.currentCustomerBounceTween) {
+              this.currentCustomerBounceTween.stop();
+              this.currentCustomerBounceTween = null;
+            }
+            this.tweens.add({
+              targets: this.currentCustomer.container,
+              y: 230,
+              duration: 150,
+              ease: 'Back.easeOut'
+            });
           }
         }
-      } else {
-        console.log('[DEBUG] drag: currentCustomer or sprite missing', !!this.currentCustomer, !!(this.currentCustomer && this.currentCustomer.sprite));
       }
     });
 
@@ -1516,12 +1528,17 @@ export default class GameScene extends Phaser.Scene {
       this.deliveryDragZone.setDepth(15);
       this.deliveryTrayLabel.setDepth(2);
 
+      // Clean up customer animation if dragging ends
+      if (this.currentCustomerBounceTween) {
+        this.currentCustomerBounceTween.stop();
+        this.currentCustomerBounceTween = null;
+      }
+      if (this.currentCustomer && this.currentCustomer.container) {
+        this.currentCustomer.container.y = 230;
+      }
+
       if (this.customerHighlighted) {
         this.customerHighlighted = false;
-        if (this.currentCustomer && this.currentCustomer.sprite) {
-          this.currentCustomer.sprite.setScale(1.0);
-          this.currentCustomer.sprite.clearTint();
-        }
         
         // Deliver!
         this.deliverCookie();
