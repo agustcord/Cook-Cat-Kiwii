@@ -53,7 +53,15 @@ export default class MainMenuScene extends Phaser.Scene {
 
     // Transition to game scene on tap/click
     playZone.on('pointerdown', () => {
-      this.scene.start('GameScene', { day: 1, coins: 0 });
+      this.scene.start('GameScene', {
+        day: 1,
+        coins: 0,
+        unlockedShapes: ['star'],
+        stock: {
+          dough: { classic: 10, chocolate: 0, oat: 0 },
+          topping: { sprinkles: 0, choco: 0, glazing: 0 }
+        }
+      });
     });
 
     // Simple micro-animations/hover feedback

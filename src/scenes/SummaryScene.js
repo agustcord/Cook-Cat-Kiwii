@@ -11,6 +11,21 @@ export default class SummaryScene extends Phaser.Scene {
     this.coins = safeData.coins || 0;
     this.meta = safeData.meta || 100;
     this.success = this.coins >= this.meta;
+
+    // Preserved start-of-day state for re-tries
+    this.coinsAtStart = safeData.coinsAtStart || 0;
+    this.unlockedShapesAtStart = safeData.unlockedShapesAtStart || ['star'];
+    this.stockAtStart = safeData.stockAtStart || {
+      dough: { classic: 10, chocolate: 0, oat: 0 },
+      topping: { sprinkles: 0, choco: 0, glazing: 0 }
+    };
+
+    // Current state to carry over to shop
+    this.unlockedShapes = safeData.unlockedShapes || ['star'];
+    this.stock = safeData.stock || {
+      dough: { classic: 10, chocolate: 0, oat: 0 },
+      topping: { sprinkles: 0, choco: 0, glazing: 0 }
+    };
   }
 
   create() {
@@ -61,14 +76,24 @@ export default class SummaryScene extends Phaser.Scene {
     // Determine button text and action callback
     let btnTextString = 'REINTENTAR';
     let nextSceneCallback = () => {
-      this.scene.start('GameScene', { day: this.day, coins: 0 });
+      this.scene.start('GameScene', {
+        day: this.day,
+        coins: this.coinsAtStart,
+        unlockedShapes: this.unlockedShapesAtStart,
+        stock: this.stockAtStart
+      });
     };
 
     if (this.success) {
       if (this.day < 4) {
         btnTextString = 'SIGUIENTE DÍA';
         nextSceneCallback = () => {
-          this.scene.start('GameScene', { day: this.day + 1, coins: this.coins });
+          this.scene.start('ShopScene', {
+            day: this.day,
+            coins: this.coins,
+            unlockedShapes: this.unlockedShapes,
+            stock: this.stock
+          });
         };
       } else {
         btnTextString = 'VOLVER AL MENÚ';

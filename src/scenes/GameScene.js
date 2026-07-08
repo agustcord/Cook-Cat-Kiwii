@@ -11,8 +11,7 @@ const DAY_CONFIGS = {
     bakeMin: 5.5,
     bakeMax: 7.5,
     recipes: [
-      { name: 'Estrella Clásica', base: 'classic', shape: 'star', toppings: ['sprinkles'] },
-      { name: 'Corazón Clásico', base: 'classic', shape: 'heart', toppings: ['sprinkles'] }
+      { name: 'Estrella Clásica', base: 'classic', shape: 'star', toppings: [] }
     ]
   },
   2: {
@@ -76,6 +75,18 @@ export default class GameScene extends Phaser.Scene {
     this.day = safeData.day || 1;
     this.coins = safeData.coins || 0;
     this.config = DAY_CONFIGS[this.day];
+
+    // Load state from data, or fallback to Day 1 starting kit
+    this.unlockedShapes = safeData.unlockedShapes || ['star'];
+    this.stock = safeData.stock || {
+      dough: { classic: 10, chocolate: 0, oat: 0 },
+      topping: { sprinkles: 0, choco: 0, glazing: 0 }
+    };
+
+    // Save starting state of the day for re-tries
+    this.coinsAtStart = this.coins;
+    this.unlockedShapesAtStart = [...this.unlockedShapes];
+    this.stockAtStart = JSON.parse(JSON.stringify(this.stock));
     
     // Core game state variables
     this.customersSpawned = 0;
@@ -101,11 +112,29 @@ export default class GameScene extends Phaser.Scene {
     this.customerSequence = sequence.slice(0, this.config.maxCustomers);
     
     // Generate non-repeating recipe sequence for the day
-    // Uses Fisher-Yates shuffle with anti-repeat protection at pool boundaries
-    const recipes = this.config.recipes || [];
+    // Filter recipes based on unlocked shapes and stock
+    const filteredRecipes = (this.config.recipes || []).filter(recipe => {
+      // 1. Check if shape is unlocked
+      if (!this.unlockedShapes.includes(recipe.shape)) return false;
+      // 2. Check if we have stock of the required dough
+      if ((this.stock.dough[recipe.base] || 0) <= 0) return false;
+      // 3. Check if we have stock of all required toppings
+      if (recipe.toppings && recipe.toppings.length > 0) {
+        for (const topping of recipe.toppings) {
+          if ((this.stock.topping[topping] || 0) <= 0) return false;
+        }
+      }
+      return true;
+    });
+
+    // Fallback if no recipe is makeable (or if filtered list is empty)
+    // We fallback to Classic Star with no toppings!
+    const fallbackRecipe = { name: 'Estrella Clásica', base: 'classic', shape: 'star', toppings: [] };
+    const recipesToUse = filteredRecipes.length > 0 ? filteredRecipes : [fallbackRecipe];
+
     let recipeSeq = [];
     while (recipeSeq.length < this.config.maxCustomers) {
-      let recipePool = [...recipes];
+      let recipePool = [...recipesToUse];
       // Fisher-Yates shuffle
       for (let i = recipePool.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -157,6 +186,7 @@ export default class GameScene extends Phaser.Scene {
 
     // Create the interactive kitchen stations
     this.createStations(width, height);
+    this.updateStockTexts();
 
     // Create Cookie Tray (Preparation Area)
     this.createCookieTray(width, height);
@@ -379,95 +409,117 @@ export default class GameScene extends Phaser.Scene {
       .setDepth(1);
 
     const bases = [
-      { id: 'classic', label: 'Clásica', color: 0xf5ebe0, unlocked: true },
-      { id: 'chocolate', label: 'Choco', color: 0x4f1200, unlocked: this.day >= 2 },
-      { id: 'oat', label: 'Avena', color: 0xd5bdaf, unlocked: this.day >= 3 }
+      { id: 'classic', label: 'Clásica', color: 0xf5ebe0 },
+      { id: 'chocolate', label: 'Choco', color: 0x4f1200 },
+      { id: 'oat', label: 'Avena', color: 0xd5bdaf }
     ];
 
-    // 50% larger dough images (70 -> 105)
     const doughSize = 105;
     const doughHoverSize = 115;
-    const portionSize = 55; // smaller "portion" that follows the cursor
+    const portionSize = 55;
+
+    this.doughButtons = {};
+    this.doughStockTexts = {};
 
     bases.forEach((b, index) => {
-      // Center the dough balls horizontally in the left column
       const x = startX + 35;
       const y = startY + 45 + index * 80;
 
-      // Dough source image (stays in place, always visible)
+      // Dough source image
       const doughImg = this.add.image(x, y, 'dough_' + b.id)
         .setDisplaySize(doughSize, doughSize)
         .setDepth(2);
-      if (!b.unlocked) {
-        doughImg.setTint(0x777777);
-        doughImg.setAlpha(0.4);
-      }
+      
+      this.doughButtons[b.id] = doughImg;
 
-      if (b.unlocked) {
-        // Create an invisible drag zone on top of the dough image
-        const dragZone = this.add.rectangle(x, y, doughSize, doughSize, 0x000000, 0);
-        dragZone.setInteractive({ useHandCursor: true });
-        this.input.setDraggable(dragZone);
+      // Add stock indicator text
+      const stockText = this.add.text(x, y + 42, '', {
+        font: '11px "Outfit", sans-serif',
+        fill: '#ffffff',
+        stroke: '#582f0e',
+        strokeThickness: 3,
+        fontWeight: '800'
+      }).setOrigin(0.5).setDepth(3);
+      
+      this.doughStockTexts[b.id] = stockText;
 
-        // The "portion" sprite — starts invisible, appears when dragging
-        let portionSprite = null;
+      // Create an invisible drag zone on top
+      const dragZone = this.add.rectangle(x, y, doughSize, doughSize, 0x000000, 0);
+      dragZone.setInteractive({ useHandCursor: true });
+      this.input.setDraggable(dragZone);
 
-        dragZone.on('pointerover', () => {
+      let portionSprite = null;
+
+      dragZone.on('pointerover', () => {
+        const currentStock = this.stock.dough[b.id] || 0;
+        if (currentStock > 0) {
           doughImg.setDisplaySize(doughHoverSize, doughHoverSize);
-        });
-        dragZone.on('pointerout', () => {
-          doughImg.setDisplaySize(doughSize, doughSize);
-        });
+        }
+      });
+      
+      dragZone.on('pointerout', () => {
+        doughImg.setDisplaySize(doughSize, doughSize);
+      });
 
-        dragZone.on('dragstart', () => {
-          // Create a small portion sprite that follows the cursor
-          portionSprite = this.add.image(dragZone.x, dragZone.y, 'dough_' + b.id);
-          portionSprite.setDisplaySize(portionSize, portionSize);
-          portionSprite.setDepth(1000);
-          portionSprite.setAlpha(0.9);
-          // Slight shrink on the source to give "tearing off" feel
-          doughImg.setDisplaySize(doughSize - 10, doughSize - 10);
-        });
+      dragZone.on('dragstart', () => {
+        const currentStock = this.stock.dough[b.id] || 0;
+        if (currentStock <= 0) {
+          this.showFeedbackText('¡Sin stock! Cómpralo en la tienda 🛒', this.trayX, 200, '#d90429');
+          return;
+        }
 
-        dragZone.on('drag', (pointer, dragX, dragY) => {
-          if (portionSprite) {
-            portionSprite.x = dragX;
-            portionSprite.y = Math.max(180, dragY);
-          }
-        });
+        portionSprite = this.add.image(dragZone.x, dragZone.y, 'dough_' + b.id);
+        portionSprite.setDisplaySize(portionSize, portionSize);
+        portionSprite.setDepth(1000);
+        portionSprite.setAlpha(0.9);
+        doughImg.setDisplaySize(doughSize - 10, doughSize - 10);
+      });
 
-        dragZone.on('dragend', () => {
-          // Check distance to cookie tray
-          const dist = Phaser.Math.Distance.Between(
-            portionSprite ? portionSprite.x : dragZone.x,
-            portionSprite ? portionSprite.y : dragZone.y,
-            this.trayX, this.trayY
-          );
+      dragZone.on('drag', (pointer, dragX, dragY) => {
+        if (portionSprite) {
+          portionSprite.x = dragX;
+          portionSprite.y = Math.max(180, dragY);
+        }
+      });
 
-          if (dist < 120) {
-            if (this.prepTrayCookies.length < 3) {
-              const newCookie = new Cookie();
-              newCookie.base = b.id;
-              this.prepTrayCookies.push(newCookie);
-              this.updateCookieVisuals();
-              this.showFeedbackText(`¡Masa de ${b.label}!`, this.trayX, 200, '#38b000');
-            } else {
-              this.showFeedbackText('¡Mesa llena! (Máx 3)', this.trayX, 200, '#d90429');
-            }
-          }
-
-          // Destroy the portion sprite
-          if (portionSprite) {
-            portionSprite.destroy();
-            portionSprite = null;
-          }
-
-          // Restore dough source size and reset drag zone position
+      dragZone.on('dragend', () => {
+        if (!portionSprite) {
           doughImg.setDisplaySize(doughSize, doughSize);
           dragZone.x = x;
           dragZone.y = y;
-        });
-      }
+          return;
+        }
+
+        const dist = Phaser.Math.Distance.Between(
+          portionSprite.x, portionSprite.y,
+          this.trayX, this.trayY
+        );
+
+        if (dist < 120) {
+          if (this.prepTrayCookies.length < 3) {
+            // Consume stock!
+            this.stock.dough[b.id]--;
+            this.updateStockTexts();
+
+            const newCookie = new Cookie();
+            newCookie.base = b.id;
+            this.prepTrayCookies.push(newCookie);
+            this.updateCookieVisuals();
+            this.showFeedbackText(`¡Masa de ${b.label}!`, this.trayX, 200, '#38b000');
+          } else {
+            this.showFeedbackText('¡Mesa llena! (Máx 3)', this.trayX, 200, '#d90429');
+          }
+        }
+
+        if (portionSprite) {
+          portionSprite.destroy();
+          portionSprite = null;
+        }
+
+        doughImg.setDisplaySize(doughSize, doughSize);
+        dragZone.x = x;
+        dragZone.y = y;
+      });
     });
   }
 
@@ -482,13 +534,15 @@ export default class GameScene extends Phaser.Scene {
     this.shapeDragZones = [];
 
     const shapes = [
-      { id: 'star', label: 'Estrella', unlocked: true },
-      { id: 'heart', label: 'Corazón', unlocked: true },
-      { id: 'cat', label: 'Gato', unlocked: this.day >= 2 },
-      { id: 'fish', label: 'Pez', unlocked: this.day >= 3 }
+      { id: 'star', label: 'Estrella' },
+      { id: 'heart', label: 'Corazón' },
+      { id: 'cat', label: 'Gato' },
+      { id: 'fish', label: 'Pez' }
     ];
 
     shapes.forEach((s, index) => {
+      const isUnlocked = this.unlockedShapes.includes(s.id);
+
       // Horizontal layout (X spacing: 60, starting at startX - 5, Y is startY + 45)
       const x = startX - 5 + index * 60;
       const y = startY + 45;
@@ -500,13 +554,13 @@ export default class GameScene extends Phaser.Scene {
 
       // Cutter Image (116x116 texture displayed at 58x58 — 2x downscale for HiDPI)
       const shapeSprite = this.add.image(29, 29, 'shape_' + s.id).setDisplaySize(58, 58);
-      if (!s.unlocked) {
+      if (!isUnlocked) {
         shapeSprite.setTint(0x777777);
         shapeSprite.setAlpha(0.4);
       }
       container.add(shapeSprite);
 
-      if (s.unlocked) {
+      if (isUnlocked) {
         // Create a flat transparent rectangle as the interactive drag zone
         const dragZone = this.add.rectangle(x + 29, y + 29, 58, 58, 0x000000, 0);
         dragZone.setInteractive({ useHandCursor: true });
@@ -742,115 +796,178 @@ export default class GameScene extends Phaser.Scene {
       .setDepth(1);
 
     const toppings = [
-      { id: 'sprinkles', label: 'Chispas', color: 0xff70a6, unlocked: true },
-      { id: 'choco', label: 'Choco', color: 0x3d0c00, unlocked: this.day >= 2 },
-      { id: 'glazing', label: 'Glaseado', color: 0xff0a54, unlocked: this.day >= 4 }
+      { id: 'sprinkles', label: 'Chispas', color: 0xff70a6 },
+      { id: 'choco', label: 'Choco', color: 0x3d0c00 },
+      { id: 'glazing', label: 'Glaseado', color: 0xff0a54 }
     ];
 
     const jarSize = 84;
     const jarHoverSize = 92;
 
+    this.toppingButtons = {};
+    this.toppingStockTexts = {};
+
     toppings.forEach((t, index) => {
       const x = startX + 10 + 42; // center of jar
       const y = startY + index * 80 + 42;
 
-      // Topping Jar sprite (stays in place as reference)
+      // Topping Jar sprite
       const jarSource = this.add.image(x, y, 'topping_' + t.id).setDisplaySize(jarSize, jarSize).setDepth(2);
-      if (!t.unlocked) {
-        jarSource.setTint(0x777777);
-        jarSource.setAlpha(0.4);
-      }
+      this.toppingButtons[t.id] = jarSource;
 
-      if (t.unlocked) {
-        // Invisible drag zone
-        const dragZone = this.add.rectangle(x, y, jarSize, jarSize, 0x000000, 0);
-        dragZone.setInteractive({ useHandCursor: true });
-        this.input.setDraggable(dragZone);
+      // Stock indicator text
+      const stockText = this.add.text(x, y + 36, '', {
+        font: '11px "Outfit", sans-serif',
+        fill: '#ffffff',
+        stroke: '#582f0e',
+        strokeThickness: 3,
+        fontWeight: '800'
+      }).setOrigin(0.5).setDepth(3);
+      this.toppingStockTexts[t.id] = stockText;
 
-        // Draggable jar clone — created on dragstart
-        let jarClone = null;
-        let initialDist = 0; // distance from home position to tray
+      // Invisible drag zone
+      const dragZone = this.add.rectangle(x, y, jarSize, jarSize, 0x000000, 0);
+      dragZone.setInteractive({ useHandCursor: true });
+      this.input.setDraggable(dragZone);
 
-        dragZone.on('pointerover', () => {
+      let jarClone = null;
+      let initialDist = 0;
+
+      dragZone.on('pointerover', () => {
+        const currentStock = this.stock.topping[t.id] || 0;
+        if (currentStock > 0) {
           jarSource.setDisplaySize(jarHoverSize, jarHoverSize);
-        });
-        dragZone.on('pointerout', () => {
-          jarSource.setDisplaySize(jarSize, jarSize);
-        });
+        }
+      });
+      
+      dragZone.on('pointerout', () => {
+        jarSource.setDisplaySize(jarSize, jarSize);
+      });
 
-        dragZone.on('dragstart', () => {
-          // Create a clone of the jar that follows the cursor
-          jarClone = this.add.image(x, y, 'topping_' + t.id);
-          jarClone.setDisplaySize(jarSize, jarSize);
-          jarClone.setDepth(1000);
-          // Dim the source jar to show it's been "picked up"
-          jarSource.setAlpha(0.35);
-          // Store the initial distance from home to tray for ratio calculation
-          initialDist = Phaser.Math.Distance.Between(x, y, this.trayX, this.trayY);
-        });
+      dragZone.on('dragstart', () => {
+        const currentStock = this.stock.topping[t.id] || 0;
+        if (currentStock <= 0) {
+          this.showFeedbackText('¡Sin stock! Cómpralo en la tienda 🛒', this.trayX, 200, '#d90429');
+          return;
+        }
 
-        dragZone.on('drag', (pointer, dragX, dragY) => {
-          if (!jarClone) return;
-          const clampedY = Math.max(180, dragY);
-          jarClone.x = dragX;
-          jarClone.y = clampedY;
+        jarClone = this.add.image(x, y, 'topping_' + t.id);
+        jarClone.setDisplaySize(jarSize, jarSize);
+        jarClone.setDepth(1000);
+        jarSource.setAlpha(0.35);
+        initialDist = Phaser.Math.Distance.Between(x, y, this.trayX, this.trayY);
+      });
 
-          // Distance-based rotation: upright (0°) when far, fully inverted (π) when at tray
-          const currentDist = Phaser.Math.Distance.Between(dragX, clampedY, this.trayX, this.trayY);
-          // ratio: 0 = at home (far), 1 = at tray (close)
-          const ratio = Phaser.Math.Clamp(1 - (currentDist / initialDist), 0, 1);
-          // Determine tilt direction: tilt left (-) if jar is to the right of tray, right (+) if to the left
-          const direction = (dragX >= this.trayX) ? -1 : 1;
-          // Full pour = π radians (180°), scaled by proximity ratio
-          jarClone.setRotation(direction * ratio * Math.PI);
-        });
+      dragZone.on('drag', (pointer, dragX, dragY) => {
+        if (!jarClone) return;
+        const clampedY = Math.max(180, dragY);
+        jarClone.x = dragX;
+        jarClone.y = clampedY;
 
-        dragZone.on('dragend', () => {
-          if (!jarClone) return;
+        const currentDist = Phaser.Math.Distance.Between(dragX, clampedY, this.trayX, this.trayY);
+        const ratio = Phaser.Math.Clamp(1 - (currentDist / initialDist), 0, 1);
+        const direction = (dragX >= this.trayX) ? -1 : 1;
+        jarClone.setRotation(direction * ratio * Math.PI);
+      });
 
-          // Check distance to cookie tray
-          const dist = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, this.trayX, this.trayY);
-
-          if (dist < 120) {
-            // Find closest cookie on preparation tray
-            let closestCookie = null;
-            let minDist = 99999;
-            const count = this.prepTrayCookies.length;
-            const spacing = 35;
-            const startX = this.trayX - ((count - 1) * spacing) / 2;
-
-            this.prepTrayCookies.forEach((cookie, index) => {
-              const cx = startX + index * spacing;
-              const cy = this.trayY;
-              const distCookie = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, cx, cy);
-              if (distCookie < 120 && distCookie < minDist) {
-                minDist = distCookie;
-                closestCookie = cookie;
-              }
-            });
-
-            if (closestCookie) {
-              closestCookie.toppings = [t.id];
-              this.updateCookieVisuals();
-              this.showFeedbackText(`¡Añadido ${t.label}! ✨`, this.trayX, 200, '#38b000');
-            } else {
-              const distToTrayCenter = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, this.trayX, this.trayY);
-              if (distToTrayCenter < 120) {
-                this.showFeedbackText('¡Primero selecciona la masa!', this.trayX, 200, '#d90429');
-              }
-            }
-          }
-
-          // Destroy the clone and restore source
-          jarClone.destroy();
-          jarClone = null;
-          jarSource.setAlpha(1);
+      dragZone.on('dragend', () => {
+        if (!jarClone) {
           jarSource.setDisplaySize(jarSize, jarSize);
           dragZone.x = x;
           dragZone.y = y;
-        });
-      }
+          return;
+        }
+
+        const dist = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, this.trayX, this.trayY);
+
+        if (dist < 120) {
+          // Find closest cookie on preparation tray
+          let closestCookie = null;
+          let minDist = 99999;
+          const count = this.prepTrayCookies.length;
+          const spacing = 35;
+          const startXLoc = this.trayX - ((count - 1) * spacing) / 2;
+
+          this.prepTrayCookies.forEach((cookie, index) => {
+            const cx = startXLoc + index * spacing;
+            const cy = this.trayY;
+            const distCookie = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, cx, cy);
+            if (distCookie < 120 && distCookie < minDist) {
+              minDist = distCookie;
+              closestCookie = cookie;
+            }
+          });
+
+          if (closestCookie) {
+            // Consume stock!
+            this.stock.topping[t.id]--;
+            this.updateStockTexts();
+
+            closestCookie.toppings = [t.id];
+            this.updateCookieVisuals();
+            this.showFeedbackText(`¡Añadido ${t.label}! ✨`, this.trayX, 200, '#38b000');
+          } else {
+            const distToTrayCenter = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, this.trayX, this.trayY);
+            if (distToTrayCenter < 120) {
+              this.showFeedbackText('¡Primero selecciona la masa!', this.trayX, 200, '#d90429');
+            }
+          }
+        }
+
+        jarClone.destroy();
+        jarClone = null;
+        jarSource.setAlpha(1);
+        jarSource.setDisplaySize(jarSize, jarSize);
+        dragZone.x = x;
+        dragZone.y = y;
+      });
     });
+  }
+
+  updateStockTexts() {
+    // 1. Dough Stock
+    if (this.doughStockTexts) {
+      Object.keys(this.doughStockTexts).forEach(id => {
+        const qty = this.stock.dough[id];
+        const textObj = this.doughStockTexts[id];
+        const imgObj = this.doughButtons[id];
+        if (textObj) {
+          textObj.setText(qty === Infinity ? 'Stock: ∞' : `Stock: ${qty}`);
+          // Update visual tint
+          if (imgObj) {
+            if (qty <= 0) {
+              imgObj.setTint(0x777777);
+              imgObj.setAlpha(0.5);
+            } else {
+              imgObj.clearTint();
+              imgObj.setAlpha(1);
+            }
+          }
+        }
+      });
+    }
+
+    // 2. Topping Stock
+    if (this.toppingStockTexts) {
+      Object.keys(this.toppingStockTexts).forEach(id => {
+        const qty = this.stock.topping[id];
+        const textObj = this.toppingStockTexts[id];
+        const imgObj = this.toppingButtons[id];
+        if (textObj) {
+          textObj.setText(`Stock: ${qty}`);
+          // Update visual tint
+          if (imgObj) {
+            if (qty <= 0) {
+              imgObj.setTint(0x777777);
+              imgObj.setAlpha(0.5);
+            } else {
+              imgObj.clearTint();
+              imgObj.setAlpha(1);
+            }
+          }
+        }
+      });
+    }
   }
 
   createCookieTray(width, height) {
@@ -964,11 +1081,9 @@ export default class GameScene extends Phaser.Scene {
 
           // 1. Drop on Trash Bin
           if (distTrash < 70) {
-            this.coins = Math.max(0, this.coins - 5);
-            this.coinsText.setText(`Monedas: ${this.coins}`);
             this.prepTrayCookies.splice(cookieIdx, 1);
             this.updateCookieVisuals();
-            this.showFeedbackText('-5 Monedas (Desperdicio) 🗑️', this.trashBinX, this.trashBinY - 50, '#d90429');
+            this.showFeedbackText('¡Desechada! 🗑️', this.trashBinX, this.trashBinY - 50, '#d90429');
 
             // Play vacuum fade/shrink animation
             this.tweens.add({
@@ -1059,7 +1174,16 @@ export default class GameScene extends Phaser.Scene {
     if (this.customersSpawned >= this.config.maxCustomers) {
       // Day ended, check progression
       this.time.delayedCall(1000, () => {
-        this.scene.start('SummaryScene', { day: this.day, coins: this.coins, meta: this.config.meta });
+        this.scene.start('SummaryScene', {
+          day: this.day,
+          coins: this.coins,
+          meta: this.config.meta,
+          coinsAtStart: this.coinsAtStart,
+          unlockedShapesAtStart: this.unlockedShapesAtStart,
+          stockAtStart: this.stockAtStart,
+          unlockedShapes: this.unlockedShapes,
+          stock: this.stock
+        });
       });
       return;
     }
@@ -1081,6 +1205,29 @@ export default class GameScene extends Phaser.Scene {
     );
   }
 
+  getCookieValue(cookieOrRecipe) {
+    if (!cookieOrRecipe) return 0;
+    
+    // Dough base value
+    const doughValues = { classic: 20, chocolate: 35, oat: 45 };
+    const baseVal = doughValues[cookieOrRecipe.base] || 20;
+
+    // Shape value
+    const shapeValues = { star: 5, heart: 10, cat: 20, fish: 30 };
+    const shapeVal = shapeValues[cookieOrRecipe.shape] || 5;
+
+    // Toppings value
+    const toppingValues = { sprinkles: 10, choco: 15, glazing: 25 };
+    let toppingVal = 0;
+    if (cookieOrRecipe.toppings && cookieOrRecipe.toppings.length > 0) {
+      cookieOrRecipe.toppings.forEach(t => {
+        toppingVal += toppingValues[t] || 0;
+      });
+    }
+
+    return baseVal + shapeVal + toppingVal;
+  }
+
   deliverCookie() {
     if (!this.currentCustomer) return;
 
@@ -1094,6 +1241,9 @@ export default class GameScene extends Phaser.Scene {
     const accumulated = this.currentCustomer.acceptedCookies || [];
     const newDelivered = this.deliveryTrayCookies;
     const totalCount = accumulated.length + newDelivered.length;
+
+    // Dynamic base selling price based on ingredients
+    const maxVal = this.getCookieValue(recipe);
 
     // Check if we delivered fewer cookies than requested
     if (totalCount < requested) {
@@ -1117,7 +1267,7 @@ export default class GameScene extends Phaser.Scene {
         allCookies.forEach(cookie => {
           const sim = cookie.getSimilarityPercentage(recipe);
           if (sim === 100) anyPerfect = true;
-          totalReward += Math.round(60 * (sim / 100));
+          totalReward += Math.round(maxVal * (sim / 100));
         });
 
         this.coins += totalReward;
@@ -1178,7 +1328,7 @@ export default class GameScene extends Phaser.Scene {
       for (let i = 0; i < requested; i++) {
         const sim = allCookies[i].getSimilarityPercentage(recipe);
         if (sim === 100) anyPerfect = true;
-        totalReward += Math.round(60 * (sim / 100));
+        totalReward += Math.round(maxVal * (sim / 100));
       }
 
       // Calculate penalty for excess cookies
@@ -1191,7 +1341,7 @@ export default class GameScene extends Phaser.Scene {
       if (excessCount > 0) {
         this.showFeedbackText(`¡Pedido completo! +${totalReward} (Exceso: -${wastePenalty}) 🗑️`, this.trayX, 200, '#ffb703');
       } else {
-        const avgSim = totalReward / (requested * 60);
+        const avgSim = totalReward / (requested * maxVal);
         let feedback = '¡Pedido completado! 👍';
         let color = '#38b000';
         if (anyPerfect && avgSim >= 0.95) {
@@ -1666,12 +1816,9 @@ export default class GameScene extends Phaser.Scene {
 
         const count = this.deliveryTrayCookies.length;
         if (count > 0) {
-          const penalty = count * 5;
-          this.coins = Math.max(0, this.coins - penalty);
-          this.coinsText.setText(`Monedas: ${this.coins}`);
           this.deliveryTrayCookies = [];
           this.drawDeliveryTray();
-          this.showFeedbackText(`-${penalty} Monedas (Desperdicio) 🗑️`, this.trashBinX, this.trashBinY - 50, '#d90429');
+          this.showFeedbackText('¡Bandeja Vaciada! 🗑️', this.trashBinX, this.trashBinY - 50, '#d90429');
         }
       }
 

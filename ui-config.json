@@ -32,8 +32,8 @@
   "formaLabel": {
     "width": 70,
     "height": 66,
-    "x": 273,
-    "y": 297
+    "x": 269,
+    "y": 298
   },
   "toppingLabel": {
     "width": 75,
@@ -44,7 +44,7 @@
   "deliveryTray": {
     "width": 200,
     "height": 50,
-    "x": 512,
-    "y": 370
+    "x": 553,
+    "y": 360
   }
 }
