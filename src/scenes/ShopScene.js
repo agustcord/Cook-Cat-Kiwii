@@ -109,20 +109,25 @@ export default class ShopScene extends Phaser.Scene {
 
       // Draw item icon sprite inside the circle
       let iconTexture = '';
-      let iconScale = 1.0;
+      let targetW = 38;
+      let targetH = 38;
+
       if (item.type === 'mold') {
         iconTexture = 'shape_' + item.id;
-        iconScale = 0.75;
+        targetW = 36;
+        targetH = 36;
       } else if (item.type === 'dough') {
         iconTexture = 'dough_' + item.id;
-        iconScale = 0.55;
+        targetW = 38;
+        targetH = 38;
       } else if (item.type === 'topping') {
         iconTexture = 'topping_' + item.id;
-        iconScale = 0.55;
+        targetW = 36;
+        targetH = 36;
       }
       
       const itemIcon = this.add.image(x - 110, y, iconTexture);
-      itemIcon.setScale(iconScale);
+      itemIcon.setDisplaySize(targetW, targetH);
 
       // Render Item details
       let nameTxt, descTxt, statusTxt;
