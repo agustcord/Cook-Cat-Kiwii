@@ -593,7 +593,7 @@ export default class GameScene extends Phaser.Scene {
       // Start baking
       this.isBaking = true;
       this.ovenTimeElapsed = 0;
-      this.ovenBtnText.setText('RETIRAR');
+      this.ovenBtnText.setText('APAGAR');
       this.ovenBarFill.clear();
       this.ovenImage.setTexture('oven_on'); // Switch to lit oven
       this.updateCookieVisuals();
