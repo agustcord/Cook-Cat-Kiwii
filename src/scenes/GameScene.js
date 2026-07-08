@@ -187,6 +187,86 @@ export default class GameScene extends Phaser.Scene {
       }
     });
 
+    // --- UI EDITOR MODE INITIALIZATION ---
+    this.isEditorMode = false;
+    this.selectedEditorElement = null;
+
+    // Create editor status text (hidden by default)
+    this.editorIndicator = this.add.text(width / 2, 20, '🛠️ MODO EDITOR DE UI ACTIVO\n[Arrastra letreros / ⬆️⬇️⬅️➡️ para Redimensionar / S para Guardar / E para Salir]', {
+      font: '16px "Outfit", sans-serif',
+      fill: '#ffffff',
+      backgroundColor: '#d90429',
+      padding: { x: 15, y: 10 },
+      align: 'center',
+      fontWeight: '800'
+    }).setOrigin(0.5, 0).setDepth(20000).setVisible(false);
+
+    // Keyboard inputs
+    this.input.keyboard.on('keydown-E', () => {
+      this.toggleEditorMode();
+    });
+
+    this.input.keyboard.on('keydown-S', () => {
+      if (this.isEditorMode) {
+        this.saveUIConfig();
+      }
+    });
+
+    // Arrow keys for resizing
+    this.input.keyboard.on('keydown-UP', () => {
+      this.resizeSelectedElement(0, 2);
+    });
+    this.input.keyboard.on('keydown-DOWN', () => {
+      this.resizeSelectedElement(0, -2);
+    });
+    this.input.keyboard.on('keydown-RIGHT', () => {
+      this.resizeSelectedElement(2, 0);
+    });
+    this.input.keyboard.on('keydown-LEFT', () => {
+      this.resizeSelectedElement(-2, 0);
+    });
+
+    // List of editable UI elements
+    const { daySign, coinsSign, metaSign } = UI_CONFIG;
+    this.editableUIElements = [
+      { key: 'daySign', bg: this.daySignImage, text: this.daySignText, textOffsetX: daySign.width / 2, textOffsetY: daySign.textOffsetY },
+      { key: 'coinsSign', bg: this.coinsSignImage, text: this.coinsText, textOffsetX: 0, textOffsetY: coinsSign.textOffsetY },
+      { key: 'metaSign', bg: this.metaSignImage, text: this.metaText, textOffsetX: -metaSign.width / 2, textOffsetY: metaSign.textOffsetY },
+      { key: 'masaLabel', bg: this.masaLabelImage, text: null },
+      { key: 'formaLabel', bg: this.formaLabelImage, text: null },
+      { key: 'toppingLabel', bg: this.toppingLabelImage, text: null }
+    ];
+
+    // Setup drag events for UI elements (only active in editor mode)
+    this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
+      if (!this.isEditorMode) return;
+
+      const element = this.editableUIElements.find(el => el.bg === gameObject);
+      if (element) {
+        // Select it
+        this.selectElement(element);
+
+        // Update background position
+        gameObject.x = dragX;
+        gameObject.y = dragY;
+
+        // If there's associated text, update it using its offset
+        if (element.text) {
+          element.text.x = dragX + element.textOffsetX;
+          element.text.y = dragY + element.textOffsetY;
+        }
+      }
+    });
+
+    // Setup click selection
+    this.editableUIElements.forEach(element => {
+      element.bg.on('pointerdown', () => {
+        if (this.isEditorMode) {
+          this.selectElement(element);
+        }
+      });
+    });
+
     // Clean up: Restore default browser cursor when leaving the scene
     this.events.on('shutdown', () => {
       this.input.setDefaultCursor('default');
@@ -201,42 +281,45 @@ export default class GameScene extends Phaser.Scene {
   setupHUD(width) {
     // Day indicator WITH DECORATIVE SIGN!
     const { daySign } = UI_CONFIG;
-    this.add.image(daySign.x, daySign.y, 'day_sign_empty')
+    this.daySignImage = this.add.image(daySign.x, daySign.y, 'day_sign_empty')
       .setDisplaySize(daySign.width, daySign.height)
-      .setOrigin(0, 0.5);
+      .setOrigin(0, 0.5)
+      .setDepth(1);
     
-    this.add.text(daySign.x + daySign.width / 2, daySign.y + daySign.textOffsetY, `DÍA ${this.day}`, {
+    this.daySignText = this.add.text(daySign.x + daySign.width / 2, daySign.y + daySign.textOffsetY, `DÍA ${this.day}`, {
       font: `${daySign.textFontSize}px "Outfit", sans-serif`,
       fill: '#582f0e',
       fontWeight: '800'
-    }).setOrigin(0.5, 0.5);
+    }).setOrigin(0.5, 0.5).setDepth(1);
 
     // Coins counter WITH DECORATIVE SIGN!
     const { coinsSign } = UI_CONFIG;
-    this.add.image(coinsSign.x, coinsSign.y, 'coins_sign_empty')
+    this.coinsSignImage = this.add.image(coinsSign.x, coinsSign.y, 'coins_sign_empty')
       .setDisplaySize(coinsSign.width, coinsSign.height)
-      .setOrigin(0.5, 0.5);
+      .setOrigin(0.5, 0.5)
+      .setDepth(1);
     
     this.coinsText = this.add.text(coinsSign.x, coinsSign.y + coinsSign.textOffsetY, `Monedas: ${this.coins}`, {
       font: `${coinsSign.textFontSize}px "Outfit", sans-serif`,
       fill: '#582f0e',
       fontWeight: '800'
-    }).setOrigin(0.5, 0.5);
+    }).setOrigin(0.5, 0.5).setDepth(1);
 
     // Meta target indicator WITH DECORATIVE SIGN!
     let { metaSign } = UI_CONFIG;
     const finalX = metaSign.x === "width" ? width : metaSign.x;
     
-    this.add.image(finalX, metaSign.y, 'meta_sign_empty')
+    this.metaSignImage = this.add.image(finalX, metaSign.y, 'meta_sign_empty')
       .setDisplaySize(metaSign.width, metaSign.height)
-      .setOrigin(1, 0.5);
+      .setOrigin(1, 0.5)
+      .setDepth(1);
     
     const textX = finalX - metaSign.width / 2;
     this.metaText = this.add.text(textX, metaSign.y + metaSign.textOffsetY, `Meta: ${this.config.meta}`, {
       font: `${metaSign.textFontSize}px "Outfit", sans-serif`,
       fill: '#582f0e',
       fontWeight: '800'
-    }).setOrigin(0.5, 0.5);
+    }).setOrigin(0.5, 0.5).setDepth(1);
   }
 
   createStations(width, height) {
@@ -255,7 +338,7 @@ export default class GameScene extends Phaser.Scene {
 
   createDoughButtons(startX, startY) {
     const { masaLabel } = UI_CONFIG;
-    this.add.image(masaLabel.x, masaLabel.y, 'masa_label')
+    this.masaLabelImage = this.add.image(masaLabel.x, masaLabel.y, 'masa_label')
       .setDisplaySize(masaLabel.width, masaLabel.height)
       .setOrigin(0.5)
       .setDepth(1);
@@ -352,7 +435,7 @@ export default class GameScene extends Phaser.Scene {
 
   createShapeButtons(startX, startY) {
     const { formaLabel } = UI_CONFIG;
-    this.add.image(formaLabel.x, formaLabel.y, 'forma_label')
+    this.formaLabelImage = this.add.image(formaLabel.x, formaLabel.y, 'forma_label')
       .setDisplaySize(formaLabel.width, formaLabel.height)
       .setOrigin(0.5)
       .setDepth(1);
@@ -564,7 +647,7 @@ export default class GameScene extends Phaser.Scene {
 
   createToppingButtons(startX, startY) {
     const { toppingLabel } = UI_CONFIG;
-    this.add.image(toppingLabel.x, toppingLabel.y, 'topping_label')
+    this.toppingLabelImage = this.add.image(toppingLabel.x, toppingLabel.y, 'topping_label')
       .setDisplaySize(toppingLabel.width, toppingLabel.height)
       .setOrigin(0.5)
       .setDepth(1);
@@ -1065,6 +1148,126 @@ export default class GameScene extends Phaser.Scene {
       // Inner fill (cream fur matching the paw asset)
       this.catArmGraphics.lineStyle(34, 0xf5ebe0);
       this.catArmGraphics.strokePoints(points);
+    }
+  }
+
+  toggleEditorMode() {
+    this.isEditorMode = !this.isEditorMode;
+    
+    // Toggle visual indicator
+    this.editorIndicator.setVisible(this.isEditorMode);
+
+    // Disable standard cursor hiding if in editor mode, so we see normal cursor
+    if (this.isEditorMode) {
+      this.input.setDefaultCursor('default');
+      if (this.catPawSprite) this.catPawSprite.setVisible(false);
+    } else {
+      this.input.setDefaultCursor('none');
+      if (this.catPawSprite) this.catPawSprite.setVisible(true);
+      this.selectElement(null);
+    }
+
+    // Toggle interactiveness and draggable state for editable UI elements
+    this.editableUIElements.forEach(element => {
+      if (this.isEditorMode) {
+        element.bg.setInteractive({ useHandCursor: true });
+        this.input.setDraggable(element.bg);
+        // Highlight elements slightly in editor mode so user knows they are editable
+        element.bg.setTint(0xffcccc);
+      } else {
+        element.bg.disableInteractive();
+        this.input.setDraggable(element.bg, false);
+        element.bg.clearTint();
+      }
+    });
+
+    this.showFeedbackText(
+      this.isEditorMode ? 'Modo Editor Activo 🛠️' : 'Modo Juego Activo 🎮',
+      this.cameras.main.width / 2,
+      100,
+      this.isEditorMode ? '#d90429' : '#38b000'
+    );
+  }
+
+  selectElement(element) {
+    // Clear previous selection tint
+    if (this.selectedEditorElement) {
+      this.selectedEditorElement.bg.setTint(0xffcccc);
+    }
+
+    this.selectedEditorElement = element;
+    if (element) {
+      element.bg.setTint(0x38b000); // Green tint for selected element
+      this.showFeedbackText(`Seleccionado: ${element.key}`, this.cameras.main.width / 2, 100, '#38b000');
+    }
+  }
+
+  resizeSelectedElement(dw, dh) {
+    if (!this.isEditorMode || !this.selectedEditorElement) return;
+
+    const el = this.selectedEditorElement;
+    const bg = el.bg;
+
+    // Calculate new size
+    const newWidth = Math.max(10, bg.displayWidth + dw);
+    const newHeight = Math.max(10, bg.displayHeight + dh);
+
+    bg.setDisplaySize(newWidth, newHeight);
+
+    // Update text offsets if needed
+    if (el.key === 'daySign') {
+      el.textOffsetX = newWidth / 2;
+    } else if (el.key === 'metaSign') {
+      el.textOffsetX = -newWidth / 2;
+    }
+
+    // Reposition text if present
+    if (el.text) {
+      el.text.x = bg.x + el.textOffsetX;
+      el.text.y = bg.y + el.textOffsetY;
+    }
+  }
+
+  saveUIConfig() {
+    // Generate config matching ui-config.json format
+    const newConfig = {};
+
+    // Get current values from active sprites
+    this.editableUIElements.forEach(element => {
+      // Find original config values to preserve textFontSize, textOffsetY, etc.
+      const originalKey = element.key;
+      const original = UI_CONFIG[originalKey];
+
+      newConfig[originalKey] = {
+        width: Math.round(element.bg.displayWidth),
+        height: Math.round(element.bg.displayHeight),
+        x: Math.round(element.bg.x),
+        y: Math.round(element.bg.y)
+      };
+
+      // Preserve special text properties if they exist
+      if (original.textFontSize !== undefined) newConfig[originalKey].textFontSize = original.textFontSize;
+      if (original.textOffsetY !== undefined) newConfig[originalKey].textOffsetY = original.textOffsetY;
+    });
+
+    const jsonStr = JSON.stringify(newConfig, null, 2);
+
+    // Copy to clipboard
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(jsonStr).then(() => {
+        this.showFeedbackText('¡Configuración copiada al portapapeles! 📋', this.cameras.main.width / 2, 100, '#38b000');
+        console.log('--- NUEVO UI CONFIG (COPIADO) ---');
+        console.log(jsonStr);
+      }).catch(err => {
+        console.error('Error al copiar al portapapeles:', err);
+        this.showFeedbackText('Error al copiar. Mira la consola (F12). ⚠️', this.cameras.main.width / 2, 100, '#d90429');
+        console.log('--- NUEVO UI CONFIG (Copia manual) ---');
+        console.log(jsonStr);
+      });
+    } else {
+      this.showFeedbackText('Copiado fallido. Mira la consola (F12). ⚠️', this.cameras.main.width / 2, 100, '#d90429');
+      console.log('--- NUEVO UI CONFIG ---');
+      console.log(jsonStr);
     }
   }
 }

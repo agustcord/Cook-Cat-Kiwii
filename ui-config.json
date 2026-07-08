@@ -12,7 +12,7 @@
     "height": 150,
     "x": 725,
     "y": 70,
-    "textFontSize":18,
+    "textFontSize": 18,
     "textOffsetY": 8
   },
   "metaSign": {
@@ -26,19 +26,19 @@
   "masaLabel": {
     "width": 90,
     "height": 50,
-    "x": 80,
-    "y": 285
+    "x": 81,
+    "y": 300
   },
   "formaLabel": {
     "width": 70,
     "height": 66,
-    "x": 270,
-    "y": 285
+    "x": 273,
+    "y": 297
   },
   "toppingLabel": {
     "width": 75,
     "height": 65,
-    "x": 942,
-    "y": 285
+    "x": 968,
+    "y": 295
   }
 }
