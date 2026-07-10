@@ -648,8 +648,14 @@ export default class GameScene extends Phaser.Scene {
 
     // Oven Image placed higher (startY - 40, which is Y = 295). Starts with oven OFF
     this.ovenImage = this.add.image(this.ovenX, this.ovenY, 'oven_off')
-      .setDepth(2)
-      .setInteractive({ useHandCursor: true });
+      .setDepth(2);
+    
+    // Set a custom bounded hit area to prevent clicking outside the visible oven
+    const hitW = 90;
+    const hitH = 95;
+    const hitX = (this.ovenImage.width - hitW) / 2;
+    const hitY = (this.ovenImage.height - hitH) / 2;
+    this.ovenImage.setInteractive(new Phaser.Geom.Rectangle(hitX, hitY, hitW, hitH), Phaser.Geom.Rectangle.Contains);
     
     this.ovenImage.on('pointerdown', () => {
       this.handleOvenImageClick();
@@ -665,7 +671,7 @@ export default class GameScene extends Phaser.Scene {
       fontWeight: '800'
     }).setOrigin(0.5).setDepth(11);
  
-    this.ovenZone = this.add.rectangle(startX + 55, startY + 62, 110, 35, 0x000000, 0).setInteractive({ useHandCursor: true }).setDepth(12);
+    this.ovenZone = this.add.rectangle(startX + 55, startY + 62, 95, 35, 0x000000, 0).setInteractive({ useHandCursor: true }).setDepth(12);
     this.ovenZone.on('pointerdown', () => {
       this.handleOvenClick();
     });
@@ -686,7 +692,7 @@ export default class GameScene extends Phaser.Scene {
       fontWeight: '800'
     }).setOrigin(0.5).setDepth(11);
 
-    this.ovenExtractZone = this.add.rectangle(startX + 55, startY + 140, 110, 30, 0x000000, 0)
+    this.ovenExtractZone = this.add.rectangle(startX + 55, startY + 140, 95, 30, 0x000000, 0)
       .setInteractive({ useHandCursor: true })
       .setDepth(12);
 
@@ -1662,7 +1668,7 @@ export default class GameScene extends Phaser.Scene {
     this.deliveryTraySprites = [];
     
     // Make the delivery tray draggable via an invisible interactive zone
-    this.deliveryDragZone = this.add.rectangle(this.deliveryTrayX, this.deliveryTrayY, this.deliveryTrayWidth, this.deliveryTrayHeight, 0x000000, 0.01)
+    this.deliveryDragZone = this.add.rectangle(this.deliveryTrayX, this.deliveryTrayY, this.deliveryTrayWidth, this.deliveryTrayHeight, 0x000000, 0)
       .setInteractive({ useHandCursor: true })
       .setDepth(15);
     this.input.setDraggable(this.deliveryDragZone);
