@@ -56,6 +56,7 @@ export default class MainMenuScene extends Phaser.Scene {
       this.scene.start('GameScene', {
         day: 1,
         coins: 0,
+        loanRemaining: 200,
         unlockedShapes: ['star'],
         stock: {
           dough: { classic: 10, chocolate: 0, oat: 0 },

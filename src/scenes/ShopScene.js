@@ -14,6 +14,7 @@ export default class ShopScene extends Phaser.Scene {
       dough: { classic: 10, chocolate: 0, oat: 0 },
       topping: { sprinkles: 0, choco: 0, glazing: 0 }
     };
+    this.loanRemaining = safeData.loanRemaining !== undefined ? safeData.loanRemaining : 200;
   }
 
   create() {
@@ -279,7 +280,8 @@ export default class ShopScene extends Phaser.Scene {
         day: this.day + 1,
         coins: this.coins,
         unlockedShapes: this.unlockedShapes,
-        stock: this.stock
+        stock: this.stock,
+        loanRemaining: this.loanRemaining
       });
     });
 

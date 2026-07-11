@@ -74,6 +74,7 @@ export default class GameScene extends Phaser.Scene {
     const safeData = data || {};
     this.day = safeData.day || 1;
     this.coins = safeData.coins || 0;
+    this.loanRemaining = safeData.loanRemaining !== undefined ? safeData.loanRemaining : 200;
     this.config = DAY_CONFIGS[this.day];
 
     // Load state from data, or fallback to Day 1 starting kit
@@ -85,6 +86,7 @@ export default class GameScene extends Phaser.Scene {
 
     // Save starting state of the day for re-tries
     this.coinsAtStart = this.coins;
+    this.loanRemainingAtStart = this.loanRemaining;
     this.unlockedShapesAtStart = [...this.unlockedShapes];
     this.stockAtStart = JSON.parse(JSON.stringify(this.stock));
     
@@ -1184,6 +1186,8 @@ export default class GameScene extends Phaser.Scene {
           day: this.day,
           coins: this.coins,
           meta: this.config.meta,
+          loanRemaining: this.loanRemaining,
+          loanRemainingAtStart: this.loanRemainingAtStart,
           coinsAtStart: this.coinsAtStart,
           unlockedShapesAtStart: this.unlockedShapesAtStart,
           stockAtStart: this.stockAtStart,

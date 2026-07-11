@@ -5,6 +5,8 @@ import MainMenuScene from './scenes/MainMenuScene.js';
 import GameScene from './scenes/GameScene.js';
 import SummaryScene from './scenes/SummaryScene.js';
 import ShopScene from './scenes/ShopScene.js';
+import GameOverScene from './scenes/GameOverScene.js';
+import VictoryScene from './scenes/VictoryScene.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -24,7 +26,7 @@ const config = {
     autoCenter: Phaser.Scale.CENTER_BOTH
   },
   // We don't need complex physics for our recipe drag-and-drop mechanics
-  scene: [BootScene, MainMenuScene, GameScene, SummaryScene, ShopScene]
+  scene: [BootScene, MainMenuScene, GameScene, SummaryScene, ShopScene, GameOverScene, VictoryScene]
 };
 
 // Create the game instance when the window loads
