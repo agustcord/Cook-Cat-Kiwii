@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 export default class Customer {
-  constructor(scene, x, y, dayConfig, onTimeoutCallback, customerId, assignedRecipe) {
+  constructor(scene, x, y, dayConfig, onTimeoutCallback, customerId, assignedRecipe, forcedQuantity) {
     this.scene = scene;
     this.x = x;
     this.y = y;
@@ -16,18 +16,23 @@ export default class Customer {
     const badDayChance = badDayProbabilities[day] || 0.50;
     this.isBadDay = Math.random() < badDayChance;
 
-    // Roll for requested cookie quantity (1 to 5) based on day progress and personality
-    const capD = Math.min(5, 1 + day);
-    const QUANTITY_RANGES = {
-      1: { min: 1, max: 3 }, // Dormilón
-      2: { min: 2, max: 4 }, // Oficinista
-      3: { min: 3, max: 5 }, // Abuelita
-      4: { min: 1, max: 2 }, // Estudiante
-      5: { min: 2, max: 5 }  // Gamer
-    };
-    const range = QUANTITY_RANGES[this.customerId] || { min: 1, max: 2 };
-    const rawQuantity = Phaser.Math.Between(range.min, range.max);
-    this.requestedQuantity = Math.max(1, Math.min(rawQuantity, capD));
+    // Set requested quantity
+    if (forcedQuantity !== undefined) {
+      this.requestedQuantity = forcedQuantity;
+    } else {
+      const capD = Math.min(5, 1 + day);
+      const QUANTITY_RANGES = {
+        1: { min: 1, max: 3 }, // Dormilón
+        2: { min: 2, max: 4 }, // Oficinista
+        3: { min: 3, max: 5 }, // Abuelita
+        4: { min: 1, max: 2 }, // Estudiante
+        5: { min: 2, max: 5 }  // Gamer
+      };
+      const range = QUANTITY_RANGES[this.customerId] || { min: 1, max: 2 };
+      const rawQuantity = Phaser.Math.Between(range.min, range.max);
+      this.requestedQuantity = Math.max(1, Math.min(rawQuantity, capD));
+    }
+    
     this.receivedCookiesCount = 0;
     this.acceptedCookies = [];
 
@@ -44,8 +49,12 @@ export default class Customer {
       multiplier *= 0.80; // 20% reduction in patience on a bad day
     }
 
-    // Patience scaled by character personality multiplier and mood
-    this.maxPatience = (dayConfig.patienceTime || 30) * multiplier;
+    // Patience scaled by character personality, mood, and quantity requested
+    let basePatience = (dayConfig.patienceTime || 30) * multiplier;
+    const quantityMultipliers = { 1: 1.0, 2: 1.2, 3: 1.4, 4: 1.8, 5: 2.0 };
+    const qtyMult = quantityMultipliers[this.requestedQuantity] || 1.0;
+    
+    this.maxPatience = basePatience * qtyMult;
     this.patience = this.maxPatience;
     this.onTimeoutCallback = onTimeoutCallback;
     this.isActive = true;

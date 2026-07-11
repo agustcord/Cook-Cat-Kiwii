@@ -113,45 +113,6 @@ export default class GameScene extends Phaser.Scene {
     }
     this.customerSequence = sequence.slice(0, this.config.maxCustomers);
     
-    // Generate non-repeating recipe sequence for the day
-    // Filter recipes based on unlocked shapes and stock
-    const filteredRecipes = (this.config.recipes || []).filter(recipe => {
-      // 1. Check if shape is unlocked
-      if (!this.unlockedShapes.includes(recipe.shape)) return false;
-      // 2. Check if we have stock of the required dough
-      if ((this.stock.dough[recipe.base] || 0) <= 0) return false;
-      // 3. Check if we have stock of all required toppings
-      if (recipe.toppings && recipe.toppings.length > 0) {
-        for (const topping of recipe.toppings) {
-          if ((this.stock.topping[topping] || 0) <= 0) return false;
-        }
-      }
-      return true;
-    });
-
-    // Fallback if no recipe is makeable (or if filtered list is empty)
-    // We fallback to Classic Star with no toppings!
-    const fallbackRecipe = { name: 'Estrella Clásica', base: 'classic', shape: 'star', toppings: [] };
-    const recipesToUse = filteredRecipes.length > 0 ? filteredRecipes : [fallbackRecipe];
-
-    let recipeSeq = [];
-    while (recipeSeq.length < this.config.maxCustomers) {
-      let recipePool = [...recipesToUse];
-      // Fisher-Yates shuffle
-      for (let i = recipePool.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [recipePool[i], recipePool[j]] = [recipePool[j], recipePool[i]];
-      }
-      // Anti-repeat: if the first recipe of this batch matches the last of the previous batch, swap it
-      if (recipeSeq.length > 0 && recipePool.length > 1 && recipePool[0] === recipeSeq[recipeSeq.length - 1]) {
-        // Swap first with a random other position
-        const swapIdx = 1 + Math.floor(Math.random() * (recipePool.length - 1));
-        [recipePool[0], recipePool[swapIdx]] = [recipePool[swapIdx], recipePool[0]];
-      }
-      recipeSeq = recipeSeq.concat(recipePool);
-    }
-    this.recipeSequence = recipeSeq.slice(0, this.config.maxCustomers);
-    
     // Time-based oven state
     this.isBaking = false;
     this.cookiesInOven = []; // Holds Cookie instances currently in the oven
@@ -1198,10 +1159,56 @@ export default class GameScene extends Phaser.Scene {
       return;
     }
 
-    // Get the pre-calculated unique customer ID and recipe for this step
+    // Get the unique customer ID
     const customerId = this.customerSequence[this.customersSpawned];
-    const assignedRecipe = this.recipeSequence[this.customersSpawned];
     this.customersSpawned++;
+
+    // Filter recipes based on unlocked shapes and currently available stock (> 0)
+    const availableRecipes = (this.config.recipes || []).filter(recipe => {
+      if (!this.unlockedShapes.includes(recipe.shape)) return false;
+      if ((this.stock.dough[recipe.base] || 0) <= 0) return false;
+      if (recipe.toppings && recipe.toppings.length > 0) {
+        for (const topping of recipe.toppings) {
+          if ((this.stock.topping[topping] || 0) <= 0) return false;
+        }
+      }
+      return true;
+    });
+
+    let selectedRecipe = null;
+    let qty = 1;
+
+    if (availableRecipes.length > 0) {
+      // Pick a random valid recipe from the ones we have ingredients for
+      selectedRecipe = Phaser.Utils.Array.GetRandom(availableRecipes);
+
+      // Determine requested quantity based on customer personality and day limits
+      const QUANTITY_RANGES = {
+        1: { min: 1, max: 3 }, // Dormilón
+        2: { min: 2, max: 4 }, // Oficinista
+        3: { min: 3, max: 5 }, // Abuelita
+        4: { min: 1, max: 2 }, // Estudiante
+        5: { min: 2, max: 5 }  // Gamer
+      };
+      const range = QUANTITY_RANGES[customerId] || { min: 1, max: 2 };
+      const capD = Math.min(5, 1 + this.day);
+      let rawQty = Phaser.Math.Between(range.min, range.max);
+      rawQty = Math.max(1, Math.min(rawQty, capD));
+
+      // Clamp quantity to remaining stock of dough and toppings
+      let stockLimit = this.stock.dough[selectedRecipe.base] || 0;
+      if (selectedRecipe.toppings && selectedRecipe.toppings.length > 0) {
+        selectedRecipe.toppings.forEach(topping => {
+          stockLimit = Math.min(stockLimit, this.stock.topping[topping] || 0);
+        });
+      }
+      qty = Math.min(rawQty, stockLimit);
+      qty = Math.max(1, qty); // Ensure at least 1
+    } else {
+      // Fallback: no stock left, ask for 1 Classic Star (technical bankruptcy fallback)
+      selectedRecipe = { name: 'Estrella Clásica', base: 'classic', shape: 'star', toppings: [] };
+      qty = 1;
+    }
 
     // Spawn customer in the counter area (centered at 512, 230)
     this.currentCustomer = new Customer(
@@ -1211,7 +1218,8 @@ export default class GameScene extends Phaser.Scene {
       this.config,
       () => this.handleCustomerTimeout(), // callback when patience runs out
       customerId,
-      assignedRecipe
+      selectedRecipe,
+      qty
     );
   }
 
