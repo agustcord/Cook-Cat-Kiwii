@@ -153,22 +153,37 @@ export default class BootScene extends Phaser.Scene {
     g.strokeRoundedRect(10, 10, 90, 90, 8);
     // Dark brew area/grate
     g.fillStyle(0x2c3e50, 1);
-    g.fillRect(20, 50, 70, 40);
+    g.fillRect(20, 52, 70, 38);
     // Silver tray plate
     g.fillStyle(0xbdc3c7, 1);
     g.fillRect(25, 82, 60, 6);
     // Portafilter head (dispenser nozzle)
     g.fillStyle(0x111111, 1);
-    g.fillRect(45, 42, 20, 8);
-    // Red indicator light
-    g.fillStyle(0xe74c3c, 1);
-    g.fillCircle(30, 25, 4);
-    // Green indicator light
-    g.fillStyle(0x2ecc71, 1);
-    g.fillCircle(45, 25, 4);
-    // Steam knob
-    g.fillStyle(0x34495e, 1);
-    g.fillCircle(75, 25, 6);
+    g.fillRect(45, 44, 20, 8);
+    
+    // Coffee Button (circle at 30, 26)
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(30, 26, 10);
+    g.lineStyle(1.5, 0x5c3d2e, 1);
+    g.strokeCircle(30, 26, 10);
+    // Tiny coffee bean inside coffee button
+    g.fillStyle(0x5c3d2e, 1);
+    g.fillEllipse(30, 26, 3, 6);
+    
+    // Milk Button (circle at 60, 26)
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(60, 26, 10);
+    g.lineStyle(1.5, 0x00b4d8, 1);
+    g.strokeCircle(60, 26, 10);
+    // Tiny milk carton inside milk button
+    g.fillStyle(0x00b4d8, 1);
+    g.fillRect(58, 22, 4, 8);
+    
+    // Steam knob (at 86, 26)
+    g.fillStyle(0x7f8c8d, 1);
+    g.fillCircle(86, 26, 6);
+    g.lineStyle(1, 0x333333, 1);
+    g.strokeCircle(86, 26, 6);
     g.generateTexture('drink_machine', 110, 110);
 
     // 4. Base Cup Drawer helper

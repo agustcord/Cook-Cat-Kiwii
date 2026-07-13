@@ -718,66 +718,54 @@ export default class GameScene extends Phaser.Scene {
       this.pickupDrink();
     });
 
-    // 4. Ingredient Jars/Buttons (Coffee Beans and Milk)
-    const jarSize = 40;
-    const beansX = startX - 32;
-    const milkX = startX + 32;
-    const jarY = startY + 95;
+    // 4. Ingredient Click Zones directly on the machine panel (Coffee Beans at left, Milk at center-right)
+    const btnSize = 22;
+    const beansX = startX - 25;
+    const milkX = startX + 5;
+    const btnY = startY - 29;
 
-    // Coffee Beans Button
-    this.beansJarImg = this.add.image(beansX, jarY, 'drink_coffee_beans')
-      .setDisplaySize(jarSize, jarSize)
-      .setDepth(3);
-    
-    this.beansStockText = this.add.text(beansX, jarY + 28, '0 u.', {
-      font: '10px "Outfit", sans-serif',
-      fill: '#ffffff',
-      stroke: '#582f0e',
-      strokeThickness: 3,
-      fontWeight: '800'
+    // Coffee Button Click Zone and Stock Text
+    this.beansStockText = this.add.text(beansX, startY - 14, '0u', {
+      font: 'bold 9px "Outfit", sans-serif',
+      fill: '#5c3d2e',
+      stroke: '#ffffff',
+      strokeThickness: 1.5
     }).setOrigin(0.5).setDepth(3);
 
-    const beansDragZone = this.add.rectangle(beansX, jarY, jarSize, jarSize, 0x000000, 0);
+    const beansDragZone = this.add.rectangle(beansX, btnY, btnSize, btnSize, 0x000000, 0);
     beansDragZone.setInteractive({ useHandCursor: true });
 
-    // Milk Button
-    this.milkCartonImg = this.add.image(milkX, jarY, 'drink_milk')
-      .setDisplaySize(jarSize, jarSize)
-      .setDepth(3);
-    
-    this.milkStockText = this.add.text(milkX, jarY + 28, '0 u.', {
-      font: '10px "Outfit", sans-serif',
-      fill: '#ffffff',
-      stroke: '#582f0e',
-      strokeThickness: 3,
-      fontWeight: '800'
+    // Milk Button Click Zone and Stock Text
+    this.milkStockText = this.add.text(milkX, startY - 14, '0u', {
+      font: 'bold 9px "Outfit", sans-serif',
+      fill: '#0077b6',
+      stroke: '#ffffff',
+      strokeThickness: 1.5
     }).setOrigin(0.5).setDepth(3);
 
-    const milkDragZone = this.add.rectangle(milkX, jarY, jarSize, jarSize, 0x000000, 0);
+    const milkDragZone = this.add.rectangle(milkX, btnY, btnSize, btnSize, 0x000000, 0);
     milkDragZone.setInteractive({ useHandCursor: true });
 
     this.updateDrinkStockTexts();
 
     // 5. Button click events (No drag-and-drop)
     beansDragZone.on('pointerover', () => {
-      if ((this.stock.drink.coffee_beans || 0) > 0) {
-        this.beansJarImg.setDisplaySize(jarSize + 6, jarSize + 6);
-      }
+      this.beansStockText.setScale(1.2);
     });
     beansDragZone.on('pointerout', () => {
-      this.beansJarImg.setDisplaySize(jarSize, jarSize);
+      this.beansStockText.setScale(1.0);
     });
     beansDragZone.on('pointerdown', () => {
       const stock = this.stock.drink.coffee_beans || 0;
       if (stock <= 0) {
-        this.showFeedbackText('¡Sin stock! Cómpralo en la tienda 🛒', startX, 200, '#d90429');
+        this.showFeedbackText('¡Sin stock de Café! Cómpralo en la tienda 🛒', startX, 200, '#d90429');
         return;
       }
       
-      // Button tap animation
+      // Text bounce animation
       this.tweens.add({
-        targets: this.beansJarImg,
-        scale: 1.15,
+        targets: this.beansStockText,
+        scale: 1.4,
         duration: 80,
         yoyo: true,
         ease: 'Quad.easeInOut'
@@ -787,24 +775,22 @@ export default class GameScene extends Phaser.Scene {
     });
 
     milkDragZone.on('pointerover', () => {
-      if ((this.stock.drink.milk || 0) > 0) {
-        this.milkCartonImg.setDisplaySize(jarSize + 6, jarSize + 6);
-      }
+      this.milkStockText.setScale(1.2);
     });
     milkDragZone.on('pointerout', () => {
-      this.milkCartonImg.setDisplaySize(jarSize, jarSize);
+      this.milkStockText.setScale(1.0);
     });
     milkDragZone.on('pointerdown', () => {
       const stock = this.stock.drink.milk || 0;
       if (stock <= 0) {
-        this.showFeedbackText('¡Sin stock! Cómpralo en la tienda 🛒', startX, 200, '#d90429');
+        this.showFeedbackText('¡Sin stock de Leche! Cómpralo en la tienda 🛒', startX, 200, '#d90429');
         return;
       }
 
-      // Button tap animation
+      // Text bounce animation
       this.tweens.add({
-        targets: this.milkCartonImg,
-        scale: 1.15,
+        targets: this.milkStockText,
+        scale: 1.4,
         duration: 80,
         yoyo: true,
         ease: 'Quad.easeInOut'
@@ -816,10 +802,10 @@ export default class GameScene extends Phaser.Scene {
 
   updateDrinkStockTexts() {
     if (this.beansStockText) {
-      this.beansStockText.setText(`${this.stock.drink.coffee_beans || 0} u.`);
+      this.beansStockText.setText(`${this.stock.drink.coffee_beans || 0}u`);
     }
     if (this.milkStockText) {
-      this.milkStockText.setText(`${this.stock.drink.milk || 0} u.`);
+      this.milkStockText.setText(`${this.stock.drink.milk || 0}u`);
     }
   }
 
