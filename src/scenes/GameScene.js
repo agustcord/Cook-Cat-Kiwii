@@ -983,24 +983,42 @@ export default class GameScene extends Phaser.Scene {
       const bakeMin = this.config.bakeMin || 4.0;
       const bakeMax = this.config.bakeMax || 8.0;
  
-      let state = 'raw';
+      // Evaluate each cookie individually based on its own accumulated bakeTime
+      this.cookiesInOven.forEach(cookie => {
+        const time = cookie.bakeTime || 0;
+        if (time >= bakeMin && time <= bakeMax) {
+          cookie.bakedState = 'baked';
+        } else if (time > bakeMax) {
+          cookie.bakedState = 'burnt';
+        } else {
+          cookie.bakedState = 'raw';
+        }
+      });
+
+      // Determine appropriate feedback based on the state of cookies in the oven
+      let hasBurnt = false;
+      let hasBaked = false;
+      let hasRaw = false;
+
+      this.cookiesInOven.forEach(cookie => {
+        if (cookie.bakedState === 'burnt') hasBurnt = true;
+        else if (cookie.bakedState === 'baked') hasBaked = true;
+        else if (cookie.bakedState === 'raw') hasRaw = true;
+      });
+
       let feedback = '¡Sigue cruda! 🥣';
       let color = '#ffb703';
- 
-      if (this.ovenTimeElapsed >= bakeMin && this.ovenTimeElapsed <= bakeMax) {
-        state = 'baked';
-        feedback = '¡Horneado Perfecto! 🍪✨';
-        color = '#38b000';
-      } else if (this.ovenTimeElapsed > bakeMax) {
-        state = 'burnt';
+
+      if (hasBurnt) {
         feedback = '¡Se ha quemado! 😭🔥';
         color = '#d90429';
+      } else if (hasBaked && !hasRaw) {
+        feedback = '¡Horneado Perfecto! 🍪✨';
+        color = '#38b000';
+      } else if (hasBaked && hasRaw) {
+        feedback = '¡Algunas están listas! 🍪';
+        color = '#38b000';
       }
- 
-      // Update state for all cookies currently in the oven
-      this.cookiesInOven.forEach(cookie => {
-        cookie.bakedState = state;
-      });
  
       this.showFeedbackText(feedback, this.trayX, 200, color);
       this.ovenBarFill.clear();
@@ -1902,7 +1920,16 @@ export default class GameScene extends Phaser.Scene {
   update(time, delta) {
     // Time-based oven baking calculation (speed up by 15% as requested)
     if (this.isBaking) {
-      this.ovenTimeElapsed += (delta / 1000) * 1.15;
+      const elapsed = (delta / 1000) * 1.15;
+      this.ovenTimeElapsed += elapsed;
+      
+      // Increment bakeTime individually for all cookies currently in the oven
+      if (this.cookiesInOven) {
+        this.cookiesInOven.forEach(cookie => {
+          cookie.bakeTime = (cookie.bakeTime || 0) + elapsed;
+        });
+      }
+
       this.updateOvenVisualEffects();
       this.updateOvenBar();
     }

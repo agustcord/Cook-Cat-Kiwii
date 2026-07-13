@@ -4,6 +4,7 @@ export default class Cookie {
     this.shape = null;        // 'star', 'heart', 'cat', 'bone'
     this.bakedState = 'raw';  // 'raw', 'baked', 'burnt'
     this.toppings = [];       // Array of strings: 'sprinkles', 'kiwi', 'glazing'
+    this.bakeTime = 0;        // Total accumulated baking seconds
   }
 
   reset() {
@@ -11,6 +12,7 @@ export default class Cookie {
     this.shape = null;
     this.bakedState = 'raw';
     this.toppings = [];
+    this.bakeTime = 0;
   }
 
   // Returns true if the cookie can be delivered (must have base and shape)
