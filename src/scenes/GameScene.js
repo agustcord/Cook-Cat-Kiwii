@@ -1676,10 +1676,7 @@ export default class GameScene extends Phaser.Scene {
     if (rejected) {
       this.showFeedbackText(rejectReason, this.trayX, 200, '#d90429');
 
-      // Angry customer feedback & patience penalty
-      const patienceLoss = this.currentCustomer.maxPatience * 0.30;
-      this.currentCustomer.patience = Math.max(0, this.currentCustomer.patience - patienceLoss);
-      this.currentCustomer.updatePatienceBar();
+      // Angry customer feedback shake (no patience penalty)
 
       this.tweens.add({
         targets: this.currentCustomer.container,
@@ -1764,10 +1761,7 @@ export default class GameScene extends Phaser.Scene {
         this.deliveryTrayCookies = [];
         this.drawDeliveryTray();
 
-        // Reduce patience drastically (-35% of max patience)
-        const patienceLoss = this.currentCustomer.maxPatience * 0.35;
-        this.currentCustomer.patience = Math.max(0, this.currentCustomer.patience - patienceLoss);
-        this.currentCustomer.updatePatienceBar();
+        // Keep patience as-is (no patience penalty for partial rejection)
 
         this.showFeedbackText(`¡Incompleto! Faltan ${requested - totalCount} galletas 😡`, this.trayX, 200, '#d90429');
 
