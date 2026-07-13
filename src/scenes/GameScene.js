@@ -1647,8 +1647,56 @@ export default class GameScene extends Phaser.Scene {
     }
 
     const recipe = this.currentCustomer.recipe;
-    const accumulated = this.currentCustomer.acceptedCookies || [];
+    const threshold = this.currentCustomer.toleranceThreshold || 80;
     const newDelivered = this.deliveryTrayCookies;
+
+    // Check if any of the delivered cookies are below the customer's tolerance threshold
+    let rejected = false;
+    let rejectReason = '¡Esto no es lo que pedí! 😡';
+
+    for (const cookie of newDelivered) {
+      const sim = cookie.getSimilarityPercentage(recipe);
+      if (sim < threshold) {
+        rejected = true;
+        if (cookie.bakedState === 'raw') {
+          rejectReason = '¡Esta galleta está cruda! 🤮';
+        } else if (cookie.bakedState === 'burnt') {
+          rejectReason = '¡Esta galleta está quemada! 🥵';
+        } else if (recipe.toppings && recipe.toppings.length > 0 && (!cookie.toppings || !cookie.toppings.includes(recipe.toppings[0]))) {
+          rejectReason = '¡Le faltan los toppings! 🍓';
+        } else if (cookie.shape !== recipe.shape) {
+          rejectReason = '¡Esta forma no es la correcta! 📐';
+        } else if (cookie.base !== recipe.base) {
+          rejectReason = '¡El sabor de la masa no es el correcto! 🍫';
+        }
+        break;
+      }
+    }
+
+    if (rejected) {
+      this.showFeedbackText(rejectReason, this.trayX, 200, '#d90429');
+
+      // Angry customer feedback & patience penalty
+      const patienceLoss = this.currentCustomer.maxPatience * 0.30;
+      this.currentCustomer.patience = Math.max(0, this.currentCustomer.patience - patienceLoss);
+      this.currentCustomer.updatePatienceBar();
+
+      this.tweens.add({
+        targets: this.currentCustomer.container,
+        x: { from: 512 - 10, to: 512 + 10 },
+        duration: 50,
+        yoyo: true,
+        repeat: 5,
+        onComplete: () => {
+          if (this.currentCustomer && this.currentCustomer.container) {
+            this.currentCustomer.container.x = 512;
+          }
+        }
+      });
+      return;
+    }
+
+    const accumulated = this.currentCustomer.acceptedCookies || [];
     const totalCount = accumulated.length + newDelivered.length;
 
     // Dynamic base selling price based on ingredients
