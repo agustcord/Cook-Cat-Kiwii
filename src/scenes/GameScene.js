@@ -240,9 +240,6 @@ export default class GameScene extends Phaser.Scene {
       { key: 'daySign', bg: this.daySignImage, text: this.daySignText, textOffsetX: daySign.width / 2, textOffsetY: daySign.textOffsetY },
       { key: 'coinsSign', bg: this.coinsSignImage, text: this.coinsText, textOffsetX: 0, textOffsetY: coinsSign.textOffsetY },
       { key: 'metaSign', bg: this.metaSignImage, text: this.metaText, textOffsetX: -metaSign.width / 2, textOffsetY: metaSign.textOffsetY },
-      { key: 'masaLabel', bg: this.masaLabelImage, text: null },
-      { key: 'formaLabel', bg: this.formaLabelImage, text: null },
-      { key: 'toppingLabel', bg: this.toppingLabelImage, text: null },
       { key: 'deliveryTray', bg: this.deliveryDragZone, text: this.deliveryTrayLabel, textOffsetX: 0, textOffsetY: -33 }
     ];
 
@@ -368,19 +365,15 @@ export default class GameScene extends Phaser.Scene {
     // Column 3: Horno (Oven minigame)
     this.createOvenStation(725, 310);
 
-    // Column 3.5: Bebidas (Drinks Station)
-    this.createDrinkStation(650, 290);
+    // Column 3.5: Bebidas (Drinks Station) - Moved to left side where 2. Forma was
+    this.createDrinkStation(269, 270);
 
     // Column 4: Decoración (Toppings)
     this.createToppingButtons(890, 310);
   }
 
   createDoughButtons(startX, startY) {
-    const { masaLabel } = UI_CONFIG;
-    this.masaLabelImage = this.add.image(masaLabel.x, masaLabel.y, 'masa_label')
-      .setDisplaySize(masaLabel.width, masaLabel.height)
-      .setOrigin(0.5)
-      .setDepth(1);
+    // Masa label sign removed
 
     const bases = [
       { id: 'classic', label: 'Clásica', color: 0xf5ebe0 },
@@ -498,11 +491,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createShapeButtons(startX, startY) {
-    const { formaLabel } = UI_CONFIG;
-    this.formaLabelImage = this.add.image(formaLabel.x, formaLabel.y, 'forma_label')
-      .setDisplaySize(formaLabel.width, formaLabel.height)
-      .setOrigin(0.5)
-      .setDepth(1);
+    // Forma label sign removed
 
     this.shapeContainers = [];
     this.shapeDragZones = [];
@@ -679,15 +668,15 @@ export default class GameScene extends Phaser.Scene {
 
   createDrinkStation(startX, startY) {
     // 1. Label
-    this.drinkLabelText = this.add.text(startX, startY - 68, 'CAFETERÍA', {
-      font: '12px "Outfit", sans-serif',
+    this.drinkLabelText = this.add.text(startX, startY - 95, 'CAFETERÍA', {
+      font: '14px "Outfit", sans-serif',
       fill: '#7f5539',
       fontWeight: '800',
       stroke: '#fff1e6',
       strokeThickness: 2
     }).setOrigin(0.5).setDepth(2);
 
-    // 2. Espresso Machine
+    // 2. Espresso Machine (Large 160x160)
     this.drinkMachine = this.add.image(startX, startY, 'drink_machine')
       .setDepth(2);
     
@@ -695,7 +684,7 @@ export default class GameScene extends Phaser.Scene {
     this.drinkMachine.setInteractive({ useHandCursor: true });
     this.drinkMachine.on('pointerdown', () => {
       if (this.machineState === 'empty') {
-        this.showFeedbackText('¡Presiona Café o Leche para preparar! ☕🥛', startX, 200, '#582f0e');
+        this.showFeedbackText('¡Presiona Café o Leche en el panel! ☕🥛', startX, 200, '#582f0e');
       } else if (this.machineState.startsWith('ready_')) {
         this.pickupDrink();
       } else {
@@ -705,42 +694,42 @@ export default class GameScene extends Phaser.Scene {
 
     // 3. Serve Button (drawn dynamically when a drink is ready)
     this.drinkServeBtnBg = this.add.graphics().setDepth(5);
-    this.drinkServeBtnText = this.add.text(startX, startY + 52, 'SERVIR', {
-      font: '10px "Outfit", sans-serif',
+    this.drinkServeBtnText = this.add.text(startX, startY + 66, 'SERVIR', {
+      font: 'bold 12px "Outfit", sans-serif',
       fill: '#ffffff',
       fontWeight: '800'
     }).setOrigin(0.5).setDepth(6);
     this.drinkServeBtnText.setVisible(false);
 
-    this.drinkServeZone = this.add.rectangle(startX, startY + 52, 70, 24, 0x000000, 0)
+    this.drinkServeZone = this.add.rectangle(startX, startY + 66, 84, 28, 0x000000, 0)
       .setDepth(7);
     this.drinkServeZone.on('pointerdown', () => {
       this.pickupDrink();
     });
 
     // 4. Ingredient Click Zones directly on the machine panel (Coffee Beans at left, Milk at center-right)
-    const btnSize = 22;
-    const beansX = startX - 25;
+    const btnSize = 32;
+    const beansX = startX - 35;
     const milkX = startX + 5;
-    const btnY = startY - 29;
+    const btnY = startY - 42;
 
-    // Coffee Button Click Zone and Stock Text
-    this.beansStockText = this.add.text(beansX, startY - 14, '0u', {
-      font: 'bold 9px "Outfit", sans-serif',
+    // Coffee Button Click Zone and Stock Text (styled like a digital display)
+    this.beansStockText = this.add.text(beansX, startY - 22, '0u', {
+      font: 'bold 11px "Outfit", sans-serif',
       fill: '#5c3d2e',
       stroke: '#ffffff',
-      strokeThickness: 1.5
+      strokeThickness: 2
     }).setOrigin(0.5).setDepth(3);
 
     const beansDragZone = this.add.rectangle(beansX, btnY, btnSize, btnSize, 0x000000, 0);
     beansDragZone.setInteractive({ useHandCursor: true });
 
-    // Milk Button Click Zone and Stock Text
-    this.milkStockText = this.add.text(milkX, startY - 14, '0u', {
-      font: 'bold 9px "Outfit", sans-serif',
+    // Milk Button Click Zone and Stock Text (styled like a digital display)
+    this.milkStockText = this.add.text(milkX, startY - 22, '0u', {
+      font: 'bold 11px "Outfit", sans-serif',
       fill: '#0077b6',
       stroke: '#ffffff',
-      strokeThickness: 1.5
+      strokeThickness: 2
     }).setOrigin(0.5).setDepth(3);
 
     const milkDragZone = this.add.rectangle(milkX, btnY, btnSize, btnSize, 0x000000, 0);
@@ -750,7 +739,7 @@ export default class GameScene extends Phaser.Scene {
 
     // 5. Button click events (No drag-and-drop)
     beansDragZone.on('pointerover', () => {
-      this.beansStockText.setScale(1.2);
+      this.beansStockText.setScale(1.25);
     });
     beansDragZone.on('pointerout', () => {
       this.beansStockText.setScale(1.0);
@@ -765,7 +754,7 @@ export default class GameScene extends Phaser.Scene {
       // Text bounce animation
       this.tweens.add({
         targets: this.beansStockText,
-        scale: 1.4,
+        scale: 1.45,
         duration: 80,
         yoyo: true,
         ease: 'Quad.easeInOut'
@@ -775,7 +764,7 @@ export default class GameScene extends Phaser.Scene {
     });
 
     milkDragZone.on('pointerover', () => {
-      this.milkStockText.setScale(1.2);
+      this.milkStockText.setScale(1.25);
     });
     milkDragZone.on('pointerout', () => {
       this.milkStockText.setScale(1.0);
@@ -790,7 +779,7 @@ export default class GameScene extends Phaser.Scene {
       // Text bounce animation
       this.tweens.add({
         targets: this.milkStockText,
-        scale: 1.4,
+        scale: 1.45,
         duration: 80,
         yoyo: true,
         ease: 'Quad.easeInOut'
@@ -815,9 +804,9 @@ export default class GameScene extends Phaser.Scene {
     
     if (isReady) {
       this.drinkServeBtnBg.fillStyle(0x38b000, 1);
-      this.drinkServeBtnBg.fillRoundedRect(startX - 35, startY + 40, 70, 24, 6);
+      this.drinkServeBtnBg.fillRoundedRect(startX - 42, startY + 52, 84, 28, 6);
       this.drinkServeBtnBg.lineStyle(1.5, 0xffffff, 1);
-      this.drinkServeBtnBg.strokeRoundedRect(startX - 35, startY + 40, 70, 24, 6);
+      this.drinkServeBtnBg.strokeRoundedRect(startX - 42, startY + 52, 84, 28, 6);
       
       this.drinkServeBtnText.setVisible(true);
       this.drinkServeZone.setInteractive({ useHandCursor: true });
@@ -837,17 +826,17 @@ export default class GameScene extends Phaser.Scene {
       // Start brewing
       this.machineState = type === 'coffee_beans' ? 'brewing_coffee' : 'brewing_milk';
       
-      // Draw progress bar above the machine (Y = startY - 60)
+      // Draw progress bar above the machine (Y = startY - 78)
       const progressBg = this.add.graphics().setDepth(20);
       progressBg.fillStyle(0xdddddd, 1);
-      progressBg.fillRoundedRect(startX - 30, startY - 55, 60, 6, 3);
+      progressBg.fillRoundedRect(startX - 40, startY - 78, 80, 8, 4);
 
       const progressBar = this.add.graphics().setDepth(21);
       
       // Place a faded cup on the machine
       const cupKey = type === 'coffee_beans' ? 'beverage_coffee' : 'beverage_milk';
-      this.machineCupSprite = this.add.image(startX, startY + 18, cupKey)
-        .setDisplaySize(40, 40)
+      this.machineCupSprite = this.add.image(startX, startY + 38, cupKey)
+        .setDisplaySize(48, 48)
         .setAlpha(0.4)
         .setDepth(4);
 
@@ -863,7 +852,7 @@ export default class GameScene extends Phaser.Scene {
           
           progressBar.clear();
           progressBar.fillStyle(0x38b000, 1);
-          progressBar.fillRoundedRect(startX - 30, startY - 55, 60 * ratio, 6, 3);
+          progressBar.fillRoundedRect(startX - 40, startY - 78, 80 * ratio, 8, 4);
 
           if (elapsed >= duration) {
             progressBg.destroy();
@@ -1061,11 +1050,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createToppingButtons(startX, startY) {
-    const { toppingLabel } = UI_CONFIG;
-    this.toppingLabelImage = this.add.image(toppingLabel.x, toppingLabel.y, 'topping_label')
-      .setDisplaySize(toppingLabel.width, toppingLabel.height)
-      .setOrigin(0.5)
-      .setDepth(1);
+    // Topping label sign removed
 
     const toppings = [
       { id: 'sprinkles', label: 'Chispas', color: 0xff70a6 },
