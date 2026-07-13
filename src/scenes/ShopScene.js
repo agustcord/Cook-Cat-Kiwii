@@ -61,21 +61,26 @@ export default class ShopScene extends Phaser.Scene {
       // TOPPINGS (Consumables x5)
       { type: 'topping', id: 'sprinkles', name: 'Chispas Azúcar', cost: 10, desc: 'Pack de 5 unidades' },
       { type: 'topping', id: 'choco', name: 'Chispas Choco', cost: 15, desc: 'Pack de 5 unidades' },
-      { type: 'topping', id: 'glazing', name: 'Glaseado Dulce', cost: 20, desc: 'Pack de 5 unidades' }
+      { type: 'topping', id: 'glazing', name: 'Glaseado Dulce', cost: 20, desc: 'Pack de 5 unidades' },
+
+      // BEBIDAS (Consumables x5)
+      { type: 'drink', id: 'coffee_beans', name: 'Granos Café', cost: 8, desc: 'Pack de 5 porciones' },
+      { type: 'drink', id: 'milk', name: 'Cartón Leche', cost: 5, desc: 'Pack de 5 porciones' }
     ];
 
-    // Layout arrangement: 3 columns (Moldes, Masas, Coberturas)
+    // Layout arrangement: 4 columns (Moldes, Masas, Toppings, Bebidas)
     const columns = {
-      mold: { title: 'MOLDES (Permanentes)', x: 180 },
-      dough: { title: 'MASAS (Packs x5)', x: 512 },
-      topping: { title: 'TOPPINGS (Packs x5)', x: 844 }
+      mold: { title: 'MOLDES (P.)', x: 145 },
+      dough: { title: 'MASAS (x5)', x: 390 },
+      topping: { title: 'TOPPINGS (x5)', x: 635 },
+      drink: { title: 'BEBIDAS (x5)', x: 880 }
     };
 
-    // Draw Column Headers (lowered to 160 to avoid card overlap)
+    // Draw Column Headers
     Object.keys(columns).forEach(key => {
       const col = columns[key];
       this.add.text(col.x, 160, col.title, {
-        font: '16px "Outfit", sans-serif',
+        font: '15px "Outfit", sans-serif',
         fill: '#7f5539',
         fontWeight: '800'
       }).setOrigin(0.5);
@@ -84,7 +89,7 @@ export default class ShopScene extends Phaser.Scene {
     this.buyButtons = [];
 
     // Categorized offsets
-    const colCounters = { mold: 0, dough: 0, topping: 0 };
+    const colCounters = { mold: 0, dough: 0, topping: 0, drink: 0 };
 
     items.forEach((item) => {
       const colKey = item.type;
@@ -94,88 +99,90 @@ export default class ShopScene extends Phaser.Scene {
       const x = col.x;
       const y = 240 + index * 95; // Adjusted starting Y to 240 to clear headers
 
-      // Draw background card for item
+      // Draw background card for item (narrower: 220px wide)
       const card = this.add.graphics();
       card.fillStyle(0xfff1e6, 0.95);
-      card.fillRoundedRect(x - 150, y - 40, 300, 80, 10);
+      card.fillRoundedRect(x - 110, y - 40, 220, 80, 10);
       card.lineStyle(2, 0xddb892, 1);
-      card.strokeRoundedRect(x - 150, y - 40, 300, 80, 10);
+      card.strokeRoundedRect(x - 110, y - 40, 220, 80, 10);
 
-      // Draw premium white circular background for the icon
+      // Draw circular background for the icon
       const iconCircle = this.add.graphics();
       iconCircle.fillStyle(0xffffff, 1);
-      iconCircle.fillCircle(x - 110, y, 25);
+      iconCircle.fillCircle(x - 78, y, 22);
       iconCircle.lineStyle(1.5, 0xddb892, 1);
-      iconCircle.strokeCircle(x - 110, y, 25);
+      iconCircle.strokeCircle(x - 78, y, 22);
 
       // Draw item icon sprite inside the circle
       let iconTexture = '';
-      let targetW = 38;
-      let targetH = 38;
+      let targetW = 32;
+      let targetH = 32;
 
       if (item.type === 'mold') {
         iconTexture = 'shape_' + item.id;
-        targetW = 36;
-        targetH = 36;
+        targetW = 30;
+        targetH = 30;
       } else if (item.type === 'dough') {
         iconTexture = 'dough_' + item.id;
-        targetW = 38;
-        targetH = 38;
+        targetW = 34;
+        targetH = 34;
       } else if (item.type === 'topping') {
         iconTexture = 'topping_' + item.id;
-        targetW = 36;
-        targetH = 36;
+        targetW = 30;
+        targetH = 30;
+      } else if (item.type === 'drink') {
+        iconTexture = 'drink_' + item.id;
+        targetW = 30;
+        targetH = 30;
       }
       
-      const itemIcon = this.add.image(x - 110, y, iconTexture);
+      const itemIcon = this.add.image(x - 78, y, iconTexture);
       itemIcon.setDisplaySize(targetW, targetH);
 
-      // Render Item details
+      // Render Item details (x offset shifted to x - 48)
       let nameTxt, descTxt, statusTxt;
       
       if (item.type === 'mold') {
-        // Molds: omit description, center name and status vertically
-        nameTxt = this.add.text(x - 70, y - 18, item.name, {
-          font: '15px "Outfit", sans-serif',
+        nameTxt = this.add.text(x - 48, y - 18, item.name, {
+          font: '13px "Outfit", sans-serif',
           fill: '#582f0e',
           fontWeight: '800'
         });
 
-        statusTxt = this.add.text(x - 70, y + 6, this.getStatusString(item), {
-          font: '12px "Outfit", sans-serif',
+        statusTxt = this.add.text(x - 48, y + 4, this.getStatusString(item), {
+          font: '11px "Outfit", sans-serif',
           fill: '#7f5539',
           fontWeight: '700'
         });
       } else {
-        // Doughs & Toppings: render name, pack description, and status
-        nameTxt = this.add.text(x - 70, y - 28, item.name, {
-          font: '15px "Outfit", sans-serif',
+        nameTxt = this.add.text(x - 48, y - 28, item.name, {
+          font: '13px "Outfit", sans-serif',
           fill: '#582f0e',
           fontWeight: '800'
         });
 
-        descTxt = this.add.text(x - 70, y - 8, item.desc, {
-          font: '11px "Outfit", sans-serif',
+        descTxt = this.add.text(x - 48, y - 10, item.desc, {
+          font: '10px "Outfit", sans-serif',
           fill: '#b5838d',
           fontWeight: '600'
         });
 
-        statusTxt = this.add.text(x - 70, y + 10, this.getStatusString(item), {
-          font: '12px "Outfit", sans-serif',
+        statusTxt = this.add.text(x - 48, y + 8, this.getStatusString(item), {
+          font: '11px "Outfit", sans-serif',
           fill: '#7f5539',
           fontWeight: '700'
         });
       }
 
-      // Buy Button container
-      const btnW = 90;
-      const btnH = 36;
-      const btnX = x + 40;
-      const btnY = y - 18;
+      // Buy Button container (placed to the right of text)
+      const btnW = 80;
+      const btnH = 34;
+      const btnX = x + 20;
+      const btnY = y - 17;
 
       const btnBg = this.add.graphics();
       const btnText = this.add.text(btnX + btnW / 2, btnY + btnH / 2, `🪙 ${item.cost}`, {
-        font: '13px "Outfit", sans-serif',
+        font: '12px "Outfit", sans-serif',
         fill: '#fff1e6',
         fontWeight: '800'
       }).setOrigin(0.5);

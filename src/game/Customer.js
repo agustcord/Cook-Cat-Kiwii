@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 export default class Customer {
-  constructor(scene, x, y, dayConfig, onTimeoutCallback, customerId, assignedRecipe, forcedQuantity) {
+  constructor(scene, x, y, dayConfig, onTimeoutCallback, customerId, assignedRecipe, forcedQuantity, requestedDrink) {
     this.scene = scene;
     this.x = x;
     this.y = y;
@@ -9,6 +9,7 @@ export default class Customer {
     
     // Use pre-assigned recipe from the shuffled sequence (no random selection)
     this.recipe = assignedRecipe || dayConfig.recipes[Math.floor(Math.random() * dayConfig.recipes.length)];
+    this.requestedDrink = requestedDrink || null;
     
     // Roll for mood (bad day / rush) based on current day
     const day = this.scene.day || 1;
@@ -51,8 +52,13 @@ export default class Customer {
 
     // Patience scaled by character personality, mood, and quantity requested
     let basePatience = (dayConfig.patienceTime || 30) * multiplier;
+    
+    // Scale patience by quantity (more cookies = more patience) and add a bonus if they ordered a drink!
     const quantityMultipliers = { 1: 1.0, 2: 1.2, 3: 1.4, 4: 1.8, 5: 2.0 };
-    const qtyMult = quantityMultipliers[this.requestedQuantity] || 1.0;
+    let qtyMult = quantityMultipliers[this.requestedQuantity] || 1.0;
+    if (this.requestedDrink) {
+      qtyMult += 0.3; // Give 30% more time to prepare the drink as well!
+    }
     
     this.maxPatience = basePatience * qtyMult;
     this.patience = this.maxPatience;
@@ -73,7 +79,6 @@ export default class Customer {
     }
     this.toleranceThreshold = threshold;
 
-    // Visual elements container
     this.container = this.scene.add.container(x, y);
     if (this.scene.customerContainer) {
       this.scene.customerContainer.add(this.container);
@@ -84,20 +89,19 @@ export default class Customer {
 
   createVisuals() {
     // 1. Draw customer character (uses the preloaded PNG sprite)
-    this.customerSprite = this.scene.add.image(0, 40, 'customer_' + this.customerId);
-    this.customerSprite.setDisplaySize(180, 180);
-    this.container.add(this.customerSprite);
-    this.sprite = this.customerSprite;
+    this.sprite = this.scene.add.image(0, 40, 'customer_' + this.customerId);
+    this.sprite.setDisplaySize(180, 180);
+    this.container.add(this.sprite);
 
     // 2. Patience Bar (Background)
-    this.patienceBg = this.scene.add.graphics();
-    this.patienceBg.fillStyle(0xe0e0e0, 1);
-    this.patienceBg.fillRoundedRect(-50, -168, 100, 12, 4);
-    this.container.add(this.patienceBg);
+    this.patienceBarBg = this.scene.add.graphics();
+    this.patienceBarBg.fillStyle(0xe0e0e0, 1);
+    this.patienceBarBg.fillRoundedRect(-50, -168, 100, 12, 4);
+    this.container.add(this.patienceBarBg);
 
     // 3. Patience Bar (Active Fill)
-    this.patienceFill = this.scene.add.graphics();
-    this.container.add(this.patienceFill);
+    this.patienceBar = this.scene.add.graphics();
+    this.container.add(this.patienceBar);
 
     // Patience Text (Countdown)
     this.patienceText = this.scene.add.text(0, -162, '', {
@@ -111,13 +115,15 @@ export default class Customer {
 
     this.updatePatienceBar();
 
-    // 4. Thought Bubble
+    // 4. Thought Bubble (Dynamic width if drink is requested)
     this.bubbleBg = this.scene.add.graphics();
     this.bubbleBg.fillStyle(0xffffff, 1);
     this.bubbleBg.lineStyle(3, 0x582f0e, 1);
-    // Draw bubble tail and rectangle
-    this.bubbleBg.fillRoundedRect(-85, -145, 170, 90, 15);
-    this.bubbleBg.strokeRoundedRect(-85, -145, 170, 90, 15);
+    
+    const bubbleW = this.requestedDrink ? 230 : 170;
+    const bubbleHalf = bubbleW / 2;
+    this.bubbleBg.fillRoundedRect(-bubbleHalf, -145, bubbleW, 90, 15);
+    this.bubbleBg.strokeRoundedRect(-bubbleHalf, -145, bubbleW, 90, 15);
     
     // Bubble pointer tail
     this.bubbleBg.fillStyle(0xffffff, 1);
@@ -131,7 +137,14 @@ export default class Customer {
     this.drawOrderImage();
 
     // 6. Delivery progress text
-    this.progressText = this.scene.add.text(0, 140, `Pedido: 0 / ${this.requestedQuantity}`, {
+    let prepText = `Pedido: 0 / ${this.requestedQuantity}`;
+    if (this.requestedDrink) {
+      let drinkName = 'Café';
+      if (this.requestedDrink === 'milk') drinkName = 'Leche';
+      else if (this.requestedDrink === 'coffee_milk') drinkName = 'Café c/Leche';
+      prepText += ` + ${drinkName}`;
+    }
+    this.progressText = this.scene.add.text(0, 140, prepText, {
       font: '12px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800',
@@ -146,7 +159,7 @@ export default class Customer {
     if (!recipe) return;
 
     // Center of the thought bubble
-    const cx = 0;
+    const cx = this.requestedDrink ? -40 : 0;
     const cy = -100;
 
     // Construct key name matching our preloaded baked cookie assets
@@ -157,7 +170,7 @@ export default class Customer {
 
     // Add cookie image to container
     const orderSprite = this.scene.add.image(cx, cy, key);
-    orderSprite.setDisplaySize(70, 70);
+    orderSprite.setDisplaySize(60, 60);
     this.container.add(orderSprite);
 
     // If quantity is more than 1, draw a small xQ badge at the bottom-right of the cookie image
@@ -166,29 +179,56 @@ export default class Customer {
       const badgeBg = this.scene.add.graphics();
       badgeBg.fillStyle(0xd90429, 1); // Red badge
       badgeBg.lineStyle(1.5, 0xffffff, 1);
-      badgeBg.fillCircle(cx + 25, cy + 25, 12);
-      badgeBg.strokeCircle(cx + 25, cy + 25, 12);
+      badgeBg.fillCircle(cx + 20, cy + 20, 11);
+      badgeBg.strokeCircle(cx + 20, cy + 20, 11);
       this.container.add(badgeBg);
 
       // Draw the text
-      const badgeText = this.scene.add.text(cx + 25, cy + 25, `x${this.requestedQuantity}`, {
-        font: '10px "Outfit", sans-serif',
+      const badgeText = this.scene.add.text(cx + 20, cy + 20, `x${this.requestedQuantity}`, {
+        font: '9px "Outfit", sans-serif',
         fill: '#ffffff',
         fontWeight: '800'
       }).setOrigin(0.5);
       this.container.add(badgeText);
+    }
+
+    // Draw the requested drink if applicable
+    if (this.requestedDrink) {
+      // Draw a "+" sign in the middle
+      const plusText = this.scene.add.text(0, cy, '+', {
+        font: '16px "Outfit", sans-serif',
+        fill: '#582f0e',
+        fontWeight: '800'
+      }).setOrigin(0.5);
+      this.container.add(plusText);
+
+      // Determine drink texture key
+      let drinkTexture = 'beverage_coffee';
+      if (this.requestedDrink === 'milk') drinkTexture = 'beverage_milk';
+      else if (this.requestedDrink === 'coffee_milk') drinkTexture = 'beverage_coffee_milk';
+
+      const drinkSprite = this.scene.add.image(45, cy, drinkTexture);
+      drinkSprite.setDisplaySize(50, 50);
+      this.container.add(drinkSprite);
     }
   }
 
   updateProgress(newCount) {
     this.receivedCookiesCount = newCount;
     if (this.progressText) {
-      this.progressText.setText(`Pedido: ${this.receivedCookiesCount} / ${this.requestedQuantity}`);
+      let prepText = `Pedido: ${this.receivedCookiesCount} / ${this.requestedQuantity}`;
+      if (this.requestedDrink) {
+        let drinkName = 'Café';
+        if (this.requestedDrink === 'milk') drinkName = 'Leche';
+        else if (this.requestedDrink === 'coffee_milk') drinkName = 'Café c/Leche';
+        prepText += ` + ${drinkName}`;
+      }
+      this.progressText.setText(prepText);
     }
   }
 
   updatePatienceBar() {
-    this.patienceFill.clear();
+    this.patienceBar.clear();
     const ratio = Math.max(0, Math.min(1, this.patience / this.maxPatience));
     
     // Color transitions: Green -> Yellow -> Red
@@ -196,8 +236,8 @@ export default class Customer {
     if (ratio < 0.25) color = 0xd90429; // Red
     else if (ratio < 0.6) color = 0xffb703; // Yellow
 
-    this.patienceFill.fillStyle(color, 1);
-    this.patienceFill.fillRoundedRect(-48, -166, 96 * ratio, 8, 3);
+    this.patienceBar.fillStyle(color, 1);
+    this.patienceBar.fillRoundedRect(-48, -166, 96 * ratio, 8, 3);
 
     if (this.patienceText) {
       const rushText = this.isBadDay ? ' ⚡' : '';

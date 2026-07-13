@@ -18,14 +18,16 @@ export default class SummaryScene extends Phaser.Scene {
     this.unlockedShapesAtStart = safeData.unlockedShapesAtStart || ['star'];
     this.stockAtStart = safeData.stockAtStart || {
       dough: { classic: 10, chocolate: 0, oat: 0 },
-      topping: { sprinkles: 0, choco: 0, glazing: 0 }
+      topping: { sprinkles: 0, choco: 0, glazing: 0 },
+      drink: { coffee_beans: 0, milk: 0 }
     };
 
     // Current state to carry over
     this.unlockedShapes = safeData.unlockedShapes || ['star'];
     this.stock = safeData.stock || {
       dough: { classic: 10, chocolate: 0, oat: 0 },
-      topping: { sprinkles: 0, choco: 0, glazing: 0 }
+      topping: { sprinkles: 0, choco: 0, glazing: 0 },
+      drink: { coffee_beans: 0, milk: 0 }
     };
 
     // 1. Calculate Economy Deductions

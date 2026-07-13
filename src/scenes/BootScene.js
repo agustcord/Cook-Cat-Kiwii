@@ -104,7 +104,106 @@ export default class BootScene extends Phaser.Scene {
   }
 
   create() {
+    // Generate Procedural Textures for Drinks Station & Beverages
+    this.generateDrinkTextures();
+
     // Go directly to the main menu
     this.scene.start('MainMenuScene');
+  }
+
+  generateDrinkTextures() {
+    const g = this.make.graphics({ x: 0, y: 0, add: false });
+
+    // Helper to clear and set style
+    const startDraw = () => {
+      g.clear();
+    };
+
+    // 1. Coffee Beans Icon (drink_coffee_beans)
+    startDraw();
+    g.fillStyle(0x5c3d2e, 1);
+    g.fillEllipse(15, 20, 8, 14); // Bean 1
+    g.fillEllipse(25, 20, 8, 14); // Bean 2
+    g.lineStyle(1.5, 0x2b1b17, 1);
+    g.strokeLineShape(new Phaser.Geom.Line(15, 13, 15, 27));
+    g.strokeLineShape(new Phaser.Geom.Line(25, 13, 25, 27));
+    g.generateTexture('drink_coffee_beans', 40, 40);
+
+    // 2. Milk Carton Icon (drink_milk)
+    startDraw();
+    // Carton Body
+    g.fillStyle(0xf5f3f4, 1);
+    g.fillRect(10, 10, 20, 26);
+    // Roof triangle
+    g.fillStyle(0xe5e5e5, 1);
+    g.fillTriangle(10, 10, 30, 10, 20, 5);
+    // Blue Stripe decoration
+    g.fillStyle(0x00b4d8, 1);
+    g.fillRect(10, 20, 20, 6);
+    g.lineStyle(1.5, 0x7f7f7f, 1);
+    g.strokeRect(10, 10, 20, 26);
+    g.generateTexture('drink_milk', 40, 40);
+
+    // 3. Espresso Machine (drink_machine)
+    startDraw();
+    // Main silver frame
+    g.fillStyle(0xd3d3d3, 1);
+    g.fillRoundedRect(10, 10, 90, 90, 8);
+    g.lineStyle(2.5, 0x7f8c8d, 1);
+    g.strokeRoundedRect(10, 10, 90, 90, 8);
+    // Dark brew area/grate
+    g.fillStyle(0x2c3e50, 1);
+    g.fillRect(20, 50, 70, 40);
+    // Silver tray plate
+    g.fillStyle(0xbdc3c7, 1);
+    g.fillRect(25, 82, 60, 6);
+    // Portafilter head (dispenser nozzle)
+    g.fillStyle(0x111111, 1);
+    g.fillRect(45, 42, 20, 8);
+    // Red indicator light
+    g.fillStyle(0xe74c3c, 1);
+    g.fillCircle(30, 25, 4);
+    // Green indicator light
+    g.fillStyle(0x2ecc71, 1);
+    g.fillCircle(45, 25, 4);
+    // Steam knob
+    g.fillStyle(0x34495e, 1);
+    g.fillCircle(75, 25, 6);
+    g.generateTexture('drink_machine', 110, 110);
+
+    // 4. Base Cup Drawer helper
+    const drawCupBody = (fillColor) => {
+      // Cup outline/handle
+      g.fillStyle(0xffffff, 1);
+      g.fillCircle(32, 22, 6); // Handle
+      g.fillStyle(0xe5e5e5, 1);
+      g.fillCircle(32, 22, 3); // Handle inner cut
+      
+      g.fillStyle(0xffffff, 1);
+      g.fillRoundedRect(12, 12, 20, 20, { tl: 2, tr: 2, bl: 8, br: 8 }); // Cup body
+      g.lineStyle(1.5, 0x8a8a8a, 1);
+      g.strokeRoundedRect(12, 12, 20, 20, { tl: 2, tr: 2, bl: 8, br: 8 });
+
+      // Liquid Fill
+      if (fillColor !== null) {
+        g.fillStyle(fillColor, 1);
+        g.fillRect(14, 15, 16, 12);
+      }
+    };
+
+    // 5. Black Coffee Cup (beverage_coffee)
+    startDraw();
+    drawCupBody(0x4a2c2a); // Dark coffee color
+    g.generateTexture('beverage_coffee', 45, 45);
+
+    // 6. Warm Milk Cup (beverage_milk)
+    startDraw();
+    drawCupBody(0xfffaf0); // Off-white cream color
+    g.generateTexture('beverage_milk', 45, 45);
+
+    // 7. Coffee with Milk Cup (beverage_coffee_milk)
+    startDraw();
+    drawCupBody(0xc69c6d); // Light brown latte color
+    g.generateTexture('beverage_coffee_milk', 45, 45);
   }
 }
