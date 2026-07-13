@@ -1456,10 +1456,14 @@ export default class GameScene extends Phaser.Scene {
     // Filter recipes based on unlocked shapes and currently available stock (> 0)
     const availableRecipes = (this.config.recipes || []).filter(recipe => {
       if (!this.unlockedShapes.includes(recipe.shape)) return false;
-      if ((this.stock.dough[recipe.base] || 0) <= 0) return false;
+      
+      const doughStock = Number(this.stock.dough[recipe.base]) || 0;
+      if (doughStock <= 0) return false;
+
       if (recipe.toppings && recipe.toppings.length > 0) {
         for (const topping of recipe.toppings) {
-          if ((this.stock.topping[topping] || 0) <= 0) return false;
+          const toppingStock = Number(this.stock.topping[topping]) || 0;
+          if (toppingStock <= 0) return false;
         }
       }
       return true;
