@@ -7,8 +7,8 @@ export default class Customer {
     this.y = y;
     this.customerId = customerId || 1;
     
-    // Use pre-assigned recipe from the shuffled sequence (no random selection)
-    this.recipe = assignedRecipe || dayConfig.recipes[Math.floor(Math.random() * dayConfig.recipes.length)];
+    // Use pre-assigned recipe from the shuffled sequence (allows null for drink-only orders)
+    this.recipe = assignedRecipe !== undefined ? assignedRecipe : (dayConfig.recipes ? dayConfig.recipes[Math.floor(Math.random() * dayConfig.recipes.length)] : null);
     this.requestedDrink = requestedDrink || null;
     
     // Roll for mood (bad day / rush) based on current day
@@ -120,7 +120,12 @@ export default class Customer {
     this.bubbleBg.fillStyle(0xffffff, 1);
     this.bubbleBg.lineStyle(3, 0x582f0e, 1);
     
-    const bubbleW = this.requestedDrink ? 230 : 170;
+    let bubbleW = 170;
+    if (this.requestedQuantity === 0) {
+      bubbleW = 120; // Smaller bubble for drink-only
+    } else if (this.requestedDrink) {
+      bubbleW = 230; // Wider bubble for cookie + drink
+    }
     const bubbleHalf = bubbleW / 2;
     this.bubbleBg.fillRoundedRect(-bubbleHalf, -145, bubbleW, 90, 15);
     this.bubbleBg.strokeRoundedRect(-bubbleHalf, -145, bubbleW, 90, 15);
@@ -137,12 +142,20 @@ export default class Customer {
     this.drawOrderImage();
 
     // 6. Delivery progress text
-    let prepText = `Pedido: 0 / ${this.requestedQuantity}`;
-    if (this.requestedDrink) {
+    let prepText = '';
+    if (this.requestedQuantity === 0) {
       let drinkName = 'Café';
       if (this.requestedDrink === 'milk') drinkName = 'Leche';
       else if (this.requestedDrink === 'coffee_milk') drinkName = 'Café c/Leche';
-      prepText += ` + ${drinkName}`;
+      prepText = `Pedido: ${drinkName}`;
+    } else {
+      prepText = `Pedido: 0 / ${this.requestedQuantity}`;
+      if (this.requestedDrink) {
+        let drinkName = 'Café';
+        if (this.requestedDrink === 'milk') drinkName = 'Leche';
+        else if (this.requestedDrink === 'coffee_milk') drinkName = 'Café c/Leche';
+        prepText += ` + ${drinkName}`;
+      }
     }
     this.progressText = this.scene.add.text(0, 140, prepText, {
       font: '12px "Outfit", sans-serif',
@@ -155,12 +168,27 @@ export default class Customer {
   }
 
   drawOrderImage() {
+    const cy = -100;
+
+    if (this.requestedQuantity === 0) {
+      // Drink-only order: draw only the drink, centered in the thought bubble
+      if (this.requestedDrink) {
+        let drinkTexture = 'beverage_coffee';
+        if (this.requestedDrink === 'milk') drinkTexture = 'beverage_milk';
+        else if (this.requestedDrink === 'coffee_milk') drinkTexture = 'beverage_coffee_milk';
+
+        const drinkSprite = this.scene.add.image(0, cy, drinkTexture);
+        drinkSprite.setDisplaySize(55, 55);
+        this.container.add(drinkSprite);
+      }
+      return;
+    }
+
     const recipe = this.recipe;
     if (!recipe) return;
 
     // Center of the thought bubble
     const cx = this.requestedDrink ? -40 : 0;
-    const cy = -100;
 
     // Construct key name matching our preloaded baked cookie assets
     let key = `cookie_${recipe.shape}_${recipe.base}_baked`;
@@ -216,12 +244,20 @@ export default class Customer {
   updateProgress(newCount) {
     this.receivedCookiesCount = newCount;
     if (this.progressText) {
-      let prepText = `Pedido: ${this.receivedCookiesCount} / ${this.requestedQuantity}`;
-      if (this.requestedDrink) {
+      let prepText = '';
+      if (this.requestedQuantity === 0) {
         let drinkName = 'Café';
         if (this.requestedDrink === 'milk') drinkName = 'Leche';
         else if (this.requestedDrink === 'coffee_milk') drinkName = 'Café c/Leche';
-        prepText += ` + ${drinkName}`;
+        prepText = `Pedido: ${drinkName}`;
+      } else {
+        prepText = `Pedido: ${this.receivedCookiesCount} / ${this.requestedQuantity}`;
+        if (this.requestedDrink) {
+          let drinkName = 'Café';
+          if (this.requestedDrink === 'milk') drinkName = 'Leche';
+          else if (this.requestedDrink === 'coffee_milk') drinkName = 'Café c/Leche';
+          prepText += ` + ${drinkName}`;
+        }
       }
       this.progressText.setText(prepText);
     }

@@ -1495,14 +1495,24 @@ export default class GameScene extends Phaser.Scene {
       qty = Math.min(rawQty, stockLimit);
       qty = Math.max(1, qty); // Ensure at least 1
     } else {
-      // Fallback: no stock left, ask for 1 Classic Star (technical bankruptcy fallback)
-      selectedRecipe = { name: 'Estrella Clásica', base: 'classic', shape: 'star', toppings: [] };
-      qty = 1;
+      // Fallback: no cookie ingredients left.
+      // Can we offer drinks instead? (Only from Day 2 onwards and if we have drinks stock)
+      const hasBeans = (this.stock.drink.coffee_beans || 0) > 0;
+      const hasMilk = (this.stock.drink.milk || 0) > 0;
+      if (this.day >= 2 && (hasBeans || hasMilk)) {
+        selectedRecipe = null;
+        qty = 0;
+      } else {
+        // Technical bankruptcy fallback: ask for 1 Classic Star
+        selectedRecipe = { name: 'Estrella Clásica', base: 'classic', shape: 'star', toppings: [] };
+        qty = 1;
+      }
     }
 
-    // Determine if they want a drink (starting Day 2, with 45% probability)
+    // Determine if they want a drink
     let requestedDrink = null;
-    if (this.day >= 2 && Math.random() < 0.45) {
+    const forceDrink = (qty === 0);
+    if (this.day >= 2 && (forceDrink || Math.random() < 0.45)) {
       const hasBeans = (this.stock.drink.coffee_beans || 0) > 0;
       const hasMilk = (this.stock.drink.milk || 0) > 0;
 
@@ -1588,13 +1598,51 @@ export default class GameScene extends Phaser.Scene {
       }
     }
 
+    const requested = this.currentCustomer.requestedQuantity;
+    if (requested === 0) {
+      // Customer only requested a drink!
+      let drinkReward = 0;
+      const drinkIndex = this.deliveryTrayDrinks.indexOf(requestedDrink);
+      if (drinkIndex !== -1) {
+        this.deliveryTrayDrinks.splice(drinkIndex, 1);
+        if (requestedDrink === 'coffee') drinkReward = 25;
+        else if (requestedDrink === 'milk') drinkReward = 15;
+        else if (requestedDrink === 'coffee_milk') drinkReward = 35;
+      }
+
+      // Penalty for any excess cookies on the tray
+      const excessCount = this.deliveryTrayCookies.length;
+      const wastePenalty = excessCount * 15;
+
+      this.coins = Math.max(0, this.coins + drinkReward - wastePenalty);
+      this.coinsText.setText(`Monedas: ${this.coins}`);
+
+      if (excessCount > 0) {
+        this.showFeedbackText(`¡Pedido completo! +${drinkReward} (Exceso: -${wastePenalty}) 🗑️`, this.trayX, 200, '#ffb703');
+      } else {
+        this.showFeedbackText(`¡Entrega perfecta! ☕ +${drinkReward} Monedas`, this.trayX, 200, '#38b000');
+        this.triggerConfetti();
+      }
+
+      // Clean up and spawn next
+      this.deliveryTrayCookies = [];
+      this.deliveryTrayDrinks = [];
+      this.drawDeliveryTray();
+      this.currentCustomer.destroy();
+      this.currentCustomer = null;
+
+      this.time.delayedCall(1500, () => {
+        this.spawnCustomer();
+      });
+      return;
+    }
+
     if (this.deliveryTrayCookies.length === 0) {
       this.showFeedbackText('¡La bandeja de entrega está vacía!', this.trayX, 200, '#d90429');
       return;
     }
 
     const recipe = this.currentCustomer.recipe;
-    const requested = this.currentCustomer.requestedQuantity;
     const accumulated = this.currentCustomer.acceptedCookies || [];
     const newDelivered = this.deliveryTrayCookies;
     const totalCount = accumulated.length + newDelivered.length;
