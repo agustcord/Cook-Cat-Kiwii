@@ -99,19 +99,19 @@ export default class ShopScene extends Phaser.Scene {
       const x = col.x;
       const y = 240 + index * 95; // Adjusted starting Y to 240 to clear headers
 
-      // Draw background card for item (narrower: 220px wide)
+      // Draw background card for item (wider: 230px wide to avoid overlaps)
       const card = this.add.graphics();
       card.fillStyle(0xfff1e6, 0.95);
-      card.fillRoundedRect(x - 110, y - 40, 220, 80, 10);
+      card.fillRoundedRect(x - 115, y - 40, 230, 80, 10);
       card.lineStyle(2, 0xddb892, 1);
-      card.strokeRoundedRect(x - 110, y - 40, 220, 80, 10);
+      card.strokeRoundedRect(x - 115, y - 40, 230, 80, 10);
 
-      // Draw circular background for the icon
+      // Draw circular background for the icon (shifted left to x - 82)
       const iconCircle = this.add.graphics();
       iconCircle.fillStyle(0xffffff, 1);
-      iconCircle.fillCircle(x - 78, y, 22);
+      iconCircle.fillCircle(x - 82, y, 22);
       iconCircle.lineStyle(1.5, 0xddb892, 1);
-      iconCircle.strokeCircle(x - 78, y, 22);
+      iconCircle.strokeCircle(x - 82, y, 22);
 
       // Draw item icon sprite inside the circle
       let iconTexture = '';
@@ -136,53 +136,51 @@ export default class ShopScene extends Phaser.Scene {
         targetH = 30;
       }
       
-      const itemIcon = this.add.image(x - 78, y, iconTexture);
+      const itemIcon = this.add.image(x - 82, y, iconTexture);
       itemIcon.setDisplaySize(targetW, targetH);
 
-      // Render Item details (x offset shifted to x - 48)
+      // Render Item details (x offset shifted to x - 52, slightly smaller fonts for extra safety)
       let nameTxt, descTxt, statusTxt;
       
       if (item.type === 'mold') {
-        nameTxt = this.add.text(x - 48, y - 18, item.name, {
-          font: '13px "Outfit", sans-serif',
-          fill: '#582f0e',
-          fontWeight: '800'
+        nameTxt = this.add.text(x - 52, y - 18, item.name, {
+          font: 'bold 12px "Outfit", sans-serif',
+          fill: '#582f0e'
         });
 
-        statusTxt = this.add.text(x - 48, y + 4, this.getStatusString(item), {
-          font: '11px "Outfit", sans-serif',
+        statusTxt = this.add.text(x - 52, y + 4, this.getStatusString(item), {
+          font: '10px "Outfit", sans-serif',
           fill: '#7f5539',
           fontWeight: '700'
         });
       } else {
-        nameTxt = this.add.text(x - 48, y - 28, item.name, {
-          font: '13px "Outfit", sans-serif',
-          fill: '#582f0e',
-          fontWeight: '800'
+        nameTxt = this.add.text(x - 52, y - 28, item.name, {
+          font: 'bold 12px "Outfit", sans-serif',
+          fill: '#582f0e'
         });
 
-        descTxt = this.add.text(x - 48, y - 10, item.desc, {
-          font: '10px "Outfit", sans-serif',
+        descTxt = this.add.text(x - 52, y - 10, item.desc, {
+          font: '9px "Outfit", sans-serif',
           fill: '#b5838d',
           fontWeight: '600'
         });
 
-        statusTxt = this.add.text(x - 48, y + 8, this.getStatusString(item), {
-          font: '11px "Outfit", sans-serif',
+        statusTxt = this.add.text(x - 52, y + 8, this.getStatusString(item), {
+          font: '10px "Outfit", sans-serif',
           fill: '#7f5539',
           fontWeight: '700'
         });
       }
 
-      // Buy Button container (placed to the right of text)
-      const btnW = 80;
-      const btnH = 34;
-      const btnX = x + 20;
-      const btnY = y - 17;
+      // Buy Button container (placed to the right of text: btnX = x + 38, width = 66)
+      const btnW = 66;
+      const btnH = 30;
+      const btnX = x + 38;
+      const btnY = y - 15;
 
       const btnBg = this.add.graphics();
       const btnText = this.add.text(btnX + btnW / 2, btnY + btnH / 2, `🪙 ${item.cost}`, {
-        font: '12px "Outfit", sans-serif',
+        font: '11px "Outfit", sans-serif',
         fill: '#fff1e6',
         fontWeight: '800'
       }).setOrigin(0.5);
