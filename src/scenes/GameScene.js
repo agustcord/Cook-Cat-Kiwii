@@ -695,7 +695,7 @@ export default class GameScene extends Phaser.Scene {
     this.drinkMachine.setInteractive({ useHandCursor: true });
     this.drinkMachine.on('pointerdown', () => {
       if (this.machineState === 'empty') {
-        this.showFeedbackText('¡Arrastra café o leche para preparar! ☕', startX, 200, '#582f0e');
+        this.showFeedbackText('¡Presiona Café o Leche para preparar! ☕🥛', startX, 200, '#582f0e');
       } else if (this.machineState.startsWith('ready_')) {
         this.pickupDrink();
       } else {
@@ -703,13 +703,28 @@ export default class GameScene extends Phaser.Scene {
       }
     });
 
-    // 3. Ingredient Jars (Coffee Beans and Milk)
+    // 3. Serve Button (drawn dynamically when a drink is ready)
+    this.drinkServeBtnBg = this.add.graphics().setDepth(5);
+    this.drinkServeBtnText = this.add.text(startX, startY + 52, 'SERVIR', {
+      font: '10px "Outfit", sans-serif',
+      fill: '#ffffff',
+      fontWeight: '800'
+    }).setOrigin(0.5).setDepth(6);
+    this.drinkServeBtnText.setVisible(false);
+
+    this.drinkServeZone = this.add.rectangle(startX, startY + 52, 70, 24, 0x000000, 0)
+      .setDepth(7);
+    this.drinkServeZone.on('pointerdown', () => {
+      this.pickupDrink();
+    });
+
+    // 4. Ingredient Jars/Buttons (Coffee Beans and Milk)
     const jarSize = 40;
     const beansX = startX - 32;
     const milkX = startX + 32;
     const jarY = startY + 95;
 
-    // Coffee Beans Jar
+    // Coffee Beans Button
     this.beansJarImg = this.add.image(beansX, jarY, 'drink_coffee_beans')
       .setDisplaySize(jarSize, jarSize)
       .setDepth(3);
@@ -724,9 +739,8 @@ export default class GameScene extends Phaser.Scene {
 
     const beansDragZone = this.add.rectangle(beansX, jarY, jarSize, jarSize, 0x000000, 0);
     beansDragZone.setInteractive({ useHandCursor: true });
-    this.input.setDraggable(beansDragZone);
 
-    // Milk Carton
+    // Milk Button
     this.milkCartonImg = this.add.image(milkX, jarY, 'drink_milk')
       .setDisplaySize(jarSize, jarSize)
       .setDepth(3);
@@ -741,12 +755,10 @@ export default class GameScene extends Phaser.Scene {
 
     const milkDragZone = this.add.rectangle(milkX, jarY, jarSize, jarSize, 0x000000, 0);
     milkDragZone.setInteractive({ useHandCursor: true });
-    this.input.setDraggable(milkDragZone);
 
     this.updateDrinkStockTexts();
 
-    // 4. Set up Drag Listeners for Coffee Beans
-    let beansClone = null;
+    // 5. Button click events (No drag-and-drop)
     beansDragZone.on('pointerover', () => {
       if ((this.stock.drink.coffee_beans || 0) > 0) {
         this.beansJarImg.setDisplaySize(jarSize + 6, jarSize + 6);
@@ -755,38 +767,25 @@ export default class GameScene extends Phaser.Scene {
     beansDragZone.on('pointerout', () => {
       this.beansJarImg.setDisplaySize(jarSize, jarSize);
     });
-    beansDragZone.on('dragstart', () => {
+    beansDragZone.on('pointerdown', () => {
       const stock = this.stock.drink.coffee_beans || 0;
       if (stock <= 0) {
         this.showFeedbackText('¡Sin stock! Cómpralo en la tienda 🛒', startX, 200, '#d90429');
         return;
       }
-      beansClone = this.add.image(beansX, jarY, 'drink_coffee_beans')
-        .setDisplaySize(jarSize, jarSize)
-        .setDepth(100);
-      this.beansJarImg.setAlpha(0.4);
-    });
-    beansDragZone.on('drag', (pointer, dragX, dragY) => {
-      if (!beansClone) return;
-      beansClone.x = dragX;
-      beansClone.y = Math.max(180, dragY);
-    });
-    beansDragZone.on('dragend', () => {
-      this.beansJarImg.setAlpha(1.0);
-      this.beansJarImg.setDisplaySize(jarSize, jarSize);
-      if (!beansClone) return;
+      
+      // Button tap animation
+      this.tweens.add({
+        targets: this.beansJarImg,
+        scale: 1.15,
+        duration: 80,
+        yoyo: true,
+        ease: 'Quad.easeInOut'
+      });
 
-      const dist = Phaser.Math.Distance.Between(beansClone.x, beansClone.y, startX, startY);
-      beansClone.destroy();
-      beansClone = null;
-
-      if (dist < 60) {
-        this.handleDrinkIngredientDrop('coffee_beans', startX, startY);
-      }
+      this.handleDrinkIngredientDrop('coffee_beans', startX, startY);
     });
 
-    // 5. Set up Drag Listeners for Milk
-    let milkClone = null;
     milkDragZone.on('pointerover', () => {
       if ((this.stock.drink.milk || 0) > 0) {
         this.milkCartonImg.setDisplaySize(jarSize + 6, jarSize + 6);
@@ -795,34 +794,23 @@ export default class GameScene extends Phaser.Scene {
     milkDragZone.on('pointerout', () => {
       this.milkCartonImg.setDisplaySize(jarSize, jarSize);
     });
-    milkDragZone.on('dragstart', () => {
+    milkDragZone.on('pointerdown', () => {
       const stock = this.stock.drink.milk || 0;
       if (stock <= 0) {
         this.showFeedbackText('¡Sin stock! Cómpralo en la tienda 🛒', startX, 200, '#d90429');
         return;
       }
-      milkClone = this.add.image(milkX, jarY, 'drink_milk')
-        .setDisplaySize(jarSize, jarSize)
-        .setDepth(100);
-      this.milkCartonImg.setAlpha(0.4);
-    });
-    milkDragZone.on('drag', (pointer, dragX, dragY) => {
-      if (!milkClone) return;
-      milkClone.x = dragX;
-      milkClone.y = Math.max(180, dragY);
-    });
-    milkDragZone.on('dragend', () => {
-      this.milkCartonImg.setAlpha(1.0);
-      this.milkCartonImg.setDisplaySize(jarSize, jarSize);
-      if (!milkClone) return;
 
-      const dist = Phaser.Math.Distance.Between(milkClone.x, milkClone.y, startX, startY);
-      milkClone.destroy();
-      milkClone = null;
+      // Button tap animation
+      this.tweens.add({
+        targets: this.milkCartonImg,
+        scale: 1.15,
+        duration: 80,
+        yoyo: true,
+        ease: 'Quad.easeInOut'
+      });
 
-      if (dist < 60) {
-        this.handleDrinkIngredientDrop('milk', startX, startY);
-      }
+      this.handleDrinkIngredientDrop('milk', startX, startY);
     });
   }
 
@@ -832,6 +820,24 @@ export default class GameScene extends Phaser.Scene {
     }
     if (this.milkStockText) {
       this.milkStockText.setText(`${this.stock.drink.milk || 0} u.`);
+    }
+  }
+
+  updateDrinkServeButtonState(startX, startY) {
+    const isReady = this.machineState.startsWith('ready_');
+    this.drinkServeBtnBg.clear();
+    
+    if (isReady) {
+      this.drinkServeBtnBg.fillStyle(0x38b000, 1);
+      this.drinkServeBtnBg.fillRoundedRect(startX - 35, startY + 40, 70, 24, 6);
+      this.drinkServeBtnBg.lineStyle(1.5, 0xffffff, 1);
+      this.drinkServeBtnBg.strokeRoundedRect(startX - 35, startY + 40, 70, 24, 6);
+      
+      this.drinkServeBtnText.setVisible(true);
+      this.drinkServeZone.setInteractive({ useHandCursor: true });
+    } else {
+      this.drinkServeBtnText.setVisible(false);
+      this.drinkServeZone.disableInteractive();
     }
   }
 
@@ -879,6 +885,7 @@ export default class GameScene extends Phaser.Scene {
 
             // Brew finished!
             this.machineState = type === 'coffee_beans' ? 'ready_coffee' : 'ready_milk';
+            
             if (this.machineCupSprite) {
               this.machineCupSprite.setAlpha(1.0);
               
@@ -898,6 +905,10 @@ export default class GameScene extends Phaser.Scene {
                 this.pickupDrink();
               });
             }
+            
+            // Show serve button
+            this.updateDrinkServeButtonState(startX, startY);
+            
             this.showFeedbackText('¡Bebida lista! ☕', startX, 200, '#38b000');
           }
         }
@@ -918,6 +929,7 @@ export default class GameScene extends Phaser.Scene {
           ease: 'Bounce.easeOut'
         });
       }
+      this.updateDrinkServeButtonState(startX, startY);
       this.showFeedbackText('¡Café con leche! ☕🥛', startX, 200, '#38b000');
     } else if (this.machineState === 'ready_milk' && type === 'coffee_beans') {
       // Upgrade Milk to Coffee with Milk
@@ -935,6 +947,7 @@ export default class GameScene extends Phaser.Scene {
           ease: 'Bounce.easeOut'
         });
       }
+      this.updateDrinkServeButtonState(startX, startY);
       this.showFeedbackText('¡Café con leche! ☕🥛', startX, 200, '#38b000');
     } else {
       this.showFeedbackText('¡La máquina está ocupada! ☕', startX, 200, '#d90429');
@@ -956,12 +969,18 @@ export default class GameScene extends Phaser.Scene {
     // Destroy cup sprite on machine and reset state
     this.machineCupSprite.destroy();
     this.machineCupSprite = null;
+    
+    const startX = this.drinkMachine.x;
+    const startY = this.drinkMachine.y;
     this.machineState = 'empty';
+
+    // Hide serve button
+    this.updateDrinkServeButtonState(startX, startY);
 
     let label = 'Café';
     if (drinkKey === 'milk') label = 'Leche';
     else if (drinkKey === 'coffee_milk') label = 'Café c/Leche';
-    this.showFeedbackText(`¡${label} servido! ☕`, 650, 200, '#38b000');
+    this.showFeedbackText(`¡${label} servido! ☕`, startX, 200, '#38b000');
   }
 
   handleOvenClick() {
@@ -2070,15 +2089,32 @@ export default class GameScene extends Phaser.Scene {
       this.deliveryTrayLabel.x = dragX;
       this.deliveryTrayLabel.y = clampedY - 33;
 
-      // Translate all cookie sprites on the tray
-      const count = this.deliveryTrayCookies.length;
-      if (count > 0) {
+      // Translate all sprites on the tray (cookies and drinks combined)
+      const cookiesCount = this.deliveryTrayCookies.length;
+      const drinksCount = this.deliveryTrayDrinks ? this.deliveryTrayDrinks.length : 0;
+      const totalCount = cookiesCount + drinksCount;
+      
+      if (totalCount > 0) {
         const spacing = 35;
-        const startX = dragX - ((count - 1) * spacing) / 2;
-        this.deliveryTraySprites.forEach((sprite, index) => {
-          sprite.x = startX + index * spacing;
-          sprite.y = clampedY;
-        });
+        const startX = dragX - ((totalCount - 1) * spacing) / 2;
+        
+        // Translate cookie sprites
+        for (let i = 0; i < cookiesCount; i++) {
+          const sprite = this.deliveryTraySprites[i];
+          if (sprite) {
+            sprite.x = startX + i * spacing;
+            sprite.y = clampedY;
+          }
+        }
+        
+        // Translate drink sprites
+        for (let i = 0; i < drinksCount; i++) {
+          const sprite = this.deliveryTraySprites[cookiesCount + i];
+          if (sprite) {
+            sprite.x = startX + (cookiesCount + i) * spacing;
+            sprite.y = clampedY - 4; // Maintain drink height offset
+          }
+        }
       }
 
       // Check distance to trash bin
@@ -2194,8 +2230,10 @@ export default class GameScene extends Phaser.Scene {
         if (this.trashIconText) this.trashIconText.clearTint();
 
         const count = this.deliveryTrayCookies.length;
-        if (count > 0) {
+        const drinksCount = this.deliveryTrayDrinks ? this.deliveryTrayDrinks.length : 0;
+        if (count > 0 || drinksCount > 0) {
           this.deliveryTrayCookies = [];
+          this.deliveryTrayDrinks = [];
           this.drawDeliveryTray();
           this.showFeedbackText('¡Bandeja Vaciada! 🗑️', this.trashBinX, this.trashBinY - 50, '#d90429');
         }
