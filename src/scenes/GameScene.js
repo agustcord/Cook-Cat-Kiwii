@@ -9,59 +9,28 @@ const DAY_CONFIGS = {
     patienceTime: 40,
     maxCustomers: 3,
     bakeMin: 5.5,
-    bakeMax: 7.5,
-    recipes: [
-      { name: 'Estrella Clásica', base: 'classic', shape: 'star', toppings: [] }
-    ]
+    bakeMax: 7.5
   },
   2: {
     meta: 150,
     patienceTime: 35,
     maxCustomers: 4,
     bakeMin: 6.0,
-    bakeMax: 7.5,
-    recipes: [
-      { name: 'Estrella Clásica', base: 'classic', shape: 'star', toppings: ['sprinkles'] },
-      { name: 'Corazón Clásico', base: 'classic', shape: 'heart', toppings: ['sprinkles'] },
-      { name: 'Corazón de Chocolate', base: 'chocolate', shape: 'heart', toppings: ['sprinkles'] },
-      { name: 'Galleta Gato Choco', base: 'classic', shape: 'cat', toppings: ['choco'] },
-      { name: 'Estrella de Choco', base: 'classic', shape: 'star', toppings: ['choco'] }
-    ]
+    bakeMax: 7.5
   },
   3: {
     meta: 200,
     patienceTime: 30,
     maxCustomers: 4,
     bakeMin: 6.5,
-    bakeMax: 7.5,
-    recipes: [
-      { name: 'Estrella Clásica', base: 'classic', shape: 'star', toppings: ['sprinkles'] },
-      { name: 'Corazón de Chocolate', base: 'chocolate', shape: 'heart', toppings: ['choco'] },
-      { name: 'Galleta Gato Choco', base: 'classic', shape: 'cat', toppings: ['choco'] },
-      { name: 'Estrella de Choco', base: 'classic', shape: 'star', toppings: ['choco'] },
-      { name: 'Corazón Avena Choco', base: 'oat', shape: 'heart', toppings: ['choco'] },
-      { name: 'Estrella Avena', base: 'oat', shape: 'star', toppings: ['sprinkles'] },
-      { name: 'Gato de Avena', base: 'oat', shape: 'cat', toppings: ['choco'] },
-      { name: 'Pez Clásico', base: 'classic', shape: 'fish', toppings: ['sprinkles'] }
-    ]
+    bakeMax: 7.5
   },
   4: {
     meta: 300,
     patienceTime: 28,
     maxCustomers: 5,
     bakeMin: 7.0,
-    bakeMax: 7.5,
-    recipes: [
-      { name: 'Estrella Clásica', base: 'classic', shape: 'star', toppings: ['sprinkles'] },
-      { name: 'Corazón de Chocolate', base: 'chocolate', shape: 'heart', toppings: ['glazing'] },
-      { name: 'Galleta Gato Choco', base: 'classic', shape: 'cat', toppings: ['choco'] },
-      { name: 'Gato Glaseado', base: 'classic', shape: 'cat', toppings: ['glazing'] },
-      { name: 'Estrella de Choco', base: 'classic', shape: 'star', toppings: ['choco'] },
-      { name: 'Corazón Avena Choco', base: 'oat', shape: 'heart', toppings: ['choco'] },
-      { name: 'Gato Choco-Fusión', base: 'chocolate', shape: 'cat', toppings: ['glazing'] },
-      { name: 'Pez de Avena Glaseado', base: 'oat', shape: 'fish', toppings: ['glazing'] },
-      { name: 'Pez de Chocolate', base: 'chocolate', shape: 'fish', toppings: ['choco'] }
-    ]
+    bakeMax: 7.5
   }
 };
 
@@ -1471,21 +1440,46 @@ export default class GameScene extends Phaser.Scene {
     const customerId = this.customerSequence[this.customersSpawned];
     this.customersSpawned++;
 
-    // Filter recipes based on unlocked shapes and currently available stock (> 0)
-    const availableRecipes = (this.config.recipes || []).filter(recipe => {
-      if (!this.unlockedShapes.includes(recipe.shape)) return false;
-      
-      const doughStock = Number(this.stock.dough[recipe.base]) || 0;
-      if (doughStock <= 0) return false;
+    // Generate available recipes dynamically based on what's unlocked and in stock!
+    const availableRecipes = [];
+    
+    // Get bases (dough) with stock > 0
+    const availableBases = Object.keys(this.stock.dough).filter(base => (Number(this.stock.dough[base]) || 0) > 0);
+    
+    // Get toppings with stock > 0
+    const availableToppings = Object.keys(this.stock.topping).filter(t => (Number(this.stock.topping[t]) || 0) > 0);
 
-      if (recipe.toppings && recipe.toppings.length > 0) {
-        for (const topping of recipe.toppings) {
-          const toppingStock = Number(this.stock.topping[topping]) || 0;
-          if (toppingStock <= 0) return false;
-        }
-      }
-      return true;
-    });
+    // Translation names for friendly displaying
+    const baseNames = { classic: 'Vainilla', chocolate: 'Chocolate', oat: 'Avena' };
+    const shapeNames = { star: 'Estrella', heart: 'Corazón', cat: 'Gato', fish: 'Pez' };
+    const toppingNames = { sprinkles: 'con Chispas', choco: 'con Chips', glazing: 'con Glaseado' };
+
+    // Generate valid combinations
+    if (this.unlockedShapes) {
+      this.unlockedShapes.forEach(shape => {
+        availableBases.forEach(base => {
+          // Plain version (no toppings)
+          const plainName = `${shapeNames[shape] || shape} de ${baseNames[base] || base}`;
+          availableRecipes.push({
+            name: plainName,
+            base: base,
+            shape: shape,
+            toppings: []
+          });
+
+          // Version with each available topping
+          availableToppings.forEach(topping => {
+            const toppedName = `${shapeNames[shape] || shape} de ${baseNames[base] || base} ${toppingNames[topping] || topping}`;
+            availableRecipes.push({
+              name: toppedName,
+              base: base,
+              shape: shape,
+              toppings: [topping]
+            });
+          });
+        });
+      });
+    }
 
     let selectedRecipe = null;
     let qty = 1;
