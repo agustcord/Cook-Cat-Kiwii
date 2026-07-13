@@ -721,7 +721,8 @@ export default class GameScene extends Phaser.Scene {
       strokeThickness: 2
     }).setOrigin(0.5).setDepth(3);
 
-    const beansDragZone = this.add.rectangle(beansX, btnY, btnSize, btnSize, 0x000000, 0);
+    const beansDragZone = this.add.rectangle(beansX, btnY, btnSize, btnSize, 0x000000, 0)
+      .setDepth(4);
     beansDragZone.setInteractive({ useHandCursor: true });
 
     // Milk Button Click Zone and Stock Text (styled like a digital display)
@@ -732,7 +733,8 @@ export default class GameScene extends Phaser.Scene {
       strokeThickness: 2
     }).setOrigin(0.5).setDepth(3);
 
-    const milkDragZone = this.add.rectangle(milkX, btnY, btnSize, btnSize, 0x000000, 0);
+    const milkDragZone = this.add.rectangle(milkX, btnY, btnSize, btnSize, 0x000000, 0)
+      .setDepth(4);
     milkDragZone.setInteractive({ useHandCursor: true });
 
     this.updateDrinkStockTexts();
