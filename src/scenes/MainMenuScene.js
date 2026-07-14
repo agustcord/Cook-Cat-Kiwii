@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../game/SoundEffects';
 
 export default class MainMenuScene extends Phaser.Scene {
   constructor() {
@@ -6,6 +7,9 @@ export default class MainMenuScene extends Phaser.Scene {
   }
 
   create() {
+    // Play introductory main menu synthesized music
+    SoundEffects.playMainMenuMusic();
+
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
@@ -53,6 +57,7 @@ export default class MainMenuScene extends Phaser.Scene {
 
     // Transition to game scene on tap/click
     playZone.on('pointerdown', () => {
+      SoundEffects.playClick();
       this.scene.start('GameScene', {
         day: 1,
         coins: 0,

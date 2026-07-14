@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../game/SoundEffects';
 
 export default class VictoryScene extends Phaser.Scene {
   constructor() {
@@ -10,6 +11,9 @@ export default class VictoryScene extends Phaser.Scene {
   }
 
   create() {
+    // Play a delightful synthesized victory arpeggio sound
+    SoundEffects.playPerfect();
+
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
@@ -71,6 +75,7 @@ export default class VictoryScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
 
     actionZone.on('pointerdown', () => {
+      SoundEffects.playClick();
       this.scene.start('MainMenuScene');
     });
 

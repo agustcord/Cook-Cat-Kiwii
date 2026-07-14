@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../game/SoundEffects';
 
 export default class SummaryScene extends Phaser.Scene {
   constructor() {
@@ -50,6 +51,12 @@ export default class SummaryScene extends Phaser.Scene {
   }
 
   create() {
+    // Play appropriate sound when entering summary
+    if (this.isBankrupt) {
+      SoundEffects.playAngry();
+    } else {
+      SoundEffects.playCoin();
+    }
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
@@ -207,7 +214,10 @@ export default class SummaryScene extends Phaser.Scene {
     const actionZone = this.add.rectangle(width / 2, btnY + btnH / 2, btnW, btnH, 0x000000, 0)
       .setInteractive({ useHandCursor: true });
 
-    actionZone.on('pointerdown', nextSceneCallback);
+    actionZone.on('pointerdown', () => {
+      SoundEffects.playClick();
+      nextSceneCallback();
+    });
 
     actionZone.on('pointerover', () => {
       actionBtnBg.clear();
@@ -232,6 +242,7 @@ export default class SummaryScene extends Phaser.Scene {
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
       retryText.on('pointerdown', () => {
+        SoundEffects.playClick();
         this.scene.start('GameScene', {
           day: this.day,
           coins: this.coinsAtStart,

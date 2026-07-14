@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../game/SoundEffects';
 
 export default class ShopScene extends Phaser.Scene {
   constructor() {
@@ -213,11 +214,13 @@ export default class ShopScene extends Phaser.Scene {
         statusTxt.setText(this.getStatusString(item));
       };
 
-      // Set up click event
       hitZone.on('pointerdown', () => {
         if (this.coins >= item.cost) {
           this.coins -= item.cost;
           this.coinBalanceText.setText(`🪙 Monedas Disponibles: ${this.coins}`);
+          
+          // Play coin register sound
+          SoundEffects.playCoin();
 
           if (item.type === 'mold') {
             this.unlockedShapes.push(item.id);
@@ -280,6 +283,7 @@ export default class ShopScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
 
     startZone.on('pointerdown', () => {
+      SoundEffects.playClick();
       // Start GameScene for the next day
       this.scene.start('GameScene', {
         day: this.day + 1,

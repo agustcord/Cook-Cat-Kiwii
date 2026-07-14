@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../game/SoundEffects';
 
 export default class GameOverScene extends Phaser.Scene {
   constructor() {
@@ -6,6 +7,9 @@ export default class GameOverScene extends Phaser.Scene {
   }
 
   create() {
+    // Play a low, disappointed/sad synthesized tone
+    SoundEffects.playAngry();
+
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
@@ -64,6 +68,7 @@ export default class GameOverScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
 
     actionZone.on('pointerdown', () => {
+      SoundEffects.playClick();
       // Restart complete game
       this.scene.start('GameScene', {
         day: 1,
