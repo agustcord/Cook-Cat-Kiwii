@@ -30,7 +30,7 @@ Este sprite representa la pata en pose de agarre o haciendo click, vista desde a
 
 ### Prompt sugerido:
 ```text
-A cute, simple flat-design chibi cat paw, clenched or grabbing pose seen from above (dorsal view, showing only the furry cream top of the paw, NO pink pads). Tiny, simple cartoon claws are slightly extended as if pinching or holding something. Minimalist cartoon style, kawaii aesthetic. Matching the exact size, orientation, and cream fur color of the open cat paw. Medium-thick clean dark brown (#4e3629) outlines. Vector graphics look, flat colors, no shadows, no complex gradients. Solid plain white background. Size: 256x256 pixels.
+A cute, simple flat-design chibi cat paw, clenched or grabbing pose seen from above (dorsal view, showing only the furry cream top of the paw, NO pink pads). Tiny, simple cartoon claws are slightly extended as if pinching or holding something. The top of the paw is attached to a long, straight furry cream cat forearm that extends straight up, going off the top edge of the frame. Crucially, the top of the image shows the straight cat forearm going all the way up, cut off by the top border, just like a long sleeve or straight column. Minimalist cartoon style, kawaii aesthetic. Matching the exact size, orientation, and cream fur color of the open cat paw. Medium-thick clean dark brown (#4e3629) outlines. Vector graphics look, flat colors, no shadows, no complex gradients. Solid plain white background. Size: 256x256 pixels.
 ```
 
 ---
