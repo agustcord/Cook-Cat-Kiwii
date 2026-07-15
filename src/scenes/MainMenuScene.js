@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import SoundEffects from '../game/SoundEffects';
+import SoundEffects from '../game/SoundEffects.js';
 
 export default class MainMenuScene extends Phaser.Scene {
   constructor() {
