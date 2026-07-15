@@ -20,8 +20,10 @@ async function processPaw(inputPath, outputName) {
 
   console.log(`Processing ${path.basename(inputPath)}...`);
 
-  // 1. Resize to 256x256 first (with white background)
+  // 1. Crop the bottom-left quadrant (x: 0-512, y: 512-1024) of the 1024x1024 grid
+  // and resize it to 256x256 with a solid white background.
   const { data, info } = await sharp(inputPath)
+    .extract({ left: 0, top: 512, width: 512, height: 512 })
     .resize(256, 256, {
       fit: 'contain',
       background: { r: 255, g: 255, b: 255 }
@@ -36,12 +38,13 @@ async function processPaw(inputPath, outputName) {
   const tempBuf = Buffer.alloc(pixelCount * 4);
 
   // 2. Convert white background to transparency
+  // We use a threshold of 240 to remove white backgrounds cleanly
   for (let i = 0; i < pixelCount; i++) {
     const r = data[i * 4];
     const g = data[i * 4 + 1];
     const b = data[i * 4 + 2];
 
-    const isWhite = r >= 245 && g >= 245 && b >= 245;
+    const isWhite = r >= 240 && g >= 240 && b >= 240;
 
     if (isWhite) {
       tempBuf[i * 4] = 0;
@@ -56,7 +59,7 @@ async function processPaw(inputPath, outputName) {
     }
   }
 
-  // 3. Automagic Arm Extension (copy row down from the first stable arm row)
+  // 3. Automagic Arm Extension (if the cropped paw starts slightly below y=0)
   let extRowY = -1;
   const minArmWidth = Math.floor(width * 0.15); // 38px
   
