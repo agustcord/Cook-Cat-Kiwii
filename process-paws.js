@@ -31,7 +31,7 @@ async function processPaw(inputPath, outputName) {
   const width = info.width;
   const height = info.height;
   const pixelCount = width * height;
-  const newData = Buffer.alloc(pixelCount * 4);
+  const tempBuf = Buffer.alloc(pixelCount * 4);
 
   // 1. Convert white background to transparency
   for (let i = 0; i < pixelCount; i++) {
@@ -42,58 +42,115 @@ async function processPaw(inputPath, outputName) {
     const isWhite = r >= 245 && g >= 245 && b >= 245;
 
     if (isWhite) {
-      newData[i * 4] = 0;
-      newData[i * 4 + 1] = 0;
-      newData[i * 4 + 2] = 0;
-      newData[i * 4 + 3] = 0; // Transparent
+      tempBuf[i * 4] = 0;
+      tempBuf[i * 4 + 1] = 0;
+      tempBuf[i * 4 + 2] = 0;
+      tempBuf[i * 4 + 3] = 0; // Transparent
     } else {
-      newData[i * 4] = r;
-      newData[i * 4 + 1] = g;
-      newData[i * 4 + 2] = b;
-      newData[i * 4 + 3] = 255; // Opaque
+      tempBuf[i * 4] = r;
+      tempBuf[i * 4 + 1] = g;
+      tempBuf[i * 4 + 2] = b;
+      tempBuf[i * 4 + 3] = 255; // Opaque
     }
   }
 
-  // 2. Automagic Arm Extension: if the top is rounded, extend the arm straight up to the edge
+  // 2. Automagic Arm Extension for rounded-top paws
   let extRowY = -1;
-  const minArmWidth = Math.floor(width * 0.15); // Require at least 15% width of image to be the arm
+  const minArmWidth = Math.floor(width * 0.15); // At least 15% width of image
   
   for (let y = 0; y < height; y++) {
     let firstOpaqueX = -1;
     let lastOpaqueX = -1;
     for (let x = 0; x < width; x++) {
       const idx = (y * width + x) * 4;
-      if (newData[idx + 3] > 0) {
+      if (tempBuf[idx + 3] > 0) {
         if (firstOpaqueX === -1) firstOpaqueX = x;
         lastOpaqueX = x;
       }
     }
     const rowWidth = (firstOpaqueX !== -1) ? (lastOpaqueX - firstOpaqueX + 1) : 0;
     
-    // We scan down from the top. The first row that has a stable arm width (e.g. at least 15% width)
     if (rowWidth >= minArmWidth) {
       extRowY = y;
       break;
     }
   }
 
-  // If we found a stable row, copy it straight up to the top of the canvas
   if (extRowY > 0) {
-    console.log(`🔧 Extendiéndo el antebrazo verticalmente desde la fila y=${extRowY} hasta la parte superior (y=0)...`);
+    console.log(`  🔧 Extendiéndo el antebrazo verticalmente desde la fila y=${extRowY}...`);
     for (let y = 0; y < extRowY; y++) {
       for (let x = 0; x < width; x++) {
         const targetIdx = (y * width + x) * 4;
         const sourceIdx = (extRowY * width + x) * 4;
-        newData[targetIdx] = newData[sourceIdx];
-        newData[targetIdx + 1] = newData[sourceIdx + 1];
-        newData[targetIdx + 2] = newData[sourceIdx + 2];
-        newData[targetIdx + 3] = newData[sourceIdx + 3];
+        tempBuf[targetIdx] = tempBuf[sourceIdx];
+        tempBuf[targetIdx + 1] = tempBuf[sourceIdx + 1];
+        tempBuf[targetIdx + 2] = tempBuf[sourceIdx + 2];
+        tempBuf[targetIdx + 3] = tempBuf[sourceIdx + 3];
       }
     }
   }
 
-  // Create sharp image and resize/trim to standard 256x256
-  await sharp(newData, {
+  // 3. Taper and Normalize Wrist Width to exactly 110 pixels at the top edge (y=0)
+  // This ensures both open and closed paws have identical wrist width and align perfectly with the arm!
+  const targetWristWidth = 110;
+  const targetLeft = Math.floor((width - targetWristWidth) / 2); // 73
+  const targetRight = targetLeft + targetWristWidth - 1; // 182
+  const transitionY = Math.floor(height * 0.55); // Transition arm tapering down to 55% of height
+
+  const finalBuf = Buffer.alloc(pixelCount * 4);
+
+  for (let y = 0; y < height; y++) {
+    // Find boundaries of the arm in the current row of tempBuf
+    let leftSrc = -1;
+    let rightSrc = -1;
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      if (tempBuf[idx + 3] > 0) {
+        if (leftSrc === -1) leftSrc = x;
+        rightSrc = x;
+      }
+    }
+
+    const rowWidth = (leftSrc !== -1) ? (rightSrc - leftSrc + 1) : 0;
+
+    // If we are in the tapering region (forearm/wrist area) and there is content in this row
+    if (y < transitionY && rowWidth > 0) {
+      const ratio = y / transitionY;
+      const leftDst = Math.round(targetLeft + (leftSrc - targetLeft) * ratio);
+      const rightDst = Math.round(targetRight + (rightSrc - targetRight) * ratio);
+      const newWidth = rightDst - leftDst + 1;
+
+      for (let x = 0; x < width; x++) {
+        const destIdx = (y * width + x) * 4;
+        if (x < leftDst || x > rightDst || newWidth <= 1) {
+          finalBuf[destIdx] = 0;
+          finalBuf[destIdx + 1] = 0;
+          finalBuf[destIdx + 2] = 0;
+          finalBuf[destIdx + 3] = 0;
+        } else {
+          // Map x to source coordinate
+          const srcX = Math.round(leftSrc + ((x - leftDst) / (newWidth - 1)) * (rightSrc - leftSrc));
+          const srcIdx = (y * width + Math.max(0, Math.min(width - 1, srcX))) * 4;
+          finalBuf[destIdx] = tempBuf[srcIdx];
+          finalBuf[destIdx + 1] = tempBuf[srcIdx + 1];
+          finalBuf[destIdx + 2] = tempBuf[srcIdx + 2];
+          finalBuf[destIdx + 3] = tempBuf[srcIdx + 3];
+        }
+      }
+    } else {
+      // Copy row as is
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+        finalBuf[idx] = tempBuf[idx];
+        finalBuf[idx + 1] = tempBuf[idx + 1];
+        finalBuf[idx + 2] = tempBuf[idx + 2];
+        finalBuf[idx + 3] = tempBuf[idx + 3];
+      }
+    }
+  }
+
+  // Save the normalized image
+  await sharp(finalBuf, {
     raw: {
       width: width,
       height: height,
@@ -107,12 +164,11 @@ async function processPaw(inputPath, outputName) {
   .png()
   .toFile(outputPath);
 
-  console.log(`✅ Procesado con éxito y guardado en: ${outputPath}`);
+  console.log(`✅ Procesado y Normalizado guardado en: ${outputPath}`);
   return true;
 }
 
 async function run() {
-  // Try to process both potential extensions (.jpg, .jpeg, .png)
   const filesToTry = [
     { input: 'cat_paw_open.jpg', output: 'cat_paw_open.png' },
     { input: 'cat_paw_open.jpeg', output: 'cat_paw_open.png' },
@@ -122,10 +178,8 @@ async function run() {
 
   let processedCount = 0;
   for (const pair of filesToTry) {
-    // Check in temp folder first
     let inputPath = path.join(TEMP_DIR, pair.input);
     if (!fs.existsSync(inputPath)) {
-      // Fallback to public/ directly
       inputPath = path.join(__dirname, 'public', pair.input);
     }
 
@@ -136,7 +190,7 @@ async function run() {
   }
 
   if (processedCount === 0) {
-    console.log('⚠️ No se encontraron archivos nuevos para procesar. Por favor coloca cat_paw_open.jpg y cat_paw_closed.jpg en public/assets/ui_temp_jpg/');
+    console.log('⚠️ No se encontraron archivos nuevos para procesar.');
   }
 }
 

@@ -151,7 +151,10 @@ export default class GameScene extends Phaser.Scene {
     this.pawY = height / 2;
 
     this.catArmGraphics = this.add.graphics().setDepth(10000);
-    this.catPawSprite = this.add.image(this.pawX, this.pawY, 'cat_paw_open').setDepth(10000).setOrigin(0.5, 0.55);
+    this.catPawSprite = this.add.image(this.pawX, this.pawY, 'cat_paw_open')
+      .setDepth(10000)
+      .setOrigin(0.5, 0.55)
+      .setDisplaySize(96, 96);
 
     // Track pointerdown/pointerup to trigger grab animation (texture swap)
     this.input.on('pointerdown', () => {
@@ -2025,12 +2028,12 @@ export default class GameScene extends Phaser.Scene {
       );
       const points = curve.getPoints(24);
 
-      // Outer outline (brown)
-      this.catArmGraphics.lineStyle(42, 0x582f0e);
+      // Outer outline (matching the sprite's dark brown #4e3629)
+      this.catArmGraphics.lineStyle(42, 0x4e3629);
       this.catArmGraphics.strokePoints(points);
 
-      // Inner fill (cream fur matching the paw asset)
-      this.catArmGraphics.lineStyle(34, 0xf5ebe0);
+      // Inner fill (matching the sprite's cream fur #fdfbf7)
+      this.catArmGraphics.lineStyle(34, 0xfdfbf7);
       this.catArmGraphics.strokePoints(points);
     }
   }
