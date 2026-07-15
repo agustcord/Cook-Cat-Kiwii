@@ -29,8 +29,8 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('oven_on', 'assets/oven_on.png');
     this.load.image('chef_cat', 'assets/chef_cat.png?v=8');
     this.load.image('menu_bg', 'assets/Cat_chef_behind_counter_202607051008.jpeg');
-    this.load.image('cat_paw_open', 'assets/cat_paw_open.png');
-    this.load.image('cat_paw_closed', 'assets/cat_paw_closed.png');
+    this.load.image('cat_paw_open', 'assets/cat_paw_open.png?v=9');
+    this.load.image('cat_paw_closed', 'assets/cat_paw_closed.png?v=9');
     
     // Preload UI assets
     this.load.image('day_sign_empty', 'assets/ui/day_sign_empty.png?v=1');
