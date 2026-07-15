@@ -20,10 +20,19 @@ async function processPaw(inputPath, outputName) {
 
   console.log(`Processing ${path.basename(inputPath)}...`);
 
-  // 1. Crop the bottom-left quadrant (x: 0-512, y: 512-1024) of the 1024x1024 grid
-  // and resize it to 256x256 with a solid white background.
+  // 1. Extract the paw card region (excluding grid borders and UI)
+  // The paw is located at x: 40-470, y: 540-980 (width=430, height=440).
+  // We pad it horizontally by 5px on each side to make it a perfect 440x440 square,
+  // then resize to 256x256.
   const { data, info } = await sharp(inputPath)
-    .extract({ left: 0, top: 512, width: 512, height: 512 })
+    .extract({ left: 40, top: 540, width: 430, height: 440 })
+    .extend({
+      top: 0,
+      bottom: 0,
+      left: 5,
+      right: 5,
+      background: { r: 255, g: 255, b: 255 }
+    })
     .resize(256, 256, {
       fit: 'contain',
       background: { r: 255, g: 255, b: 255 }
@@ -38,12 +47,12 @@ async function processPaw(inputPath, outputName) {
   const tempBuf = Buffer.alloc(pixelCount * 4);
 
   // 2. Convert white background to transparency
-  // We use a threshold of 240 to remove white backgrounds cleanly
   for (let i = 0; i < pixelCount; i++) {
     const r = data[i * 4];
     const g = data[i * 4 + 1];
     const b = data[i * 4 + 2];
 
+    // Transparent threshold for off-white background
     const isWhite = r >= 240 && g >= 240 && b >= 240;
 
     if (isWhite) {
@@ -59,7 +68,7 @@ async function processPaw(inputPath, outputName) {
     }
   }
 
-  // 3. Automagic Arm Extension (if the cropped paw starts slightly below y=0)
+  // 3. Automagic Arm Extension (fill top if the cropped card paw doesn't reach y=0)
   let extRowY = -1;
   const minArmWidth = Math.floor(width * 0.15); // 38px
   
