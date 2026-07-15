@@ -29,15 +29,17 @@ async function processPaw(filename, outputName) {
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  const pixelCount = info.width * info.height;
+  const width = info.width;
+  const height = info.height;
+  const pixelCount = width * height;
   const newData = Buffer.alloc(pixelCount * 4);
 
+  // 1. Convert white background to transparency
   for (let i = 0; i < pixelCount; i++) {
     const r = data[i * 4];
     const g = data[i * 4 + 1];
     const b = data[i * 4 + 2];
 
-    // Check if pixel is white (background)
     const isWhite = r >= 245 && g >= 245 && b >= 245;
 
     if (isWhite) {
@@ -53,11 +55,49 @@ async function processPaw(filename, outputName) {
     }
   }
 
-  // Create sharp image and resize/trim to standard 128x128 or 256x256 (let's keep 256x256 as target)
+  // 2. Automagic Arm Extension: if the top is rounded, extend the arm straight up to the edge
+  let extRowY = -1;
+  const minArmWidth = Math.floor(width * 0.15); // Require at least 15% width of image to be the arm
+  
+  for (let y = 0; y < height; y++) {
+    let firstOpaqueX = -1;
+    let lastOpaqueX = -1;
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      if (newData[idx + 3] > 0) {
+        if (firstOpaqueX === -1) firstOpaqueX = x;
+        lastOpaqueX = x;
+      }
+    }
+    const rowWidth = (firstOpaqueX !== -1) ? (lastOpaqueX - firstOpaqueX + 1) : 0;
+    
+    // We scan down from the top. The first row that has a stable arm width (e.g. at least 15% width)
+    if (rowWidth >= minArmWidth) {
+      extRowY = y;
+      break;
+    }
+  }
+
+  // If we found a stable row, copy it straight up to the top of the canvas
+  if (extRowY > 0) {
+    console.log(`🔧 Extendiéndo el antebrazo verticalmente desde la fila y=${extRowY} hasta la parte superior (y=0)...`);
+    for (let y = 0; y < extRowY; y++) {
+      for (let x = 0; x < width; x++) {
+        const targetIdx = (y * width + x) * 4;
+        const sourceIdx = (extRowY * width + x) * 4;
+        newData[targetIdx] = newData[sourceIdx];
+        newData[targetIdx + 1] = newData[sourceIdx + 1];
+        newData[targetIdx + 2] = newData[sourceIdx + 2];
+        newData[targetIdx + 3] = newData[sourceIdx + 3];
+      }
+    }
+  }
+
+  // Create sharp image and resize/trim to standard 256x256
   await sharp(newData, {
     raw: {
-      width: info.width,
-      height: info.height,
+      width: width,
+      height: height,
       channels: 4
     }
   })
