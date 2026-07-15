@@ -2028,12 +2028,12 @@ export default class GameScene extends Phaser.Scene {
       );
       const points = curve.getPoints(24);
 
-      // Outer outline (matching the sprite's dark brown #4e3629)
-      this.catArmGraphics.lineStyle(42, 0x4e3629);
+      // Outer outline (matching the sprite's exact dark brown #472918)
+      this.catArmGraphics.lineStyle(42, 0x472918);
       this.catArmGraphics.strokePoints(points);
 
-      // Inner fill (matching the sprite's cream fur #fdfbf7)
-      this.catArmGraphics.lineStyle(34, 0xfdfbf7);
+      // Inner fill (matching the sprite's exact cream fur #f4f1ce)
+      this.catArmGraphics.lineStyle(34, 0xf4f1ce);
       this.catArmGraphics.strokePoints(points);
     }
   }

@@ -20,10 +20,12 @@ async function processPaw(inputPath, outputName) {
 
   console.log(`Processing ${path.basename(inputPath)}...`);
 
-  // Remove white background and make transparent
+  // 1. Resize to 256x256 first (with white background)
   const { data, info } = await sharp(inputPath)
-    .flatten({ background: { r: 255, g: 255, b: 255 } })
-    .toColorspace('srgb')
+    .resize(256, 256, {
+      fit: 'contain',
+      background: { r: 255, g: 255, b: 255 }
+    })
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -33,7 +35,7 @@ async function processPaw(inputPath, outputName) {
   const pixelCount = width * height;
   const tempBuf = Buffer.alloc(pixelCount * 4);
 
-  // 1. Convert white background to transparency
+  // 2. Convert white background to transparency
   for (let i = 0; i < pixelCount; i++) {
     const r = data[i * 4];
     const g = data[i * 4 + 1];
@@ -54,9 +56,9 @@ async function processPaw(inputPath, outputName) {
     }
   }
 
-  // 2. Automagic Arm Extension for rounded-top paws
+  // 3. Automagic Arm Extension (copy row down from the first stable arm row)
   let extRowY = -1;
-  const minArmWidth = Math.floor(width * 0.15); // At least 15% width of image
+  const minArmWidth = Math.floor(width * 0.15); // 38px
   
   for (let y = 0; y < height; y++) {
     let firstOpaqueX = -1;
@@ -90,17 +92,16 @@ async function processPaw(inputPath, outputName) {
     }
   }
 
-  // 3. Taper and Normalize Wrist Width to exactly 110 pixels at the top edge (y=0)
+  // 4. Taper and Normalize Wrist Width to exactly 112 pixels at the top edge (y=0)
   // This ensures both open and closed paws have identical wrist width and align perfectly with the arm!
-  const targetWristWidth = 110;
-  const targetLeft = Math.floor((width - targetWristWidth) / 2); // 73
-  const targetRight = targetLeft + targetWristWidth - 1; // 182
+  const targetWristWidth = 112;
+  const targetLeft = Math.floor((width - targetWristWidth) / 2); // 72
+  const targetRight = targetLeft + targetWristWidth - 1; // 183
   const transitionY = Math.floor(height * 0.55); // Transition arm tapering down to 55% of height
 
   const finalBuf = Buffer.alloc(pixelCount * 4);
 
   for (let y = 0; y < height; y++) {
-    // Find boundaries of the arm in the current row of tempBuf
     let leftSrc = -1;
     let rightSrc = -1;
     for (let x = 0; x < width; x++) {
@@ -113,7 +114,6 @@ async function processPaw(inputPath, outputName) {
 
     const rowWidth = (leftSrc !== -1) ? (rightSrc - leftSrc + 1) : 0;
 
-    // If we are in the tapering region (forearm/wrist area) and there is content in this row
     if (y < transitionY && rowWidth > 0) {
       const ratio = y / transitionY;
       const leftDst = Math.round(targetLeft + (leftSrc - targetLeft) * ratio);
@@ -128,7 +128,6 @@ async function processPaw(inputPath, outputName) {
           finalBuf[destIdx + 2] = 0;
           finalBuf[destIdx + 3] = 0;
         } else {
-          // Map x to source coordinate
           const srcX = Math.round(leftSrc + ((x - leftDst) / (newWidth - 1)) * (rightSrc - leftSrc));
           const srcIdx = (y * width + Math.max(0, Math.min(width - 1, srcX))) * 4;
           finalBuf[destIdx] = tempBuf[srcIdx];
@@ -157,14 +156,10 @@ async function processPaw(inputPath, outputName) {
       channels: 4
     }
   })
-  .resize(256, 256, {
-    fit: 'contain',
-    background: { r: 0, g: 0, b: 0, alpha: 0 }
-  })
   .png()
   .toFile(outputPath);
 
-  console.log(`✅ Procesado y Normalizado guardado en: ${outputPath}`);
+  console.log(`   ✅ Procesado y Normalizado guardado en: ${outputPath}`);
   return true;
 }
 
