@@ -10,8 +10,7 @@ const TEMP_DIR = path.join(__dirname, 'public', 'assets', 'ui_temp_jpg');
 const OUTPUT_DIR = path.join(__dirname, 'public', 'assets');
 
 // Helper to process a single paw image
-async function processPaw(filename, outputName) {
-  const inputPath = path.join(TEMP_DIR, filename);
+async function processPaw(inputPath, outputName) {
   const outputPath = path.join(OUTPUT_DIR, outputName);
 
   if (!fs.existsSync(inputPath)) {
@@ -19,7 +18,7 @@ async function processPaw(filename, outputName) {
     return false;
   }
 
-  console.log(`Processing ${filename}...`);
+  console.log(`Processing ${path.basename(inputPath)}...`);
 
   // Remove white background and make transparent
   const { data, info } = await sharp(inputPath)
@@ -123,9 +122,15 @@ async function run() {
 
   let processedCount = 0;
   for (const pair of filesToTry) {
-    const inputExists = fs.existsSync(path.join(TEMP_DIR, pair.input));
-    if (inputExists) {
-      const success = await processPaw(pair.input, pair.output);
+    // Check in temp folder first
+    let inputPath = path.join(TEMP_DIR, pair.input);
+    if (!fs.existsSync(inputPath)) {
+      // Fallback to public/ directly
+      inputPath = path.join(__dirname, 'public', pair.input);
+    }
+
+    if (fs.existsSync(inputPath)) {
+      const success = await processPaw(inputPath, pair.output);
       if (success) processedCount++;
     }
   }
