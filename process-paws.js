@@ -1,38 +1,33 @@
 import fs from 'fs';
-import path from 'path';
+import path from 'url';
 import { fileURLToPath } from 'url';
 import sharp from 'sharp';
+import fsExtra from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.fileURLToPath(new URL('.', import.meta.url));
 
-const TEMP_DIR = path.join(__dirname, 'public', 'assets', 'ui_temp_jpg');
-const OUTPUT_DIR = path.join(__dirname, 'public', 'assets');
+const TEMP_DIR = path.fileURLToPath(new URL('./public/assets/ui_temp_jpg', import.meta.url));
+const OUTPUT_DIR = path.fileURLToPath(new URL('./public/assets', import.meta.url));
 
 // Helper to process a single paw image
 async function processPaw(inputPath, outputName) {
-  const outputPath = path.join(OUTPUT_DIR, outputName);
+  const outputPath = path.fileURLToPath(new URL(`./public/assets/${outputName}`, import.meta.url));
 
-  if (!fs.existsSync(inputPath)) {
+  if (!fsExtra.existsSync(inputPath)) {
     console.error(`❌ Archivo de origen no encontrado: ${inputPath}`);
     return false;
   }
 
-  console.log(`Processing ${path.basename(inputPath)}...`);
+  console.log(`Processing ${inputPath}...`);
 
-  // 1. Extract the paw card region (excluding grid borders and UI)
-  // The paw is located at x: 40-470, y: 540-980 (width=430, height=440).
-  // We pad it horizontally by 5px on each side to make it a perfect 440x440 square,
-  // then resize to 256x256.
+  // 1. Extract the Top-Left Card safe area (x: 40-470, y: 40-470, width=430, height=430)
+  // which contains the straight paw variation pointing UPWARDS.
+  // 2. Flip it vertically using .flip() so it points DOWNWARDS (wrist at top y=0, fingers at bottom).
+  // 3. Resize to 256x256.
   const { data, info } = await sharp(inputPath)
-    .extract({ left: 40, top: 540, width: 430, height: 440 })
-    .extend({
-      top: 0,
-      bottom: 0,
-      left: 5,
-      right: 5,
-      background: { r: 255, g: 255, b: 255 }
-    })
+    .extract({ left: 40, top: 40, width: 430, height: 430 })
+    .flip() // Flips vertically
     .resize(256, 256, {
       fit: 'contain',
       background: { r: 255, g: 255, b: 255 }
@@ -46,13 +41,12 @@ async function processPaw(inputPath, outputName) {
   const pixelCount = width * height;
   const tempBuf = Buffer.alloc(pixelCount * 4);
 
-  // 2. Convert white background to transparency
+  // 4. Convert white background to transparency
   for (let i = 0; i < pixelCount; i++) {
     const r = data[i * 4];
     const g = data[i * 4 + 1];
     const b = data[i * 4 + 2];
 
-    // Transparent threshold for off-white background
     const isWhite = r >= 240 && g >= 240 && b >= 240;
 
     if (isWhite) {
@@ -68,7 +62,7 @@ async function processPaw(inputPath, outputName) {
     }
   }
 
-  // 3. Automagic Arm Extension (fill top if the cropped card paw doesn't reach y=0)
+  // 5. Automagic Arm Extension (fill top if the flipped wrist doesn't quite reach y=0)
   let extRowY = -1;
   const minArmWidth = Math.floor(width * 0.15); // 38px
   
@@ -104,12 +98,11 @@ async function processPaw(inputPath, outputName) {
     }
   }
 
-  // 4. Taper and Normalize Wrist Width to exactly 112 pixels at the top edge (y=0)
-  // This ensures both open and closed paws have identical wrist width and align perfectly with the arm!
+  // 6. Taper and Normalize Wrist Width to exactly 112 pixels at the top edge (y=0)
   const targetWristWidth = 112;
   const targetLeft = Math.floor((width - targetWristWidth) / 2); // 72
   const targetRight = targetLeft + targetWristWidth - 1; // 183
-  const transitionY = Math.floor(height * 0.55); // Transition arm tapering down to 55% of height
+  const transitionY = Math.floor(height * 0.55); // Transition tapering down to 55% of height
 
   const finalBuf = Buffer.alloc(pixelCount * 4);
 
@@ -185,12 +178,12 @@ async function run() {
 
   let processedCount = 0;
   for (const pair of filesToTry) {
-    let inputPath = path.join(TEMP_DIR, pair.input);
-    if (!fs.existsSync(inputPath)) {
-      inputPath = path.join(__dirname, 'public', pair.input);
+    let inputPath = path.fileURLToPath(new URL(`./public/assets/ui_temp_jpg/${pair.input}`, import.meta.url));
+    if (!fsExtra.existsSync(inputPath)) {
+      inputPath = path.fileURLToPath(new URL(`./public/${pair.input}`, import.meta.url));
     }
 
-    if (fs.existsSync(inputPath)) {
+    if (fsExtra.existsSync(inputPath)) {
       const success = await processPaw(inputPath, pair.output);
       if (success) processedCount++;
     }

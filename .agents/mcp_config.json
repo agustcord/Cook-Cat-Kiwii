@@ -3,6 +3,14 @@
     "game-asset-gen": {
       "command": "npx",
       "args": ["-y", "mcp-game-asset-gen"]
+    },
+    "imgx": {
+      "command": "npx",
+      "args": ["-y", "imgx-mcp"]
+    },
+    "opencv": {
+      "command": "uvx",
+      "args": ["opencv-mcp-server"]
     }
   }
 }
