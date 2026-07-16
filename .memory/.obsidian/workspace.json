@@ -4,11 +4,31 @@
     "type": "split",
     "children": [
       {
-        "id": "bd003eb91c51eb4b",
+        "id": "b2b197431173b823",
         "type": "tabs",
         "children": [
           {
-            "id": "550152ddc8579ecc",
+            "id": "f8b89ff426261bbe",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "wiki/guia_resolucion_problemas.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "guia_resolucion_problemas"
+            }
+          }
+        ]
+      },
+      {
+        "id": "cb8159e4ecb3b631",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "54bab70589e0cad9",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -69,12 +89,24 @@
               "icon": "lucide-bookmark",
               "title": "Marcadores"
             }
+          },
+          {
+            "id": "74bf79f216807de1",
+            "type": "leaf",
+            "state": {
+              "type": "notebook-navigator",
+              "state": {},
+              "icon": "notebook-navigator",
+              "title": "Navegador de Cuadernos"
+            }
           }
-        ]
+        ],
+        "currentTab": 3
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 513.5,
+    "collapsed": true
   },
   "right": {
     "id": "424309e039d9cf3a",
@@ -173,21 +205,22 @@
       "daily-notes:Abrir la nota de hoy": false,
       "templates:Insertar plantilla": false,
       "command-palette:Abrir paleta de comandos": false,
-      "bases:Crear nueva base": false
+      "bases:Crear nueva base": false,
+      "notebook-navigator:Navegador de Cuadernos": false
     }
   },
-  "active": "550152ddc8579ecc",
+  "active": "54bab70589e0cad9",
   "lastOpenFiles": [
-    "wiki/inspiracion_musica.md",
-    "index.md",
     "wiki/guia_resolucion_problemas.md",
-    "2026-07-16.md",
-    "Sin título.canvas",
-    "log.md",
     "wiki/hoja_ruta.md",
-    "wiki/historia.md",
-    "wiki/configuracion_ui.md",
     "wiki/bienvenida.md",
-    "wiki/biblia_arte.md"
+    "2026-07-16.md",
+    "wiki/configuracion_ui.md",
+    "index.md",
+    "log.md",
+    "wiki/historia.md",
+    "wiki/inspiracion_musica.md",
+    "wiki/biblia_arte.md",
+    "Sin título.canvas"
   ]
 }

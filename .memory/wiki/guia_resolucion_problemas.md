@@ -55,3 +55,13 @@ Esta guía documenta los problemas técnicos, de diseño y visuales encontrados 
 * **Causa Raíz**: Se estaban utilizando colores aproximados de la paleta general del juego (`0xf5ebe0` y `0x4e3629`). Al analizar los píxeles reales del sprite, se descubrió que el color de pelaje exacto es `#f4f1ce` y el marrón del contorno es `#472918`.
 * **Solución**: Se actualizaron las constantes del brazo dinámico en `GameScene.js` para usar los códigos hexadecimales exactos extraídos de la textura.
 * **Lección**: Extrae siempre los colores muestreando los píxeles reales de las texturas importadas para que los gráficos generados por código tengan coherencia cromática absoluta.
+
+### 3.5. Unión de la Pata y el Brazo Procedural (Técnica de Sandwich de Capas y Acortamiento Fijo)
+* **Síntoma**: La pata abierta y el brazo procedural presentaban un corte horizontal brusco en la muñeca ("notch" o "repisa") al unirse, haciéndose notar la terminación plana de la textura 2D. Además, al mover la pata hacia arriba en la pantalla, esta se desprendía del brazo.
+* **Causa Raíz**:
+  1. La pata y el brazo compartían la misma capa de profundidad, dejando visible el borde inferior plano de la pata.
+  2. El acortamiento del brazo se calculaba mediante un porcentaje estático (12%). A mayor distancia del cursor (pata arriba), el 12% representaba un espacio mayor en píxeles, provocando la separación.
+* **Solución**:
+  1. *Sandwich de Capas*: Se dividió el dibujo del brazo en dos. El contorno del brazo se asignó a `setDepth(9998)` (detrás de la pata) y el relleno crema del brazo se asignó a `setDepth(10000)` (por encima de la pata a `depth 9999`). De este modo, el relleno crema cubre el corte del final de la muñeca fusionándose de forma invisible con el pelaje del mismo color, mientras que el contorno marrón queda oculto por detrás.
+  2. *Acortamiento por Píxeles Fijos*: Se cambió el cálculo para que el trazo del brazo termine siempre exactamente **25 píxeles** antes de llegar al cursor (usando `tMax` dinámico en base al largo total de la curva Bezier).
+* **Lección**: Para transiciones impecables entre assets de rasterizado (imágenes) y vectores dibujados por código, combina el ordenamiento fino de capas (sandwiching) con offsets en píxeles fijos para evitar deformaciones dependientes de la escala o la distancia.

@@ -23,14 +23,27 @@ async function processPaw(inputPath, outputName) {
   const width = 256;
   const height = 256;
 
-  // 1. Crop Top-Left Q1 (430x430), flip vertically, resize to 256x256
-  const flippedBuf = await sharp(inputPath)
-    .extract({ left: 40, top: 40, width: 430, height: 430 })
-    .flip()
-    .resize(width, height, {
+  // 1. Cargar la imagen: si es un archivo .png nuevo, no aplicamos corte de cuadrante ni volteo vertical.
+  const isNewPng = inputPath.endsWith('.png');
+  let sharpInstance = sharp(inputPath);
+
+  if (isNewPng) {
+    sharpInstance = sharpInstance.resize(width, height, {
       fit: 'contain',
       background: { r: 255, g: 255, b: 255 }
-    })
+    });
+  } else {
+    // Legado: recorte de Q1 (430x430), volteo vertical y redimensionamiento
+    sharpInstance = sharpInstance
+      .extract({ left: 40, top: 40, width: 430, height: 430 })
+      .flip()
+      .resize(width, height, {
+        fit: 'contain',
+        background: { r: 255, g: 255, b: 255 }
+      });
+  }
+
+  const flippedBuf = await sharpInstance
     .ensureAlpha()
     .raw()
     .toBuffer();
@@ -141,9 +154,9 @@ async function processPaw(inputPath, outputName) {
     }
   }
 
-  // 6. Taper and Normalize Wrist Width to exactly 112 pixels at the top edge (y=0)
-  const targetWristWidth = 112;
-  const targetLeft = Math.floor((width - targetWristWidth) / 2); // 72
+  // 6. Taper and Normalize Wrist Width to exactly 100 pixels at the top edge (y=0)
+  const targetWristWidth = 100;
+  const targetLeft = Math.floor((width - targetWristWidth) / 2); // 78
   const targetRight = targetLeft + targetWristWidth - 1; // 183
   const transitionY = Math.floor(height * 0.55); // Transition tapering down to 55% of height
 
@@ -216,8 +229,10 @@ async function run() {
   const filesToTry = [
     { input: 'cat_paw_open.jpg', output: 'cat_paw_open.png' },
     { input: 'cat_paw_open.jpeg', output: 'cat_paw_open.png' },
+    { input: 'cat_paw_open.png', output: 'cat_paw_open.png' },
     { input: 'cat_paw_closed.jpg', output: 'cat_paw_closed.png' },
-    { input: 'cat_paw_closed.jpeg', output: 'cat_paw_closed.png' }
+    { input: 'cat_paw_closed.jpeg', output: 'cat_paw_closed.png' },
+    { input: 'cat_paw_closed.png', output: 'cat_paw_closed.png' }
   ];
 
   let processedCount = 0;

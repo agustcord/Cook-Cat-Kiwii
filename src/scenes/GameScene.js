@@ -150,9 +150,10 @@ export default class GameScene extends Phaser.Scene {
     this.pawX = width / 2;
     this.pawY = height / 2;
 
-    this.catArmGraphics = this.add.graphics().setDepth(10000);
+    this.catArmOutlineGraphics = this.add.graphics().setDepth(9998);
+    this.catArmFillGraphics = this.add.graphics().setDepth(10000);
     this.catPawSprite = this.add.image(this.pawX, this.pawY, 'cat_paw_open')
-      .setDepth(10000)
+      .setDepth(9999)
       .setOrigin(0.5, 0.55)
       .setDisplaySize(96, 96);
 
@@ -160,11 +161,13 @@ export default class GameScene extends Phaser.Scene {
     this.input.on('pointerdown', () => {
       if (this.catPawSprite) {
         this.catPawSprite.setTexture('cat_paw_closed');
+        this.catPawSprite.setDisplaySize(104, 104);
       }
     });
     this.input.on('pointerup', () => {
       if (this.catPawSprite) {
         this.catPawSprite.setTexture('cat_paw_open');
+        this.catPawSprite.setDisplaySize(96, 96);
       }
     });
 
@@ -1994,7 +1997,7 @@ export default class GameScene extends Phaser.Scene {
 
     // Custom Cat Paw Cursor Update
     const pointer = this.input.activePointer;
-    if (pointer && this.catPawSprite && this.catArmGraphics) {
+    if (pointer && this.catPawSprite && this.catArmOutlineGraphics && this.catArmFillGraphics) {
       // Lerp paw position to pointer position with a Y clamp limit at Y=180 (top of oven)
       const clampedTargetY = Math.max(180, pointer.y);
       const lerpSpeed = 0.22;
@@ -2018,7 +2021,8 @@ export default class GameScene extends Phaser.Scene {
       this.catPawSprite.setRotation(angle - Math.PI / 2);
 
       // Redraw the arm graphics
-      this.catArmGraphics.clear();
+      this.catArmOutlineGraphics.clear();
+      this.catArmFillGraphics.clear();
 
       // Generate Bezier Curve points
       const curve = new Phaser.Curves.QuadraticBezier(
@@ -2026,15 +2030,26 @@ export default class GameScene extends Phaser.Scene {
         new Phaser.Math.Vector2(controlX, controlY),
         new Phaser.Math.Vector2(this.pawX, this.pawY)
       );
-      const points = curve.getPoints(24);
+      
+      // Shorten the arm by a fixed 25 pixels to prevent detaching as the paw moves up
+      const curveLength = curve.getLength();
+      const shortenPixels = 25;
+      const tMax = curveLength > shortenPixels ? (curveLength - shortenPixels) / curveLength : 1.0;
 
-      // Outer outline (matching the sprite's exact dark brown #472918)
-      this.catArmGraphics.lineStyle(42, 0x472918);
-      this.catArmGraphics.strokePoints(points);
+      const points = [];
+      const segments = 24;
+      for (let i = 0; i <= segments; i++) {
+        const t = (i / segments) * tMax;
+        points.push(curve.getPoint(t));
+      }
 
-      // Inner fill (matching the sprite's exact cream fur #f4f1ce)
-      this.catArmGraphics.lineStyle(34, 0xf4f1ce);
-      this.catArmGraphics.strokePoints(points);
+      // Outer outline (matching the sprite's exact dark brown #553523) - drawn behind paw
+      this.catArmOutlineGraphics.lineStyle(40, 0x553523);
+      this.catArmOutlineGraphics.strokePoints(points);
+
+      // Inner fill (matching the sprite's exact cream fur #f4e7d4) - drawn on top of paw
+      this.catArmFillGraphics.lineStyle(36, 0xf4e7d4);
+      this.catArmFillGraphics.strokePoints(points);
     }
   }
 

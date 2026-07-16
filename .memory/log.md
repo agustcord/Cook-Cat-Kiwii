@@ -1,5 +1,8 @@
 # Bitácora de Cambios (Log)
 
+## [2026-07-16] fix | Solución de corte y desalineación de la pata del gato
+- Se actualizó [[guia_resolucion_problemas|Guía de Resolución de Problemas]] con la sección 3.5 sobre la técnica de sandwich de capas y acortamiento por píxeles fijos del brazo procedural.
+
 ## [2026-07-16] update | Agregada nota de inspiración de música
 - Se creó la nota [[inspiracion_musica|Inspiración de Música]] guardando el enlace de YouTube Music de referencia para el juego.
 - Se actualizó el [[index|Catálogo de Notas]].
