@@ -14,6 +14,7 @@
 
 ## 🎨 Arte y Assets
 - [[biblia_arte|Biblia de Arte (Art Bible)]]
+- [[inspiracion_musica|Inspiración de Música]]
 
 ## 📋 Tareas y Pendientes
 - [x] Completar la inicialización y abrir el Vault en Obsidian.
