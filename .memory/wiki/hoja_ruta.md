@@ -10,7 +10,7 @@
 *   [x] Generar el gato Kiwi protagonista definitivo.
 *   [x] Iterar y aprobar la imagen base del gato.
 *   [x] Crear y aprobar [[biblia_arte|Biblia de Arte]].
-*   [ ] Generar 1 cliente de prueba consistente con la biblia.
+*   [x] Generar 1 cliente de prueba consistente con la biblia.
 
 ## ETAPA 2 — Core loop jugable (lógica, placeholders)
 *   [x] Lógica "Llega cliente" y pedido visible.

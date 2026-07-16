@@ -4,6 +4,7 @@
 - [[bienvenida|Nota de Bienvenida]]
 - [[historia|Historia y Lore]]
 - [[hoja_ruta|Hoja de Ruta (Roadmap)]]
+- [[guia_resolucion_problemas|Guía de Resolución de Problemas (Post-Mortem)]]
 
 ## 🎮 Mecánicas y Sistemas
 - [[configuracion_ui|Configuración de la Interfaz (UI)]]

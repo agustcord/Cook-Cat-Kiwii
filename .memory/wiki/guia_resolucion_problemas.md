@@ -1,0 +1,57 @@
+# Guía de Resolución de Problemas (Troubleshooting & Post-Mortem)
+
+Esta guía documenta los problemas técnicos, de diseño y visuales encontrados durante el desarrollo de **Kiwi Bakery**, sus causas raíces y cómo se solucionaron. Sirve como referencia para evitar cometer los mismos errores en futuras expansiones o proyectos similares.
+
+---
+
+## 🎮 1. Mecánicas e Interacciones del Juego
+
+### 1.1. Monotonía en Pedidos tras Agotarse una Masa (Bug de Masa Agotada)
+* **Síntoma**: Si la masa clásica se agotaba en una partida pero quedaban existencias de chocolate o avena, los clientes dejaban de pedir galletas y solo pedían bebidas.
+* **Causa Raíz**: Lógica de selección de ingredientes de pedidos en `GameScene.js` con dependencia dura con la masa por defecto (clásica). Al no estar disponible esa masa, la función fallaba y forzaba el pedido a bebida para evitar un crash.
+* **Solución**: Se reestructuró la selección en `GameScene.js` para escanear el inventario, filtrar las masas desbloqueadas con stock mayor a cero (`stock > 0`) y elegir aleatoriamente de esa lista.
+* **Lección**: Las validaciones de inventario deben ser dinámicas y basadas en colecciones filtradas en tiempo real.
+
+### 1.2. Moldes de Galletas Bloqueados por Días (Conflicto con la Tienda)
+* **Síntoma**: En el día 2, el juego forzaba a que los clientes pidieran únicamente la forma de corazón, ignorando las compras de la tienda.
+* **Causa Raíz**: Lógica heredada del prototipo inicial donde los moldes se desbloqueaban según el día transcurrido, anulando las compras del jugador en la `ShopScene.js`.
+* **Solución**: Se eliminó el desbloqueo secuencial por días. Ahora los pedidos de formas se generan aleatoriamente basándose únicamente en los moldes adquiridos en el inventario.
+* **Lección**: Al implementar tiendas dinámicas, elimina las dependencias temporales duras en las escenas.
+
+---
+
+## 🛠️ 2. Código e Infraestructura (Vite + Phaser)
+
+### 2.1. Bloqueo en Pantalla de Carga (Ciclo Infinito en BootScene)
+* **Síntoma**: El juego se quedaba en "Cargando..." infinitamente y no mostraba el menú principal.
+* **Causa Raíz**: Al importar la clase procedural `SoundEffects.js` en múltiples escenas, se omitió la extensión `.js` en las sentencias de importación. Bajo Vite y ES Modules nativos, el navegador requiere obligatoriamente las extensiones de archivos para resolver los módulos locales.
+* **Solución**: Se corrigieron todos los imports añadiendo la extensión explícita: `../game/SoundEffects.js`.
+* **Lección**: En entornos con módulos ES modernos, todas las importaciones locales de archivos JS **deben** llevar la extensión `.js` explícitamente.
+
+---
+
+## 🎨 3. Arte, Assets y Cursor Dinámico (Pata de Gato)
+
+### 3.1. El Efecto "Guante de Boxeo" del Cursor
+* **Síntoma**: La pata de gato se veía gigante en comparación con el mostrador y parecía un guante de boxeo colgado de un brazo de Phaser muy delgado.
+* **Causa Raíz**: Las texturas generadas por la IA eran de $256 \times 256$ píxeles y se renderizaban a escala `1.0`, mientras que el brazo vectorial dinámico dibujado por Phaser tenía un grosor de solo `42px`.
+* **Solución**: Se redimensionó la visualización del sprite en `GameScene.js` a `96 x 96` píxeles. A esta escala, la muñeca de la pata mide exactamente `42px` en pantalla, logrando una unión visual perfecta.
+* **Lección**: Diseña los assets con una resolución mayor para conservar calidad, pero define siempre una escala de renderizado que guarde relación directa con los grosores de los elementos vectoriales que se conectan a ellos.
+
+### 3.2. La Banda Marrón Horizontal en el Agarre (Pata Cerrada)
+* **Síntoma**: Al hacer click, aparecía una línea marrón gruesa horizontal en la muñeca cortando la fluidez del brazo.
+* **Causa Raíz**: En la imagen del grid de la IA, la pata cerrada tenía un contorno horizontal marrón cerrado en la muñeca. Nuestro script original de estiramiento copió esa última fila hacia arriba, duplicando la línea marrón y creando una banda ancha sólida.
+* **Solución**: Se modificó el procesamiento en `process-paws.js` para recortar el cuadrante exacto de la pata antes de procesarla, asegurando que el corte del antebrazo se hiciera en la zona interna de relleno de pelaje crema, eliminando el contorno marrón horizontal.
+* **Lección**: Para piezas de extremidades que deben unirse a gráficos procedurales, el extremo de la textura **debe ser abierto** (sin línea de contorno en la base de la muñeca/brazo) para permitir un flujo visual continuo.
+
+### 3.3. Deformación Diagonal y Torsión de la Pata (Warping)
+* **Síntoma**: Al recortar el cuadrante de la pata, esta aparecía estirada de lado y muy delgada.
+* **Causa Raíz**: Las patas no estaban en el centro del cuadrante de la grilla de la IA; estaban desplazadas a la derecha. Nuestro script intentaba forzar a que la muñeca de la pata se centrara en `x = 128` mediante un cálculo de deformación gradual (tapering), provocando que el brazo se dibujara en diagonal.
+* **Solución**: Se implementó un algoritmo en `process-paws.js` que detecta la caja delimitadora real de la pata en el cuadrante, la extrae, y la centra horizontalmente de forma perfecta en un lienzo cuadrado limpio de $440 \times 440$ píxeles antes de aplicarle el tapering y el resize final.
+* **Lección**: Nunca intentes centrar un objeto descentrado estirando sus coordenadas en base a interpolaciones. Primero recorta la caja delimitadora del objeto real, céntrala físicamente en un lienzo nuevo, y luego aplica las transformaciones.
+
+### 3.4. Inconsistencia de Colores en la Extremidad
+* **Síntoma**: El brazo dinámico de Phaser y la pata de gato tenían tonos crema y marrón ligeramente diferentes.
+* **Causa Raíz**: Se estaban utilizando colores aproximados de la paleta general del juego (`0xf5ebe0` y `0x4e3629`). Al analizar los píxeles reales del sprite, se descubrió que el color de pelaje exacto es `#f4f1ce` y el marrón del contorno es `#472918`.
+* **Solución**: Se actualizaron las constantes del brazo dinámico en `GameScene.js` para usar los códigos hexadecimales exactos extraídos de la textura.
+* **Lección**: Extrae siempre los colores muestreando los píxeles reales de las texturas importadas para que los gráficos generados por código tengan coherencia cromática absoluta.
