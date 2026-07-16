@@ -1,99 +1,142 @@
 import fs from 'fs';
-import path from 'url';
+import path from 'path';
 import { fileURLToPath } from 'url';
 import sharp from 'sharp';
-import fsExtra from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.fileURLToPath(new URL('.', import.meta.url));
+const __dirname = path.dirname(__filename);
 
-const TEMP_DIR = path.fileURLToPath(new URL('./public/assets/ui_temp_jpg', import.meta.url));
-const OUTPUT_DIR = path.fileURLToPath(new URL('./public/assets', import.meta.url));
+const TEMP_DIR = path.join(__dirname, 'public', 'assets', 'ui_temp_jpg');
+const OUTPUT_DIR = path.join(__dirname, 'public', 'assets');
 
 // Helper to process a single paw image
 async function processPaw(inputPath, outputName) {
-  const outputPath = path.fileURLToPath(new URL(`./public/assets/${outputName}`, import.meta.url));
+  const outputPath = path.join(OUTPUT_DIR, outputName);
 
-  if (!fsExtra.existsSync(inputPath)) {
+  if (!fs.existsSync(inputPath)) {
     console.error(`❌ Archivo de origen no encontrado: ${inputPath}`);
     return false;
   }
 
-  console.log(`Processing ${inputPath}...`);
+  console.log(`Processing ${path.basename(inputPath)}...`);
 
-  // 1. Extract the Top-Left Card safe area (x: 40-470, y: 40-470, width=430, height=430)
-  // which contains the straight paw variation pointing UPWARDS.
-  // 2. Flip it vertically using .flip() so it points DOWNWARDS (wrist at top y=0, fingers at bottom).
-  // 3. Resize to 256x256.
-  const { data, info } = await sharp(inputPath)
+  const width = 256;
+  const height = 256;
+
+  // 1. Crop Top-Left Q1 (430x430), flip vertically, resize to 256x256
+  const flippedBuf = await sharp(inputPath)
     .extract({ left: 40, top: 40, width: 430, height: 430 })
-    .flip() // Flips vertically
-    .resize(256, 256, {
+    .flip()
+    .resize(width, height, {
       fit: 'contain',
       background: { r: 255, g: 255, b: 255 }
     })
     .ensureAlpha()
     .raw()
-    .toBuffer({ resolveWithObject: true });
+    .toBuffer();
 
-  const width = info.width;
-  const height = info.height;
-  const pixelCount = width * height;
-  const tempBuf = Buffer.alloc(pixelCount * 4);
-
-  // 4. Convert white background to transparency
-  for (let i = 0; i < pixelCount; i++) {
-    const r = data[i * 4];
-    const g = data[i * 4 + 1];
-    const b = data[i * 4 + 2];
-
+  // 2. Remove white background in temp buffer
+  const tempBuf = Buffer.alloc(width * height * 4);
+  for (let i = 0; i < width * height; i++) {
+    const r = flippedBuf[i * 4];
+    const g = flippedBuf[i * 4 + 1];
+    const b = flippedBuf[i * 4 + 2];
     const isWhite = r >= 240 && g >= 240 && b >= 240;
 
     if (isWhite) {
-      tempBuf[i * 4] = 0;
-      tempBuf[i * 4 + 1] = 0;
-      tempBuf[i * 4 + 2] = 0;
-      tempBuf[i * 4 + 3] = 0; // Transparent
+      tempBuf[i * 4 + 3] = 0;
     } else {
       tempBuf[i * 4] = r;
       tempBuf[i * 4 + 1] = g;
       tempBuf[i * 4 + 2] = b;
-      tempBuf[i * 4 + 3] = 255; // Opaque
+      tempBuf[i * 4 + 3] = 255;
     }
   }
 
-  // 5. Automagic Arm Extension (fill top if the flipped wrist doesn't quite reach y=0)
-  let extRowY = -1;
-  const minArmWidth = Math.floor(width * 0.15); // 38px
-  
-  for (let y = 0; y < height; y++) {
-    let firstOpaqueX = -1;
-    let lastOpaqueX = -1;
+  // 3. Find tilt angle dynamically
+  let sumX_top = 0, count_top = 0;
+  for (let y = 10; y < 40; y++) {
     for (let x = 0; x < width; x++) {
-      const idx = (y * width + x) * 4;
-      if (tempBuf[idx + 3] > 0) {
-        if (firstOpaqueX === -1) firstOpaqueX = x;
-        lastOpaqueX = x;
+      if (tempBuf[(y * width + x) * 4 + 3] > 0) {
+        sumX_top += x;
+        count_top++;
       }
     }
-    const rowWidth = (firstOpaqueX !== -1) ? (lastOpaqueX - firstOpaqueX + 1) : 0;
-    
-    if (rowWidth >= minArmWidth) {
-      extRowY = y;
+  }
+  const x_top = sumX_top / count_top;
+
+  let lastOpaqueY = -1;
+  for (let y = height - 1; y >= 0; y--) {
+    let rowHasOpaque = false;
+    for (let x = 0; x < width; x++) {
+      if (tempBuf[(y * width + x) * 4 + 3] > 0) {
+        rowHasOpaque = true;
+        break;
+      }
+    }
+    if (rowHasOpaque) {
+      lastOpaqueY = y;
       break;
     }
   }
 
-  if (extRowY > 0) {
-    console.log(`  🔧 Extendiéndo el antebrazo verticalmente desde la fila y=${extRowY}...`);
-    for (let y = 0; y < extRowY; y++) {
-      for (let x = 0; x < width; x++) {
-        const targetIdx = (y * width + x) * 4;
-        const sourceIdx = (extRowY * width + x) * 4;
-        tempBuf[targetIdx] = tempBuf[sourceIdx];
-        tempBuf[targetIdx + 1] = tempBuf[sourceIdx + 1];
-        tempBuf[targetIdx + 2] = tempBuf[sourceIdx + 2];
-        tempBuf[targetIdx + 3] = tempBuf[sourceIdx + 3];
+  let sumX_bot = 0, count_bot = 0;
+  const botStart = Math.max(0, lastOpaqueY - 40);
+  const botEnd = lastOpaqueY;
+  for (let y = botStart; y < botEnd; y++) {
+    for (let x = 0; x < width; x++) {
+      if (tempBuf[(y * width + x) * 4 + 3] > 0) {
+        sumX_bot += x;
+        count_bot++;
+      }
+    }
+  }
+  const x_bot = sumX_bot / count_bot;
+
+  const dx = x_bot - x_top;
+  const dy = (botStart + botEnd)/2 - 25;
+  const angleRad = Math.atan2(dx, dy);
+  const angleDeg = angleRad * 180 / Math.PI;
+
+  console.log(`  📐 Ángulo de inclinación detectado: ${angleDeg.toFixed(2)} grados. Rotando...`);
+
+  // 4. Rotate image to make it perfectly vertical, and resize back to 256x256
+  const rotatedRaw = await sharp(tempBuf, {
+    raw: {
+      width: width,
+      height: height,
+      channels: 4
+    }
+  })
+  .rotate(angleDeg, { background: { r: 255, g: 255, b: 255, alpha: 0 } })
+  .resize(width, height, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 0 } })
+  .raw()
+  .toBuffer();
+
+  // 5. Centering: find the new wrist center of mass and shift horizontally to exactly x=128
+  let rotatedX_top = 0, r_count_top = 0;
+  for (let y = 10; y < 40; y++) {
+    for (let x = 0; x < width; x++) {
+      if (rotatedRaw[(y * width + x) * 4 + 3] > 0) {
+        rotatedX_top += x;
+        r_count_top++;
+      }
+    }
+  }
+  const currentWristX = rotatedX_top / r_count_top;
+  const shiftX = Math.round(width / 2 - currentWristX);
+
+  const centeredBuf = Buffer.alloc(width * height * 4);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const srcX = x - shiftX;
+      const destIdx = (y * width + x) * 4;
+      if (srcX >= 0 && srcX < width) {
+        const srcIdx = (y * width + srcX) * 4;
+        centeredBuf[destIdx] = rotatedRaw[srcIdx];
+        centeredBuf[destIdx + 1] = rotatedRaw[srcIdx + 1];
+        centeredBuf[destIdx + 2] = rotatedRaw[srcIdx + 2];
+        centeredBuf[destIdx + 3] = rotatedRaw[srcIdx + 3];
       }
     }
   }
@@ -104,6 +147,7 @@ async function processPaw(inputPath, outputName) {
   const targetRight = targetLeft + targetWristWidth - 1; // 183
   const transitionY = Math.floor(height * 0.55); // Transition tapering down to 55% of height
 
+  const pixelCount = width * height;
   const finalBuf = Buffer.alloc(pixelCount * 4);
 
   for (let y = 0; y < height; y++) {
@@ -111,7 +155,7 @@ async function processPaw(inputPath, outputName) {
     let rightSrc = -1;
     for (let x = 0; x < width; x++) {
       const idx = (y * width + x) * 4;
-      if (tempBuf[idx + 3] > 0) {
+      if (centeredBuf[idx + 3] > 0) {
         if (leftSrc === -1) leftSrc = x;
         rightSrc = x;
       }
@@ -135,20 +179,20 @@ async function processPaw(inputPath, outputName) {
         } else {
           const srcX = Math.round(leftSrc + ((x - leftDst) / (newWidth - 1)) * (rightSrc - leftSrc));
           const srcIdx = (y * width + Math.max(0, Math.min(width - 1, srcX))) * 4;
-          finalBuf[destIdx] = tempBuf[srcIdx];
-          finalBuf[destIdx + 1] = tempBuf[srcIdx + 1];
-          finalBuf[destIdx + 2] = tempBuf[srcIdx + 2];
-          finalBuf[destIdx + 3] = tempBuf[srcIdx + 3];
+          finalBuf[destIdx] = centeredBuf[srcIdx];
+          finalBuf[destIdx + 1] = centeredBuf[srcIdx + 1];
+          finalBuf[destIdx + 2] = centeredBuf[srcIdx + 2];
+          finalBuf[destIdx + 3] = centeredBuf[srcIdx + 3];
         }
       }
     } else {
       // Copy row as is
       for (let x = 0; x < width; x++) {
         const idx = (y * width + x) * 4;
-        finalBuf[idx] = tempBuf[idx];
-        finalBuf[idx + 1] = tempBuf[idx + 1];
-        finalBuf[idx + 2] = tempBuf[idx + 2];
-        finalBuf[idx + 3] = tempBuf[idx + 3];
+        finalBuf[idx] = centeredBuf[idx];
+        finalBuf[idx + 1] = centeredBuf[idx + 1];
+        finalBuf[idx + 2] = centeredBuf[idx + 2];
+        finalBuf[idx + 3] = centeredBuf[idx + 3];
       }
     }
   }
@@ -178,12 +222,12 @@ async function run() {
 
   let processedCount = 0;
   for (const pair of filesToTry) {
-    let inputPath = path.fileURLToPath(new URL(`./public/assets/ui_temp_jpg/${pair.input}`, import.meta.url));
-    if (!fsExtra.existsSync(inputPath)) {
-      inputPath = path.fileURLToPath(new URL(`./public/${pair.input}`, import.meta.url));
+    let inputPath = path.join(TEMP_DIR, pair.input);
+    if (!fs.existsSync(inputPath)) {
+      inputPath = path.join(__dirname, 'public', pair.input);
     }
 
-    if (fsExtra.existsSync(inputPath)) {
+    if (fs.existsSync(inputPath)) {
       const success = await processPaw(inputPath, pair.output);
       if (success) processedCount++;
     }
