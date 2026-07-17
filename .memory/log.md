@@ -1,5 +1,12 @@
 # Bitácora de Cambios (Log)
 
+## [2026-07-17] feat | Música de fondo y panel de control de volumen
+- Se cargó e integró en loop la canción de fondo `Kiwi's Simple Bakehouse Loop.mp3` provista por el usuario.
+- Se agregó el botón de Nota Musical (`🎵`) en la parte superior izquierda del HUD.
+- Se desarrolló el modal `openAudioPanel()` que permite regular el volumen de 10% en 10% y alternar entre sonido silenciado (Mute/Unmute).
+- Se implementó la persistencia de las preferencias de audio del jugador utilizando `localStorage`.
+- Se actualizó [[guia_resolucion_problemas|Guía de Resolución de Problemas]] con la sección 1.6 de la música de fondo.
+
 ## [2026-07-17] feat | Implementada mecánica de rasguñar clientes (garras fuera)
 - Se añadió la interacción de rasguño: al mover la pata cerrada (isDown) y vacía sobre el cliente activo, este grita de dolor, se sacude y huye enojado.
 - Se implementaron efectos visuales de líneas rojas de garras, diálogos aleatorios de queja y animación shake con huida rápida.

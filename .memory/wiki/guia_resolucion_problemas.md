@@ -43,6 +43,16 @@ Esta guía documenta los problemas técnicos, de diseño y visuales encontrados 
   4. La función reproduce `SoundEffects.playAngry()`, muestra diálogos aleatorios de queja (rojos) como `"¡AUCH! ¡Qué servicio tan salvaje! 😡🐾"`, dibuja marcas de garras rojas en pantalla usando `graphics` con un fundido rápido, aplica un efecto shake (sacudida) al cliente, y finalmente realiza un tween de huida hacia la izquierda de la pantalla (`x: -300`) antes de destruirse y traer al siguiente cliente a los 1.5s.
 * **Lección**: La combinación de inputs de Phaser (pointer.isDown + drag flags) y cálculos de distancia Euclidiana permite crear interacciones físicas ricas y orgánicas (como gestos o ataques a personajes) de manera muy ligera y sin sobrecargar la física del motor.
 
+### 1.6. Música de Fondo y Panel de Audio
+* **Síntoma**: Se requería agregar la reproducción de música de fondo (en loop) a partir del archivo `.mp3` suministrado por el usuario, y añadir un icono de nota musical interactivo en el HUD que despliegue un panel para regular el volumen (0% a 100%) y silenciar (Mute/Unmute).
+* **Solución**:
+  1. Se cargó el audio `'bg_music'` en `BootScene.js` apuntando a `assets/audio/Kiwi's Simple Bakehouse Loop.mp3`.
+  2. En `GameScene.js`, se inicializó `this.bgMusic` con volumen recuperado de `localStorage` (o 25% por defecto).
+  3. Se colocó un botón flotante con el icono de nota musical (`🎵`) en la parte superior izquierda del HUD.
+  4. Al pulsar el botón, se abre `openAudioPanel()`, que crea un contenedor flotante modal con un overlay oscuro bloqueador de clics, indicador gráfico del volumen actual, botones interactivos `-` / `+` para disminuir/aumentar el nivel, y botón Mute/Unmute.
+  5. Se implementó la persistencia de las preferencias en `localStorage` (`bg_music_volume` y `bg_music_muted`).
+* **Lección**: Al implementar audio de fondo dinámico y configurable, utiliza contenedores modales de Phaser con overlays interactivos para focalizar la UX en los sliders de audio, y persiste siempre los ajustes en el almacenamiento local para optimizar el re-ingreso del jugador.
+
 ---
 
 ## 🛠️ 2. Código e Infraestructura (Vite + Phaser)

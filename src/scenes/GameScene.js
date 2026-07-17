@@ -104,6 +104,25 @@ export default class GameScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
+    // Music settings from localStorage
+    const savedVolume = localStorage.getItem('bg_music_volume');
+    this.musicVolume = savedVolume !== null ? parseFloat(savedVolume) : 0.25;
+    this.musicMuted = localStorage.getItem('bg_music_muted') === 'true';
+
+    if (!this.sound.get('bg_music')) {
+      this.bgMusic = this.sound.add('bg_music', { 
+        loop: true, 
+        volume: this.musicMuted ? 0 : this.musicVolume 
+      });
+      this.bgMusic.play();
+    } else {
+      this.bgMusic = this.sound.get('bg_music');
+      if (!this.bgMusic.isPlaying) {
+        this.bgMusic.play();
+      }
+      this.bgMusic.setVolume(this.musicMuted ? 0 : this.musicVolume);
+    }
+
     // Draw primary background (cream wall)
     this.drawBackground(width, height);
 
@@ -337,6 +356,38 @@ export default class GameScene extends Phaser.Scene {
       fill: '#582f0e',
       fontWeight: '800'
     }).setOrigin(0.5, 0.5).setDepth(1);
+
+    // Music Button (🎵)
+    const musicBtnX = 205;
+    const musicBtnY = 55;
+
+    this.musicButtonBg = this.add.graphics();
+    this.musicButtonBg.fillStyle(0xe6ccb2, 1);
+    this.musicButtonBg.lineStyle(3, 0x582f0e, 1);
+    this.musicButtonBg.fillCircle(musicBtnX, musicBtnY, 19);
+    this.musicButtonBg.strokeCircle(musicBtnX, musicBtnY, 19);
+    this.musicButtonBg.setDepth(2);
+
+    this.musicButtonText = this.add.text(musicBtnX, musicBtnY, '🎵', {
+      font: '20px "Outfit", sans-serif',
+      fill: '#582f0e',
+      fontWeight: '800'
+    }).setOrigin(0.5).setDepth(3);
+
+    this.musicBtnZone = this.add.circle(musicBtnX, musicBtnY, 19, 0x000000, 0)
+      .setDepth(4)
+      .setInteractive({ useHandCursor: true });
+
+    this.musicBtnZone.on('pointerover', () => {
+      this.musicButtonText.setScale(1.2);
+    });
+    this.musicBtnZone.on('pointerout', () => {
+      this.musicButtonText.setScale(1.0);
+    });
+    this.musicBtnZone.on('pointerdown', () => {
+      SoundEffects.playClick();
+      this.openAudioPanel();
+    });
   }
 
   createStations(width, height) {
@@ -2851,5 +2902,228 @@ export default class GameScene extends Phaser.Scene {
       fontWeight: '800'
     }).setOrigin(0.5);
     this.trashContainer.add(this.trashLabel);
+  }
+
+  openAudioPanel() {
+    if (this.audioPanelContainer) return;
+
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // 1. Create container
+    this.audioPanelContainer = this.add.container(0, 0).setDepth(20000);
+
+    // 2. Translucent dark overlay to prevent clicks behind
+    const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.45)
+      .setOrigin(0, 0)
+      .setInteractive();
+    this.audioPanelContainer.add(overlay);
+
+    // 3. Panel Container Box
+    const boxW = 340;
+    const boxH = 220;
+    const boxX = width / 2;
+    const boxY = height / 2;
+
+    const panelBg = this.add.graphics();
+    panelBg.fillStyle(0xf5ebe0, 1);
+    panelBg.lineStyle(4, 0x582f0e, 1);
+    panelBg.fillRoundedRect(boxX - boxW / 2, boxY - boxH / 2, boxW, boxH, 16);
+    panelBg.strokeRoundedRect(boxX - boxW / 2, boxY - boxH / 2, boxW, boxH, 16);
+    this.audioPanelContainer.add(panelBg);
+
+    // 4. Title
+    const titleText = this.add.text(boxX, boxY - 75, 'MÚSICA DE FONDO', {
+      font: '20px "Outfit", sans-serif',
+      fill: '#582f0e',
+      fontWeight: '800'
+    }).setOrigin(0.5);
+    this.audioPanelContainer.add(titleText);
+
+    // 5. Volume control bar indicator
+    const volumeBarBg = this.add.graphics();
+    volumeBarBg.fillStyle(0xe6ccb2, 1);
+    volumeBarBg.fillRoundedRect(boxX - 70, boxY - 15, 140, 14, 4);
+    this.audioPanelContainer.add(volumeBarBg);
+
+    const volumeFill = this.add.graphics();
+    this.audioPanelContainer.add(volumeFill);
+
+    const drawVolumeBar = () => {
+      volumeFill.clear();
+      if (this.musicMuted) return;
+      volumeFill.fillStyle(0x38b000, 1); // Green fill
+      volumeFill.fillRoundedRect(boxX - 68, boxY - 13, 136 * this.musicVolume, 10, 3);
+    };
+    drawVolumeBar();
+
+    // 6. Volume Percentage Text
+    const volumePercentText = this.add.text(boxX, boxY + 15, `Volumen: ${Math.round(this.musicVolume * 100)}%`, {
+      font: '13px "Outfit", sans-serif',
+      fill: '#7f5539',
+      fontWeight: '700'
+    }).setOrigin(0.5);
+    this.audioPanelContainer.add(volumePercentText);
+
+    // 7. Interactive volume adjustment buttons (+ and -)
+    const btnSize = 32;
+
+    // Minus Button
+    const minusBtnBg = this.add.graphics();
+    minusBtnBg.fillStyle(0xddb892, 1);
+    minusBtnBg.lineStyle(2, 0x582f0e, 1);
+    minusBtnBg.fillCircle(boxX - 95, boxY - 8, btnSize / 2);
+    minusBtnBg.strokeCircle(boxX - 95, boxY - 8, btnSize / 2);
+    this.audioPanelContainer.add(minusBtnBg);
+
+    const minusText = this.add.text(boxX - 95, boxY - 8, '-', {
+      font: '20px "Outfit", sans-serif',
+      fill: '#582f0e',
+      fontWeight: '800'
+    }).setOrigin(0.5);
+    this.audioPanelContainer.add(minusText);
+
+    const minusZone = this.add.circle(boxX - 95, boxY - 8, btnSize / 2, 0x000000, 0)
+      .setInteractive({ useHandCursor: true });
+    this.audioPanelContainer.add(minusZone);
+
+    // Plus Button
+    const plusBtnBg = this.add.graphics();
+    plusBtnBg.fillStyle(0xddb892, 1);
+    plusBtnBg.lineStyle(2, 0x582f0e, 1);
+    plusBtnBg.fillCircle(boxX + 95, boxY - 8, btnSize / 2);
+    plusBtnBg.strokeCircle(boxX + 95, boxY - 8, btnSize / 2);
+    this.audioPanelContainer.add(plusBtnBg);
+
+    const plusText = this.add.text(boxX + 95, boxY - 8, '+', {
+      font: '20px "Outfit", sans-serif',
+      fill: '#582f0e',
+      fontWeight: '800'
+    }).setOrigin(0.5);
+    this.audioPanelContainer.add(plusText);
+
+    const plusZone = this.add.circle(boxX + 95, boxY - 8, btnSize / 2, 0x000000, 0)
+      .setInteractive({ useHandCursor: true });
+    this.audioPanelContainer.add(plusZone);
+
+    // 8. Mute / Unmute Button
+    const muteBtnX = boxX;
+    const muteBtnY = boxY + 50;
+
+    const muteBtnBg = this.add.graphics();
+    muteBtnBg.fillStyle(0xb7b7a4, 1);
+    muteBtnBg.lineStyle(2.5, 0x582f0e, 1);
+    muteBtnBg.fillRoundedRect(muteBtnX - 70, muteBtnY - 16, 140, 32, 8);
+    muteBtnBg.strokeRoundedRect(muteBtnX - 70, muteBtnY - 16, 140, 32, 8);
+    this.audioPanelContainer.add(muteBtnBg);
+
+    const getMuteLabel = () => this.musicMuted ? '🔇 Silenciado' : '🔊 Activado';
+    const muteText = this.add.text(muteBtnX, muteBtnY, getMuteLabel(), {
+      font: '14px "Outfit", sans-serif',
+      fill: '#582f0e',
+      fontWeight: '800'
+    }).setOrigin(0.5);
+    this.audioPanelContainer.add(muteText);
+
+    const muteZone = this.add.rectangle(muteBtnX, muteBtnY, 140, 32, 0x000000, 0)
+      .setInteractive({ useHandCursor: true });
+    this.audioPanelContainer.add(muteZone);
+
+    // 9. Close Button (X)
+    const closeBtnX = boxX + boxW / 2 - 22;
+    const closeBtnY = boxY - boxH / 2 + 22;
+
+    const closeBtnBg = this.add.graphics();
+    closeBtnBg.fillStyle(0xd90429, 1);
+    closeBtnBg.lineStyle(2, 0xffffff, 1);
+    closeBtnBg.fillCircle(closeBtnX, closeBtnY, 13);
+    closeBtnBg.strokeCircle(closeBtnX, closeBtnY, 13);
+    this.audioPanelContainer.add(closeBtnBg);
+
+    const closeText = this.add.text(closeBtnX, closeBtnY, 'X', {
+      font: '13px "Outfit", sans-serif',
+      fill: '#ffffff',
+      fontWeight: '800'
+    }).setOrigin(0.5);
+    this.audioPanelContainer.add(closeText);
+
+    const closeZone = this.add.circle(closeBtnX, closeBtnY, 13, 0x000000, 0)
+      .setInteractive({ useHandCursor: true });
+    this.audioPanelContainer.add(closeZone);
+
+    // --- Interactive Logic ---
+
+    // Minus Button Interaction
+    minusZone.on('pointerdown', () => {
+      SoundEffects.playClick();
+      this.musicVolume = Math.max(0.0, parseFloat((this.musicVolume - 0.1).toFixed(1)));
+      
+      // If we decrease and it's muted, let's unmute so the change is felt
+      if (this.musicMuted && this.musicVolume > 0) {
+        this.musicMuted = false;
+        localStorage.setItem('bg_music_muted', 'false');
+        muteText.setText(getMuteLabel());
+      }
+      
+      localStorage.setItem('bg_music_volume', this.musicVolume);
+      if (this.bgMusic) {
+        this.bgMusic.setVolume(this.musicMuted ? 0 : this.musicVolume);
+      }
+      
+      volumePercentText.setText(`Volumen: ${Math.round(this.musicVolume * 100)}%`);
+      drawVolumeBar();
+    });
+
+    // Plus Button Interaction
+    plusZone.on('pointerdown', () => {
+      SoundEffects.playClick();
+      this.musicVolume = Math.min(1.0, parseFloat((this.musicVolume + 0.1).toFixed(1)));
+      
+      // Auto unmute when increasing volume
+      if (this.musicMuted) {
+        this.musicMuted = false;
+        localStorage.setItem('bg_music_muted', 'false');
+        muteText.setText(getMuteLabel());
+      }
+
+      localStorage.setItem('bg_music_volume', this.musicVolume);
+      if (this.bgMusic) {
+        this.bgMusic.setVolume(this.musicMuted ? 0 : this.musicVolume);
+      }
+
+      volumePercentText.setText(`Volumen: ${Math.round(this.musicVolume * 100)}%`);
+      drawVolumeBar();
+    });
+
+    // Mute/Unmute Interaction
+    muteZone.on('pointerdown', () => {
+      SoundEffects.playClick();
+      this.musicMuted = !this.musicMuted;
+      localStorage.setItem('bg_music_muted', this.musicMuted);
+      
+      if (this.bgMusic) {
+        this.bgMusic.setVolume(this.musicMuted ? 0 : this.musicVolume);
+      }
+
+      muteText.setText(getMuteLabel());
+      drawVolumeBar();
+    });
+
+    // Close Button Interaction
+    closeZone.on('pointerdown', () => {
+      SoundEffects.playClick();
+      this.audioPanelContainer.destroy();
+      this.audioPanelContainer = null;
+    });
+
+    // Soft scale on hover for buttons
+    minusZone.on('pointerover', () => minusText.setScale(1.2));
+    minusZone.on('pointerout', () => minusText.setScale(1.0));
+    plusZone.on('pointerover', () => plusText.setScale(1.2));
+    plusZone.on('pointerout', () => plusText.setScale(1.0));
+    muteZone.on('pointerover', () => muteText.setScale(1.05));
+    muteZone.on('pointerout', () => muteText.setScale(1.0));
+    closeZone.on('pointerover', () => closeText.setScale(1.2));
+    closeZone.on('pointerout', () => closeText.setScale(1.0));
   }
 }
