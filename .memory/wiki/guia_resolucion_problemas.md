@@ -34,6 +34,15 @@ Esta guía documenta los problemas técnicos, de diseño y visuales encontrados 
   5. Se implementó `makeCupDraggable()` para que, cuando la bebida esté lista, el sprite de la taza con líquido sea arrastrable. Si el jugador la desliza y suelta a menos de 85px de la Bandeja de Entrega, se llama a `pickupDrink()` para servirla; si se suelta fuera, regresa suavemente a la cafetera restableciendo su profundidad (`setDepth(4)`).
 * **Lección**: Al agregar capas adicionales de interacción física (como arrastrar el contenedor y luego el contenido preparado), mantén comportamientos de retorno mediante animaciones tween amortiguadas si la colisión falla, asegurando una UX fluida y sin saltos visuales bruscos.
 
+### 1.5. Mecánica de Rasguñar Clientes (Garras Fuera)
+* **Síntoma**: Se deseaba añadir una interacción graciosa de "castigo" o juego salvaje: si el jugador pasa la pata cerrada (con garras) y vacía sobre el cliente activo, este reacciona dolorido/enojado y huye del local sin pagar ni recibir pedidos.
+* **Solución**:
+  1. Se implementó un flag booleano `this.isHoldingItem` en la escena, asignado a `true` al arrancar cualquier arrastre (masa, molde, galleta o taza) y reestablecido a `false` al finalizar.
+  2. En el ciclo `update()`, si el cliente está activo, el ratón está presionado (`pointer.isDown`, mostrando la pata cerrada con garras) y no se sostiene ningún item (`!this.isHoldingItem`), se calcula la distancia Euclidiana.
+  3. Si la distancia al cliente es menor a 95 píxeles, se llama a `scratchCustomer()`.
+  4. La función reproduce `SoundEffects.playAngry()`, muestra diálogos aleatorios de queja (rojos) como `"¡AUCH! ¡Qué servicio tan salvaje! 😡🐾"`, dibuja marcas de garras rojas en pantalla usando `graphics` con un fundido rápido, aplica un efecto shake (sacudida) al cliente, y finalmente realiza un tween de huida hacia la izquierda de la pantalla (`x: -300`) antes de destruirse y traer al siguiente cliente a los 1.5s.
+* **Lección**: La combinación de inputs de Phaser (pointer.isDown + drag flags) y cálculos de distancia Euclidiana permite crear interacciones físicas ricas y orgánicas (como gestos o ataques a personajes) de manera muy ligera y sin sobrecargar la física del motor.
+
 ---
 
 ## 🛠️ 2. Código e Infraestructura (Vite + Phaser)

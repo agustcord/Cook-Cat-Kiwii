@@ -65,6 +65,7 @@ export default class GameScene extends Phaser.Scene {
     // Core game state variables
     this.customersSpawned = 0;
     this.currentCustomer = null;
+    this.isHoldingItem = false;
     
     // Generate unique, non-repeating customer sequence for the day
     let availablePool = [1, 2, 3, 4, 5];
@@ -420,6 +421,7 @@ export default class GameScene extends Phaser.Scene {
           return;
         }
 
+        this.isHoldingItem = true;
         SoundEffects.playClick();
         portionSprite = this.add.image(dragZone.x, dragZone.y, 'dough_' + b.id);
         portionSprite.setDisplaySize(portionSize, portionSize);
@@ -436,6 +438,7 @@ export default class GameScene extends Phaser.Scene {
       });
 
       dragZone.on('dragend', () => {
+        this.isHoldingItem = false;
         if (!portionSprite) {
           doughImg.setDisplaySize(doughSize, doughSize);
           dragZone.x = x;
@@ -529,6 +532,7 @@ export default class GameScene extends Phaser.Scene {
 
         // Drag handlers
         dragZone.on('dragstart', () => {
+          this.isHoldingItem = true;
           SoundEffects.playClick();
           container.setDepth(1000);
           dragZone.setDepth(1000);
@@ -543,6 +547,7 @@ export default class GameScene extends Phaser.Scene {
         });
 
         dragZone.on('dragend', () => {
+          this.isHoldingItem = false;
           // Find closest cookie in prepTrayCookies that doesn't have a shape yet
           let closestCookie = null;
           let minDist = 99999;
@@ -812,6 +817,7 @@ export default class GameScene extends Phaser.Scene {
         dragBlocked = true;
         return;
       }
+      this.isHoldingItem = true;
       dragBlocked = false;
       SoundEffects.playClick();
       tempDragCup = this.add.image(this.cupStackImage.x, this.cupStackImage.y, 'beverage_empty_cup')
@@ -827,6 +833,7 @@ export default class GameScene extends Phaser.Scene {
     });
 
     this.cupStackZone.on('dragend', () => {
+      this.isHoldingItem = false;
       if (dragBlocked) {
         dragBlocked = false;
         return;
@@ -1035,6 +1042,7 @@ export default class GameScene extends Phaser.Scene {
     this.machineCupSprite.setData('origY', startY + 38);
 
     this.machineCupSprite.on('dragstart', () => {
+      this.isHoldingItem = true;
       SoundEffects.playClick();
       this.machineCupSprite.setDepth(1000);
     });
@@ -1045,6 +1053,7 @@ export default class GameScene extends Phaser.Scene {
     });
 
     this.machineCupSprite.on('dragend', () => {
+      this.isHoldingItem = false;
       const dist = Phaser.Math.Distance.Between(
         this.machineCupSprite.x,
         this.machineCupSprite.y,
@@ -1462,6 +1471,7 @@ export default class GameScene extends Phaser.Scene {
         sprite.setData('origY', y);
 
         sprite.on('dragstart', () => {
+          this.isHoldingItem = true;
           SoundEffects.playClick();
           sprite.setDepth(1000);
         });
@@ -1496,6 +1506,7 @@ export default class GameScene extends Phaser.Scene {
         });
 
         sprite.on('dragend', () => {
+          this.isHoldingItem = false;
           // Reset highlights
           if (this.trashHighlighted) {
             this.trashHighlighted = false;
@@ -2056,6 +2067,70 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
+  scratchCustomer() {
+    if (!this.currentCustomer || !this.currentCustomer.isActive) return;
+
+    this.currentCustomer.isActive = false;
+
+    SoundEffects.playAngry();
+
+    const dialogues = [
+      '¡AUCH! ¡Qué servicio tan salvaje! 😡🐾',
+      '¡Miau! ¡Eso dolió mucho! 😿',
+      '¡Llamaré al control de animales! 😤',
+      '¡Me rasguñó! ¡No volveré jamás! 😡'
+    ];
+    const chosenText = dialogues[Math.floor(Math.random() * dialogues.length)];
+    this.showFeedbackText(chosenText, this.currentCustomer.container.x, this.currentCustomer.container.y - 130, '#d90429');
+
+    const cx = this.currentCustomer.container.x;
+    const cy = this.currentCustomer.container.y + 40;
+    const scratchGraphics = this.add.graphics().setDepth(20);
+    scratchGraphics.lineStyle(4, 0xd90429, 1);
+
+    scratchGraphics.lineBetween(cx - 30, cy - 30, cx - 10, cy + 30);
+    scratchGraphics.lineBetween(cx - 10, cy - 35, cx + 10, cy + 25);
+    scratchGraphics.lineBetween(cx + 10, cy - 30, cx + 30, cy + 30);
+
+    this.tweens.add({
+      targets: scratchGraphics,
+      alpha: 0,
+      duration: 350,
+      onComplete: () => {
+        scratchGraphics.destroy();
+      }
+    });
+
+    this.tweens.add({
+      targets: this.currentCustomer.container,
+      x: cx + Phaser.Math.Between(-12, 12),
+      y: this.currentCustomer.container.y + Phaser.Math.Between(-10, 10),
+      duration: 50,
+      yoyo: true,
+      repeat: 4,
+      onComplete: () => {
+        if (this.currentCustomer && this.currentCustomer.container) {
+          this.tweens.add({
+            targets: this.currentCustomer.container,
+            x: -300,
+            alpha: 0,
+            duration: 650,
+            ease: 'Power2.easeIn',
+            onComplete: () => {
+              if (this.currentCustomer) {
+                this.currentCustomer.destroy();
+                this.currentCustomer = null;
+              }
+              this.time.delayedCall(1500, () => {
+                this.spawnCustomer();
+              });
+            }
+          });
+        }
+      }
+    });
+  }
+
   showFeedbackText(text, x, y, color) {
     // Lower the Y coordinate to be right above the preparation table (Y ~ 366)
     const targetY = (y === 200) ? (this.trayY - 120) : y;
@@ -2192,6 +2267,25 @@ export default class GameScene extends Phaser.Scene {
       // Inner fill (matching the sprite's exact cream fur #f4e7d4) - drawn on top of paw
       this.catArmFillGraphics.lineStyle(36, 0xf4e7d4);
       this.catArmFillGraphics.strokePoints(points);
+
+      // Check if scratching the active customer
+      if (
+        this.currentCustomer &&
+        this.currentCustomer.isActive &&
+        pointer.isDown &&
+        !this.isHoldingItem &&
+        this.currentCustomer.container
+      ) {
+        const distToCustomer = Phaser.Math.Distance.Between(
+          this.pawX,
+          this.pawY,
+          this.currentCustomer.container.x,
+          this.currentCustomer.container.y + 40
+        );
+        if (distToCustomer < 95) {
+          this.scratchCustomer();
+        }
+      }
     }
   }
 
