@@ -218,7 +218,8 @@ export default class GameScene extends Phaser.Scene {
       { key: 'daySign', bg: this.daySignImage, text: this.daySignText, textOffsetX: daySign.width / 2, textOffsetY: daySign.textOffsetY },
       { key: 'coinsSign', bg: this.coinsSignImage, text: this.coinsText, textOffsetX: 0, textOffsetY: coinsSign.textOffsetY },
       { key: 'metaSign', bg: this.metaSignImage, text: this.metaText, textOffsetX: -metaSign.width / 2, textOffsetY: metaSign.textOffsetY },
-      { key: 'deliveryTray', bg: this.deliveryDragZone, text: this.deliveryTrayLabel, textOffsetX: 0, textOffsetY: -33 }
+      { key: 'deliveryTray', bg: this.deliveryDragZone, text: this.deliveryTrayLabel, textOffsetX: 0, textOffsetY: -33 },
+      { key: 'cupStack', bg: this.cupStackZone, text: null, textOffsetX: 0, textOffsetY: 0 }
     ];
 
     // Setup drag events for UI elements (only active in editor mode)
@@ -258,6 +259,11 @@ export default class GameScene extends Phaser.Scene {
           this.deliveryTrayY = dragY;
           this.drawDeliveryTrayBg(0xccffcc); // Draw highlighted color while dragging
           this.drawDeliveryTray(); // Redraw cookies in new location
+        } else if (element.key === 'cupStack') {
+          if (this.cupStackImage) {
+            this.cupStackImage.x = dragX;
+            this.cupStackImage.y = dragY;
+          }
         }
 
         // If there's associated text, update it using its offset
@@ -773,22 +779,28 @@ export default class GameScene extends Phaser.Scene {
     });
 
     // 6. Clean Cups Stack (placed on top of the machine)
-    this.cupStackImage = this.add.image(startX + 52, startY - 68, 'beverage_empty_cup')
-      .setDisplaySize(38, 38)
+    const { cupStack } = UI_CONFIG;
+    const cupStackX = cupStack ? cupStack.x : (startX + 52);
+    const cupStackY = cupStack ? cupStack.y : (startY - 68);
+    const cupStackW = cupStack ? cupStack.width : 38;
+    const cupStackH = cupStack ? cupStack.height : 38;
+
+    this.cupStackImage = this.add.image(cupStackX, cupStackY, 'beverage_empty_cup')
+      .setDisplaySize(cupStackW, cupStackH)
       .setDepth(3)
       .setAlpha(0.85);
 
-    const cupStackZone = this.add.rectangle(startX + 52, startY - 68, 38, 38, 0x000000, 0)
+    this.cupStackZone = this.add.rectangle(cupStackX, cupStackY, cupStackW, cupStackH, 0x000000, 0)
       .setDepth(4);
-    cupStackZone.setInteractive({ useHandCursor: true });
+    this.cupStackZone.setInteractive({ useHandCursor: true });
 
-    cupStackZone.on('pointerover', () => {
+    this.cupStackZone.on('pointerover', () => {
       this.cupStackImage.setScale(1.1);
     });
-    cupStackZone.on('pointerout', () => {
+    this.cupStackZone.on('pointerout', () => {
       this.cupStackImage.setScale(1.0);
     });
-    cupStackZone.on('pointerdown', () => {
+    this.cupStackZone.on('pointerdown', () => {
       this.handleCupStackClick(startX, startY);
     });
   }
@@ -802,9 +814,9 @@ export default class GameScene extends Phaser.Scene {
 
     SoundEffects.playClick();
 
-    // Spawn flight animation cup
-    const flightCup = this.add.image(startX + 52, startY - 68, 'beverage_empty_cup')
-      .setDisplaySize(38, 38)
+    // Spawn flight animation cup using current coordinates of the stack
+    const flightCup = this.add.image(this.cupStackImage.x, this.cupStackImage.y, 'beverage_empty_cup')
+      .setDisplaySize(this.cupStackImage.displayWidth, this.cupStackImage.displayHeight)
       .setDepth(100);
 
     this.tweens.add({
