@@ -793,6 +793,7 @@ export default class GameScene extends Phaser.Scene {
     this.cupStackZone = this.add.rectangle(cupStackX, cupStackY, cupStackW, cupStackH, 0x000000, 0)
       .setDepth(4);
     this.cupStackZone.setInteractive({ useHandCursor: true });
+    this.input.setDraggable(this.cupStackZone);
 
     this.cupStackZone.on('pointerover', () => {
       this.cupStackImage.setScale(1.1);
@@ -800,46 +801,71 @@ export default class GameScene extends Phaser.Scene {
     this.cupStackZone.on('pointerout', () => {
       this.cupStackImage.setScale(1.0);
     });
-    this.cupStackZone.on('pointerdown', () => {
-      this.handleCupStackClick(startX, startY);
+
+    let tempDragCup = null;
+    let dragBlocked = false;
+
+    this.cupStackZone.on('dragstart', () => {
+      if (this.machineState !== 'no_cup') {
+        SoundEffects.playAngry();
+        this.showFeedbackText('¡Ya hay una taza en la cafetera! ☕', startX, 200, '#d90429');
+        dragBlocked = true;
+        return;
+      }
+      dragBlocked = false;
+      SoundEffects.playClick();
+      tempDragCup = this.add.image(this.cupStackImage.x, this.cupStackImage.y, 'beverage_empty_cup')
+        .setDisplaySize(38, 38)
+        .setDepth(100)
+        .setAlpha(0.85);
     });
-  }
 
-  handleCupStackClick(startX, startY) {
-    if (this.machineState !== 'no_cup') {
-      SoundEffects.playAngry();
-      this.showFeedbackText('¡Ya hay una taza en la cafetera! ☕', startX, 200, '#d90429');
-      return;
-    }
+    this.cupStackZone.on('drag', (pointer, dragX, dragY) => {
+      if (dragBlocked || !tempDragCup) return;
+      tempDragCup.x = dragX;
+      tempDragCup.y = dragY;
+    });
 
-    SoundEffects.playClick();
+    this.cupStackZone.on('dragend', () => {
+      if (dragBlocked) {
+        dragBlocked = false;
+        return;
+      }
+      if (!tempDragCup) return;
 
-    // Spawn flight animation cup using current coordinates of the stack
-    const flightCup = this.add.image(this.cupStackImage.x, this.cupStackImage.y, 'beverage_empty_cup')
-      .setDisplaySize(this.cupStackImage.displayWidth, this.cupStackImage.displayHeight)
-      .setDepth(100);
+      const destX = startX;
+      const destY = startY + 38;
+      const dist = Phaser.Math.Distance.Between(tempDragCup.x, tempDragCup.y, destX, destY);
 
-    this.tweens.add({
-      targets: flightCup,
-      x: startX,
-      y: startY + 38,
-      displaySizeX: 48,
-      displaySizeY: 48,
-      duration: 300,
-      ease: 'Cubic.out',
-      onComplete: () => {
-        flightCup.destroy();
+      if (dist < 75) {
+        tempDragCup.destroy();
+        tempDragCup = null;
 
-        // Place permanent empty cup on machine
-        this.machineCupSprite = this.add.image(startX, startY + 38, 'beverage_empty_cup')
+        this.machineCupSprite = this.add.image(destX, destY, 'beverage_empty_cup')
           .setDisplaySize(48, 48)
           .setDepth(4);
 
         this.machineState = 'empty';
         this.showFeedbackText('¡Taza colocada! ☕', startX, 200, '#38b000');
+        SoundEffects.playClick();
+      } else {
+        const activeCup = tempDragCup;
+        tempDragCup = null;
+        this.tweens.add({
+          targets: activeCup,
+          x: this.cupStackImage.x,
+          y: this.cupStackImage.y,
+          duration: 250,
+          ease: 'Cubic.out',
+          onComplete: () => {
+            activeCup.destroy();
+          }
+        });
       }
     });
   }
+
+
 
   updateDrinkStockTexts() {
     if (this.beansStockText) {
@@ -940,11 +966,8 @@ export default class GameScene extends Phaser.Scene {
                 ease: 'Quad.easeInOut'
               });
 
-              // Set cup interactive to click-and-pickup
-              this.machineCupSprite.setInteractive({ useHandCursor: true });
-              this.machineCupSprite.on('pointerdown', () => {
-                this.pickupDrink();
-              });
+              // Make cup draggable to delivery tray
+              this.makeCupDraggable(startX, startY);
             }
             
             // Show serve button
@@ -1000,6 +1023,52 @@ export default class GameScene extends Phaser.Scene {
       SoundEffects.playAngry();
       this.showFeedbackText('¡La máquina está ocupada! ☕', startX, 200, '#d90429');
     }
+  }
+
+  makeCupDraggable(startX, startY) {
+    if (!this.machineCupSprite) return;
+
+    this.machineCupSprite.setInteractive({ useHandCursor: true });
+    this.input.setDraggable(this.machineCupSprite);
+
+    this.machineCupSprite.setData('origX', startX);
+    this.machineCupSprite.setData('origY', startY + 38);
+
+    this.machineCupSprite.on('dragstart', () => {
+      SoundEffects.playClick();
+      this.machineCupSprite.setDepth(1000);
+    });
+
+    this.machineCupSprite.on('drag', (pointer, dragX, dragY) => {
+      this.machineCupSprite.x = dragX;
+      this.machineCupSprite.y = dragY;
+    });
+
+    this.machineCupSprite.on('dragend', () => {
+      const dist = Phaser.Math.Distance.Between(
+        this.machineCupSprite.x,
+        this.machineCupSprite.y,
+        this.deliveryTrayX,
+        this.deliveryTrayY
+      );
+
+      if (dist < 85) {
+        this.pickupDrink();
+      } else {
+        this.tweens.add({
+          targets: this.machineCupSprite,
+          x: this.machineCupSprite.getData('origX'),
+          y: this.machineCupSprite.getData('origY'),
+          duration: 250,
+          ease: 'Cubic.out',
+          onComplete: () => {
+            if (this.machineCupSprite) {
+              this.machineCupSprite.setDepth(4);
+            }
+          }
+        });
+      }
+    });
   }
 
   pickupDrink() {
