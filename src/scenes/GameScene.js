@@ -155,7 +155,7 @@ export default class GameScene extends Phaser.Scene {
     this.catPawSprite = this.add.image(this.pawX, this.pawY, 'cat_paw_open')
       .setDepth(9999)
       .setOrigin(0.5, 0.55)
-      .setDisplaySize(97, 97);
+      .setDisplaySize(98, 98);
 
     // Track pointerdown/pointerup to trigger grab animation (texture swap)
     this.input.on('pointerdown', () => {
@@ -168,7 +168,7 @@ export default class GameScene extends Phaser.Scene {
     this.input.on('pointerup', () => {
       if (this.catPawSprite) {
         this.catPawSprite.setTexture('cat_paw_open');
-        this.catPawSprite.setDisplaySize(97, 97);
+        this.catPawSprite.setDisplaySize(98, 98);
         this.catPawSprite.setOrigin(0.5, 0.55);
       }
     });
