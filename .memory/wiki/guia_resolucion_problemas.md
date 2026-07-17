@@ -50,9 +50,9 @@ Esta guía documenta los problemas técnicos, de diseño y visuales encontrados 
   2. En `GameScene.js`, se inicializó `this.bgMusic` con volumen recuperado de `localStorage` (o 15% por defecto para que sea sutil).
   3. Se colocó un botón flotante con el icono de nota musical (`🎵`) leyendo su posición de `UI_CONFIG.musicButton` (por defecto en `x: 195, y: 200` debajo del letrero del día), quedando en la zona interactiva del mostrador para ser accesible por la pata del gato (la cual tiene un límite superior de Y = 180). Se habilitó como elemento editable en `this.editableUIElements` para que el usuario pueda reubicarlo mediante arrastre en el Modo Editor de UI y guardarlo en `ui-config.json`.
   4. Al pulsar el botón, se abre `openAudioPanel()` y se activa `this.isAudioPanelOpen = true`. Esto congela la actualización de la pata del gato en `update()`, la hace invisible y activa el cursor de sistema por defecto (`default`) para evitar conflictos al arrastrar o pulsar los botones del panel.
-  5. Se implementó la barra visual de volumen, botones `-` / `+` y mute, persistiendo las preferencias en `localStorage` (`bg_music_volume` y `bg_music_muted`).
-  6. Al cerrar el panel de audio, se restablece `this.isAudioPanelOpen = false`, se oculta de nuevo el cursor de sistema (`none`) y se hace visible la pata del gato para continuar jugando.
-* **Lección**: Al implementar audio de fondo dinámico y configurable, utiliza contenedores modales de Phaser con overlays interactivos para focalizar la UX en los sliders de audio, y conmuta el cursor de juego a cursor nativo de sistema al abrir pantallas de configuración para evitar colisiones e interacciones indeseadas de fondo.
+  5. Se implementó la barra visual de volumen, botones `-` / `+` (regulando de 5% en 5% con pasos de `0.05`) y mute, persistiendo las preferencias en `localStorage` (`bg_music_volume` y `bg_music_muted`).
+  6. Al cerrar el panel de audio, se establece `this.isAudioPanelOpen = false`, `this.scratchBlockedUntilPointerUp = true` (bloqueando rasguños hasta que el jugador levante el ratón para evitar que el click de la "X" rasguñe al cliente instantáneamente), se oculta de nuevo el cursor de sistema (`none`) y se hace visible la pata del gato para continuar jugando.
+* **Lección**: Al alternar menús y elementos modales, implementa flags de control de click persistente (`scratchBlockedUntilPointerUp`) para requerir que el usuario libere el ratón antes de procesar clicks de juego físico (como golpes o garras), evitando falsas colisiones y rasguños indeseados en la transición.
 
 ---
 

@@ -67,6 +67,7 @@ export default class GameScene extends Phaser.Scene {
     this.currentCustomer = null;
     this.isHoldingItem = false;
     this.isAudioPanelOpen = false;
+    this.scratchBlockedUntilPointerUp = false;
     
     // Generate unique, non-repeating customer sequence for the day
     let availablePool = [1, 2, 3, 4, 5];
@@ -2278,6 +2279,10 @@ export default class GameScene extends Phaser.Scene {
     if (this.isAudioPanelOpen) return;
 
     const pointer = this.input.activePointer;
+    if (pointer && !pointer.isDown) {
+      this.scratchBlockedUntilPointerUp = false;
+    }
+
     if (pointer && this.catPawSprite && this.catArmOutlineGraphics && this.catArmFillGraphics) {
       // Lerp paw position to pointer position with a Y clamp limit at Y=180 (top of oven)
       const clampedTargetY = Math.max(180, pointer.y);
@@ -2337,6 +2342,7 @@ export default class GameScene extends Phaser.Scene {
         this.currentCustomer &&
         this.currentCustomer.isActive &&
         pointer.isDown &&
+        !this.scratchBlockedUntilPointerUp &&
         !this.isHoldingItem &&
         this.currentCustomer.container
       ) {
@@ -3076,7 +3082,7 @@ export default class GameScene extends Phaser.Scene {
     // Minus Button Interaction
     minusZone.on('pointerdown', () => {
       SoundEffects.playClick();
-      this.musicVolume = Math.max(0.0, parseFloat((this.musicVolume - 0.1).toFixed(1)));
+      this.musicVolume = Math.max(0.0, parseFloat((this.musicVolume - 0.05).toFixed(2)));
       
       // If we decrease and it's muted, let's unmute so the change is felt
       if (this.musicMuted && this.musicVolume > 0) {
@@ -3097,7 +3103,7 @@ export default class GameScene extends Phaser.Scene {
     // Plus Button Interaction
     plusZone.on('pointerdown', () => {
       SoundEffects.playClick();
-      this.musicVolume = Math.min(1.0, parseFloat((this.musicVolume + 0.1).toFixed(1)));
+      this.musicVolume = Math.min(1.0, parseFloat((this.musicVolume + 0.05).toFixed(2)));
       
       // Auto unmute when increasing volume
       if (this.musicMuted) {
@@ -3133,6 +3139,7 @@ export default class GameScene extends Phaser.Scene {
     closeZone.on('pointerdown', () => {
       SoundEffects.playClick();
       this.isAudioPanelOpen = false;
+      this.scratchBlockedUntilPointerUp = true; // Block scratching until user releases the mouse button
       this.input.setDefaultCursor('none');
       if (this.catPawSprite) this.catPawSprite.setVisible(true);
 
