@@ -3,6 +3,7 @@
 ## [2026-07-17] feat | Implementada mecánica de rasguñar clientes (garras fuera)
 - Se añadió la interacción de rasguño: al mover la pata cerrada (isDown) y vacía sobre el cliente activo, este grita de dolor, se sacude y huye enojado.
 - Se implementaron efectos visuales de líneas rojas de garras, diálogos aleatorios de queja y animación shake con huida rápida.
+- Se corrigió un bug que causaba rasguños involuntarios al arrastrar la bandeja de entrega (`deliveryDragZone`), integrando el flag `isHoldingItem` en sus eventos de arrastre.
 - Se actualizó [[guia_resolucion_problemas|Guía de Resolución de Problemas]] con la sección 1.5 detallando el diseño técnico de los rasguños.
 
 ## [2026-07-17] feat | Taza arrastrable y física en la cafetera

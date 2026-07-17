@@ -2468,6 +2468,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.deliveryDragZone.on('dragstart', () => {
       if (this.isEditorMode) return;
+      this.isHoldingItem = true;
       SoundEffects.playClick();
       this.deliveryDragZone.setDepth(1000);
       this.deliveryTrayLabel.setDepth(1001);
@@ -2608,6 +2609,7 @@ export default class GameScene extends Phaser.Scene {
     });
 
     this.deliveryDragZone.on('dragend', () => {
+      this.isHoldingItem = false;
       if (this.isEditorMode) return;
       this.deliveryDragZone.setScale(1.0);
       this.deliveryDragZone.setDepth(15);
