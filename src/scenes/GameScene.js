@@ -656,14 +656,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createDrinkStation(startX, startY) {
-    // 1. Label
-    this.drinkLabelText = this.add.text(startX - 25, startY - 105, 'CAFETERÍA', {
-      font: '14px "Outfit", sans-serif',
-      fill: '#7f5539',
-      fontWeight: '800',
-      stroke: '#fff1e6',
-      strokeThickness: 2
-    }).setOrigin(0.5).setDepth(2);
+
 
     // 2. Espresso Machine (Large 160x160)
     this.drinkMachine = this.add.image(startX, startY, 'drink_machine')
@@ -780,19 +773,12 @@ export default class GameScene extends Phaser.Scene {
     });
 
     // 6. Clean Cups Stack (placed on top of the machine)
-    this.cupStackImage = this.add.image(startX + 52, startY - 90, 'beverage_empty_cup')
+    this.cupStackImage = this.add.image(startX + 52, startY - 68, 'beverage_empty_cup')
       .setDisplaySize(38, 38)
       .setDepth(3)
       .setAlpha(0.85);
 
-    this.cupStackText = this.add.text(startX + 52, startY - 110, 'TAZAS', {
-      font: 'bold 9px "Outfit", sans-serif',
-      fill: '#7f5539',
-      stroke: '#ffffff',
-      strokeThickness: 2
-    }).setOrigin(0.5).setDepth(3);
-
-    const cupStackZone = this.add.rectangle(startX + 52, startY - 90, 38, 38, 0x000000, 0)
+    const cupStackZone = this.add.rectangle(startX + 52, startY - 68, 38, 38, 0x000000, 0)
       .setDepth(4);
     cupStackZone.setInteractive({ useHandCursor: true });
 
@@ -817,7 +803,7 @@ export default class GameScene extends Phaser.Scene {
     SoundEffects.playClick();
 
     // Spawn flight animation cup
-    const flightCup = this.add.image(startX + 52, startY - 90, 'beverage_empty_cup')
+    const flightCup = this.add.image(startX + 52, startY - 68, 'beverage_empty_cup')
       .setDisplaySize(38, 38)
       .setDepth(100);
 
