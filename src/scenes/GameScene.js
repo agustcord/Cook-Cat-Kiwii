@@ -2524,8 +2524,6 @@ export default class GameScene extends Phaser.Scene {
       return;
     }
 
-    this.prepTrayCookies = [];
-
     // Move all cookies from oven to prep tray together
     this.cookiesInOven.forEach((cookie, index) => {
       let key = `cookie_${cookie.shape}_${cookie.base}_${cookie.bakedState}`;

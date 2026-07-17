@@ -18,6 +18,12 @@ Esta guía documenta los problemas técnicos, de diseño y visuales encontrados 
 * **Solución**: Se eliminó el desbloqueo secuencial por días. Ahora los pedidos de formas se generan aleatoriamente basándose únicamente en los moldes adquiridos en el inventario.
 * **Lección**: Al implementar tiendas dinámicas, elimina las dependencias temporales duras en las escenas.
 
+### 1.3. Desaparición de Galletas Crudas en la Bandeja al Sacar del Horno
+* **Síntoma**: Si el jugador tenía galletas en la bandeja de preparación (por ejemplo, una galleta cruda) y retiraba otras galletas del horno, la galleta de la bandeja desaparecía, quedando únicamente las recién horneadas.
+* **Causa Raíz**: En `GameScene.js`, la función `handleOvenImageClick()` realizaba `this.prepTrayCookies = [];` al iniciar la extracción, limpiando y perdiendo el contenido previo de la bandeja antes de añadir las galletas del horno.
+* **Solución**: Se eliminó el vaciado del arreglo de galletas de la bandeja en `handleOvenImageClick()`, de modo que las galletas extraídas simplemente se añaden al final del listado mediante `.push()`.
+* **Lección**: No asumas que un contenedor de destino está vacío al transferir objetos; preserva siempre los elementos existentes a menos que la mecánica requiera un reemplazo total.
+
 ---
 
 ## 🛠️ 2. Código e Infraestructura (Vite + Phaser)

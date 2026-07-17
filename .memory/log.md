@@ -1,5 +1,8 @@
 # Bitácora de Cambios (Log)
 
+## [2026-07-17] fix | Corregido bug de desaparición de galletas crudas en la bandeja
+- Se actualizó [[guia_resolucion_problemas|Guía de Resolución de Problemas]] con la sección 1.3 detallando la solución al bug que vaciaba prepTrayCookies al sacar galletas del horno.
+
 ## [2026-07-16] fix | Solución de corte y desalineación de la pata del gato
 - Se actualizó [[guia_resolucion_problemas|Guía de Resolución de Problemas]] con la sección 3.5 sobre la técnica de sandwich de capas y acortamiento por píxeles fijos del brazo procedural.
 

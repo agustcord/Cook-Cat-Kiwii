@@ -6,6 +6,7 @@
       {
         "id": "b2b197431173b823",
         "type": "tabs",
+        "dimension": 45.521292217327456,
         "children": [
           {
             "id": "f8b89ff426261bbe",
@@ -26,15 +27,20 @@
       {
         "id": "cb8159e4ecb3b631",
         "type": "tabs",
+        "dimension": 54.478707782672544,
         "children": [
           {
             "id": "54bab70589e0cad9",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Vista gráfica"
+              "type": "markdown",
+              "state": {
+                "file": "index.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "index"
             }
           }
         ]
@@ -105,8 +111,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 513.5,
-    "collapsed": true
+    "width": 513.5
   },
   "right": {
     "id": "424309e039d9cf3a",
