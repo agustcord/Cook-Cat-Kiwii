@@ -2,7 +2,7 @@
 
 ## [2026-07-17] feat | Música de fondo y panel de control de volumen
 - Se cargó e integró en loop la canción de fondo `Kiwi's Simple Bakehouse Loop.mp3` provista por el usuario, configurando el volumen inicial por defecto al 15% (`0.15`).
-- Se agregó el botón de Nota Musical (`🎵`) en `x: 195, y: 200` para hacerlo accesible al cursor de la pata de gato (Y <= 180).
+- Se agregó el botón de Nota Musical (`🎵`) y se habilitó como elemento editable en el Modo Editor de UI (`musicButton`) con persistencia en `ui-config.json` para facilitar su libre reubicación.
 - Se desarrolló el modal `openAudioPanel()`. Al abrirse, congela la pata de gato, la oculta y activa el cursor de ratón nativo del sistema para facilitar el control de audio sin conflictos de garras.
 - Se implementó la persistencia de las preferencias de audio del jugador utilizando `localStorage`.
 - Se actualizó [[guia_resolucion_problemas|Guía de Resolución de Problemas]] con la sección 1.6 de la música de fondo.

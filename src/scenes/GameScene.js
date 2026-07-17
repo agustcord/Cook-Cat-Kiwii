@@ -240,7 +240,8 @@ export default class GameScene extends Phaser.Scene {
       { key: 'coinsSign', bg: this.coinsSignImage, text: this.coinsText, textOffsetX: 0, textOffsetY: coinsSign.textOffsetY },
       { key: 'metaSign', bg: this.metaSignImage, text: this.metaText, textOffsetX: -metaSign.width / 2, textOffsetY: metaSign.textOffsetY },
       { key: 'deliveryTray', bg: this.deliveryDragZone, text: this.deliveryTrayLabel, textOffsetX: 0, textOffsetY: -33 },
-      { key: 'cupStack', bg: this.cupStackZone, text: null, textOffsetX: 0, textOffsetY: 0 }
+      { key: 'cupStack', bg: this.cupStackZone, text: null, textOffsetX: 0, textOffsetY: 0 },
+      { key: 'musicButton', bg: this.musicBtnZone, text: this.musicButtonText, textOffsetX: 0, textOffsetY: 0 }
     ];
 
     // Setup drag events for UI elements (only active in editor mode)
@@ -284,6 +285,11 @@ export default class GameScene extends Phaser.Scene {
           if (this.cupStackImage) {
             this.cupStackImage.x = dragX;
             this.cupStackImage.y = dragY;
+          }
+        } else if (element.key === 'musicButton') {
+          if (this.musicButtonBg) {
+            this.musicButtonBg.x = dragX;
+            this.musicButtonBg.y = dragY;
           }
         }
 
@@ -359,14 +365,17 @@ export default class GameScene extends Phaser.Scene {
     }).setOrigin(0.5, 0.5).setDepth(1);
 
     // Music Button (🎵)
-    const musicBtnX = 195;
-    const musicBtnY = 200;
+    const { musicButton } = UI_CONFIG;
+    const musicBtnX = musicButton ? musicButton.x : 195;
+    const musicBtnY = musicButton ? musicButton.y : 200;
+    const musicBtnW = musicButton ? musicButton.width : 38;
 
     this.musicButtonBg = this.add.graphics();
     this.musicButtonBg.fillStyle(0xe6ccb2, 1);
     this.musicButtonBg.lineStyle(3, 0x582f0e, 1);
-    this.musicButtonBg.fillCircle(musicBtnX, musicBtnY, 19);
-    this.musicButtonBg.strokeCircle(musicBtnX, musicBtnY, 19);
+    this.musicButtonBg.fillCircle(0, 0, musicBtnW / 2);
+    this.musicButtonBg.strokeCircle(0, 0, musicBtnW / 2);
+    this.musicButtonBg.setPosition(musicBtnX, musicBtnY);
     this.musicButtonBg.setDepth(2);
 
     this.musicButtonText = this.add.text(musicBtnX, musicBtnY, '🎵', {
@@ -375,7 +384,7 @@ export default class GameScene extends Phaser.Scene {
       fontWeight: '800'
     }).setOrigin(0.5).setDepth(3);
 
-    this.musicBtnZone = this.add.circle(musicBtnX, musicBtnY, 19, 0x000000, 0)
+    this.musicBtnZone = this.add.circle(musicBtnX, musicBtnY, musicBtnW / 2, 0x000000, 0)
       .setDepth(4)
       .setInteractive({ useHandCursor: true });
 
@@ -386,6 +395,7 @@ export default class GameScene extends Phaser.Scene {
       this.musicButtonText.setScale(1.0);
     });
     this.musicBtnZone.on('pointerdown', () => {
+      if (this.isEditorMode) return; // Ignore audio panel trigger if editing positions
       SoundEffects.playClick();
       this.openAudioPanel();
     });

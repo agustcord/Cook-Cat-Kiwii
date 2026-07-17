@@ -52,5 +52,11 @@
     "height": 38,
     "x": 318,
     "y": 190
+  },
+  "musicButton": {
+    "width": 38,
+    "height": 38,
+    "x": 195,
+    "y": 200
   }
 }

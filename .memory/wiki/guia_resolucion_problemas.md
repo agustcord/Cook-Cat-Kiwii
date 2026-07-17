@@ -48,7 +48,7 @@ Esta guía documenta los problemas técnicos, de diseño y visuales encontrados 
 * **Solución**:
   1. Se cargó el audio `'bg_music'` en `BootScene.js` apuntando a `assets/audio/Kiwi's Simple Bakehouse Loop.mp3`.
   2. En `GameScene.js`, se inicializó `this.bgMusic` con volumen recuperado de `localStorage` (o 15% por defecto para que sea sutil).
-  3. Se colocó un botón flotante con el icono de nota musical (`🎵`) en `x: 195, y: 200` (debajo del letrero del día), quedando en la zona interactiva del mostrador para ser accesible por la pata del gato (la cual tiene un límite superior de Y = 180).
+  3. Se colocó un botón flotante con el icono de nota musical (`🎵`) leyendo su posición de `UI_CONFIG.musicButton` (por defecto en `x: 195, y: 200` debajo del letrero del día), quedando en la zona interactiva del mostrador para ser accesible por la pata del gato (la cual tiene un límite superior de Y = 180). Se habilitó como elemento editable en `this.editableUIElements` para que el usuario pueda reubicarlo mediante arrastre en el Modo Editor de UI y guardarlo en `ui-config.json`.
   4. Al pulsar el botón, se abre `openAudioPanel()` y se activa `this.isAudioPanelOpen = true`. Esto congela la actualización de la pata del gato en `update()`, la hace invisible y activa el cursor de sistema por defecto (`default`) para evitar conflictos al arrastrar o pulsar los botones del panel.
   5. Se implementó la barra visual de volumen, botones `-` / `+` y mute, persistiendo las preferencias en `localStorage` (`bg_music_volume` y `bg_music_muted`).
   6. Al cerrar el panel de audio, se restablece `this.isAudioPanelOpen = false`, se oculta de nuevo el cursor de sistema (`none`) y se hace visible la pata del gato para continuar jugando.
