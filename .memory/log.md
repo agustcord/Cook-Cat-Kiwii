@@ -2,6 +2,7 @@
 
 ## [2026-07-17] feat | Implementada mecánica de taza vacía obligatoria en la cafetera
 - Se implementó la pila de tazas y la obligatoriedad de colocar tazas vacías antes de preparar café o leche.
+- Se reubicó la pila de tazas y la etiqueta TAZAS a la parte superior de la cafetera, alineando la etiqueta CAFETERÍA para evitar superposiciones.
 - Se actualizó [[guia_resolucion_problemas|Guía de Resolución de Problemas]] con la sección 1.4 detallando el diseño técnico de la estación de bebidas.
 
 ## [2026-07-17] fix | Corregido bug de desaparición de galletas crudas en la bandeja

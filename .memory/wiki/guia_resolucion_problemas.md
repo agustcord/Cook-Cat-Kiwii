@@ -29,7 +29,7 @@ Esta guía documenta los problemas técnicos, de diseño y visuales encontrados 
 * **Solución**:
   1. Se generó una textura procedimental `'beverage_empty_cup'` en `BootScene.js` invocando el método de dibujo con relleno nulo (`drawCupBody(null)`).
   2. Se actualizó el ciclo de estados de la cafetera agregando el estado `'no_cup'`.
-  3. Se creó una pila interactiva de tazas (`'TAZAS'`) a la derecha de la cafetera que permite colocar una taza vacía en el mostrador de preparación mediante un tween animado.
+  3. Se creó una pila interactiva de tazas (`'TAZAS'`) apoyada en el borde superior derecho de la cafetera (para asemejar una cafetera real que apila tazas en su techo) y se reubicó la etiqueta `'CAFETERÍA'` de forma simétrica a la izquierda, permitiendo colocar una taza vacía en el mostrador mediante un tween animado desde arriba.
   4. Se bloqueó el inicio de preparación de bebidas mediante una validación en `handleDrinkIngredientDrop` si el estado es `'no_cup'`.
   5. Se modificó `pickupDrink()` para que al retirar el pedido la cafetera vuelva automáticamente al estado `'no_cup'`.
 * **Lección**: Al agregar capas adicionales de interacción (como colocar un contenedor antes del contenido), inicializa siempre el objeto base como pre-requisito obligatorio e integra animaciones fluidas (tweens) para realzar el feedback de la interacción física.
