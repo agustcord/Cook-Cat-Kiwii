@@ -30,8 +30,12 @@ async function processPaw(inputPath, outputName) {
   if (isNewPng) {
     sharpInstance = sharpInstance.resize(width, height, {
       fit: 'contain',
-      background: { r: 255, g: 255, b: 255 }
+      background: { r: 255, g: 255, b: 255, alpha: 0 }
     });
+    // Si es la pata cerrada, la volteamos verticalmente para que apunte hacia abajo en la textura (y Phaser la rote bien en el juego)
+    if (inputPath.includes('closed')) {
+      sharpInstance = sharpInstance.flip();
+    }
   } else {
     // Legado: recorte de Q1 (430x430), volteo vertical y redimensionamiento
     sharpInstance = sharpInstance
@@ -54,7 +58,8 @@ async function processPaw(inputPath, outputName) {
     const r = flippedBuf[i * 4];
     const g = flippedBuf[i * 4 + 1];
     const b = flippedBuf[i * 4 + 2];
-    const isWhite = r >= 240 && g >= 240 && b >= 240;
+    const a = flippedBuf[i * 4 + 3];
+    const isWhite = (r >= 240 && g >= 240 && b >= 240) || a < 15;
 
     if (isWhite) {
       tempBuf[i * 4 + 3] = 0;
