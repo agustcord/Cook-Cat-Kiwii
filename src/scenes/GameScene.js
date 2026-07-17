@@ -161,8 +161,8 @@ export default class GameScene extends Phaser.Scene {
     this.input.on('pointerdown', () => {
       if (this.catPawSprite) {
         this.catPawSprite.setTexture('cat_paw_closed');
-        this.catPawSprite.setDisplaySize(101, 101);
-        this.catPawSprite.setOrigin(0.5, 0.58);
+        this.catPawSprite.setDisplaySize(98, 98);
+        this.catPawSprite.setOrigin(0.5, 0.61);
       }
     });
     this.input.on('pointerup', () => {
