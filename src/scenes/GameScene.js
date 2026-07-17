@@ -66,6 +66,7 @@ export default class GameScene extends Phaser.Scene {
     this.customersSpawned = 0;
     this.currentCustomer = null;
     this.isHoldingItem = false;
+    this.isAudioPanelOpen = false;
     
     // Generate unique, non-repeating customer sequence for the day
     let availablePool = [1, 2, 3, 4, 5];
@@ -106,7 +107,7 @@ export default class GameScene extends Phaser.Scene {
 
     // Music settings from localStorage
     const savedVolume = localStorage.getItem('bg_music_volume');
-    this.musicVolume = savedVolume !== null ? parseFloat(savedVolume) : 0.25;
+    this.musicVolume = savedVolume !== null ? parseFloat(savedVolume) : 0.15;
     this.musicMuted = localStorage.getItem('bg_music_muted') === 'true';
 
     if (!this.sound.get('bg_music')) {
@@ -358,8 +359,8 @@ export default class GameScene extends Phaser.Scene {
     }).setOrigin(0.5, 0.5).setDepth(1);
 
     // Music Button (🎵)
-    const musicBtnX = 205;
-    const musicBtnY = 55;
+    const musicBtnX = 195;
+    const musicBtnY = 200;
 
     this.musicButtonBg = this.add.graphics();
     this.musicButtonBg.fillStyle(0xe6ccb2, 1);
@@ -2264,6 +2265,8 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // Custom Cat Paw Cursor Update
+    if (this.isAudioPanelOpen) return;
+
     const pointer = this.input.activePointer;
     if (pointer && this.catPawSprite && this.catArmOutlineGraphics && this.catArmFillGraphics) {
       // Lerp paw position to pointer position with a Y clamp limit at Y=180 (top of oven)
@@ -2907,6 +2910,13 @@ export default class GameScene extends Phaser.Scene {
   openAudioPanel() {
     if (this.audioPanelContainer) return;
 
+    this.isAudioPanelOpen = true;
+    this.input.setDefaultCursor('default');
+
+    if (this.catPawSprite) this.catPawSprite.setVisible(false);
+    if (this.catArmOutlineGraphics) this.catArmOutlineGraphics.clear();
+    if (this.catArmFillGraphics) this.catArmFillGraphics.clear();
+
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
@@ -3112,6 +3122,10 @@ export default class GameScene extends Phaser.Scene {
     // Close Button Interaction
     closeZone.on('pointerdown', () => {
       SoundEffects.playClick();
+      this.isAudioPanelOpen = false;
+      this.input.setDefaultCursor('none');
+      if (this.catPawSprite) this.catPawSprite.setVisible(true);
+
       this.audioPanelContainer.destroy();
       this.audioPanelContainer = null;
     });
