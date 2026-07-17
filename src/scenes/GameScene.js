@@ -2231,8 +2231,8 @@ export default class GameScene extends Phaser.Scene {
   }
 
   saveUIConfig() {
-    // Generate config matching ui-config.json format
-    const newConfig = {};
+    // Generate config matching ui-config.json format, preserving all original keys
+    const newConfig = { ...UI_CONFIG };
 
     // Get current values from active sprites
     this.editableUIElements.forEach(element => {
