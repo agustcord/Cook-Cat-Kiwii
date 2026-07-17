@@ -24,6 +24,16 @@ Esta guía documenta los problemas técnicos, de diseño y visuales encontrados 
 * **Solución**: Se eliminó el vaciado del arreglo de galletas de la bandeja en `handleOvenImageClick()`, de modo que las galletas extraídas simplemente se añaden al final del listado mediante `.push()`.
 * **Lección**: No asumas que un contenedor de destino está vacío al transferir objetos; preserva siempre los elementos existentes a menos que la mecánica requiera un reemplazo total.
 
+### 1.4. Requisito de Taza Vacía en la Estación de Bebidas (Cafetera)
+* **Síntoma**: Se requería añadir una nueva interacción al proceso de preparación de café, leche o café con leche: colocar primero una taza vacía en la máquina para poder verter cualquier ingrediente.
+* **Solución**:
+  1. Se generó una textura procedimental `'beverage_empty_cup'` en `BootScene.js` invocando el método de dibujo con relleno nulo (`drawCupBody(null)`).
+  2. Se actualizó el ciclo de estados de la cafetera agregando el estado `'no_cup'`.
+  3. Se creó una pila interactiva de tazas (`'TAZAS'`) a la derecha de la cafetera que permite colocar una taza vacía en el mostrador de preparación mediante un tween animado.
+  4. Se bloqueó el inicio de preparación de bebidas mediante una validación en `handleDrinkIngredientDrop` si el estado es `'no_cup'`.
+  5. Se modificó `pickupDrink()` para que al retirar el pedido la cafetera vuelva automáticamente al estado `'no_cup'`.
+* **Lección**: Al agregar capas adicionales de interacción (como colocar un contenedor antes del contenido), inicializa siempre el objeto base como pre-requisito obligatorio e integra animaciones fluidas (tweens) para realzar el feedback de la interacción física.
+
 ---
 
 ## 🛠️ 2. Código e Infraestructura (Vite + Phaser)

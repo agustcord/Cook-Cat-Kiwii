@@ -220,5 +220,10 @@ export default class BootScene extends Phaser.Scene {
     startDraw();
     drawCupBody(0xc69c6d); // Light brown latte color
     g.generateTexture('beverage_coffee_milk', 45, 45);
+
+    // 8. Empty Cup (beverage_empty_cup)
+    startDraw();
+    drawCupBody(null); // No fill color
+    g.generateTexture('beverage_empty_cup', 45, 45);
   }
 }

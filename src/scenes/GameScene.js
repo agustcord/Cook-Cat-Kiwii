@@ -94,7 +94,7 @@ export default class GameScene extends Phaser.Scene {
     this.ovenTimeElapsed = 0;
 
     // Drink machine state
-    this.machineState = 'empty'; // 'empty', 'brewing_coffee', 'brewing_milk', 'ready_coffee', 'ready_milk', 'ready_coffee_milk'
+    this.machineState = 'no_cup'; // 'no_cup', 'empty' (cup placed), 'brewing_coffee', 'brewing_milk', 'ready_coffee', 'ready_milk', 'ready_coffee_milk'
     this.machineCupSprite = null;
     this.machineTimer = null;
   }
@@ -778,6 +778,69 @@ export default class GameScene extends Phaser.Scene {
 
       this.handleDrinkIngredientDrop('milk', startX, startY);
     });
+
+    // 6. Clean Cups Stack (placed to the right on the machine tray)
+    this.cupStackImage = this.add.image(startX + 52, startY + 38, 'beverage_empty_cup')
+      .setDisplaySize(38, 38)
+      .setDepth(3)
+      .setAlpha(0.85);
+
+    this.cupStackText = this.add.text(startX + 52, startY + 16, 'TAZAS', {
+      font: 'bold 9px "Outfit", sans-serif',
+      fill: '#7f5539',
+      stroke: '#ffffff',
+      strokeThickness: 2
+    }).setOrigin(0.5).setDepth(3);
+
+    const cupStackZone = this.add.rectangle(startX + 52, startY + 38, 38, 38, 0x000000, 0)
+      .setDepth(4);
+    cupStackZone.setInteractive({ useHandCursor: true });
+
+    cupStackZone.on('pointerover', () => {
+      this.cupStackImage.setScale(1.1);
+    });
+    cupStackZone.on('pointerout', () => {
+      this.cupStackImage.setScale(1.0);
+    });
+    cupStackZone.on('pointerdown', () => {
+      this.handleCupStackClick(startX, startY);
+    });
+  }
+
+  handleCupStackClick(startX, startY) {
+    if (this.machineState !== 'no_cup') {
+      SoundEffects.playAngry();
+      this.showFeedbackText('¡Ya hay una taza en la cafetera! ☕', startX, 200, '#d90429');
+      return;
+    }
+
+    SoundEffects.playClick();
+
+    // Spawn flight animation cup
+    const flightCup = this.add.image(startX + 52, startY + 38, 'beverage_empty_cup')
+      .setDisplaySize(38, 38)
+      .setDepth(100);
+
+    this.tweens.add({
+      targets: flightCup,
+      x: startX,
+      y: startY + 38,
+      displaySizeX: 48,
+      displaySizeY: 48,
+      duration: 300,
+      ease: 'Cubic.out',
+      onComplete: () => {
+        flightCup.destroy();
+
+        // Place permanent empty cup on machine
+        this.machineCupSprite = this.add.image(startX, startY + 38, 'beverage_empty_cup')
+          .setDisplaySize(48, 48)
+          .setDepth(4);
+
+        this.machineState = 'empty';
+        this.showFeedbackText('¡Taza colocada! ☕', startX, 200, '#38b000');
+      }
+    });
   }
 
   updateDrinkStockTexts() {
@@ -808,6 +871,12 @@ export default class GameScene extends Phaser.Scene {
   }
 
   handleDrinkIngredientDrop(type, startX, startY) {
+    if (this.machineState === 'no_cup') {
+      SoundEffects.playAngry();
+      this.showFeedbackText('¡Primero coloca una taza! ☕🥛', startX, 200, '#d90429');
+      return;
+    }
+
     // Check if machine is in a state to accept ingredients
     if (this.machineState === 'empty') {
       // Deduct stock
@@ -825,12 +894,16 @@ export default class GameScene extends Phaser.Scene {
 
       const progressBar = this.add.graphics().setDepth(21);
       
-      // Place a faded cup on the machine
+      // Update texture and alpha of the existing cup
       const cupKey = type === 'coffee_beans' ? 'beverage_coffee' : 'beverage_milk';
-      this.machineCupSprite = this.add.image(startX, startY + 38, cupKey)
-        .setDisplaySize(48, 48)
-        .setAlpha(0.4)
-        .setDepth(4);
+      if (this.machineCupSprite) {
+        this.machineCupSprite.setTexture(cupKey).setAlpha(0.4);
+      } else {
+        this.machineCupSprite = this.add.image(startX, startY + 38, cupKey)
+          .setDisplaySize(48, 48)
+          .setAlpha(0.4)
+          .setDepth(4);
+      }
 
       let elapsed = 0;
       const duration = 3000; // 3 seconds brew time
@@ -950,7 +1023,7 @@ export default class GameScene extends Phaser.Scene {
     
     const startX = this.drinkMachine.x;
     const startY = this.drinkMachine.y;
-    this.machineState = 'empty';
+    this.machineState = 'no_cup';
 
     // Hide serve button
     this.updateDrinkServeButtonState(startX, startY);

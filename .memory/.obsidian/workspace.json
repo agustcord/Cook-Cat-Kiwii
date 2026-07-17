@@ -33,14 +33,10 @@
             "id": "54bab70589e0cad9",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "index.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "index"
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Vista gráfica"
             }
           }
         ]
@@ -111,7 +107,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 513.5
+    "width": 513.5,
+    "collapsed": true
   },
   "right": {
     "id": "424309e039d9cf3a",
@@ -217,15 +214,15 @@
   "active": "54bab70589e0cad9",
   "lastOpenFiles": [
     "wiki/guia_resolucion_problemas.md",
-    "wiki/hoja_ruta.md",
-    "wiki/bienvenida.md",
-    "2026-07-16.md",
-    "wiki/configuracion_ui.md",
     "index.md",
+    "wiki/configuracion_ui.md",
+    "wiki/bienvenida.md",
+    "wiki/biblia_arte.md",
+    "wiki/hoja_ruta.md",
+    "2026-07-16.md",
     "log.md",
     "wiki/historia.md",
     "wiki/inspiracion_musica.md",
-    "wiki/biblia_arte.md",
     "Sin título.canvas"
   ]
 }

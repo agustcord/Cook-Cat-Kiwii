@@ -1,5 +1,9 @@
 # Bitácora de Cambios (Log)
 
+## [2026-07-17] feat | Implementada mecánica de taza vacía obligatoria en la cafetera
+- Se implementó la pila de tazas y la obligatoriedad de colocar tazas vacías antes de preparar café o leche.
+- Se actualizó [[guia_resolucion_problemas|Guía de Resolución de Problemas]] con la sección 1.4 detallando el diseño técnico de la estación de bebidas.
+
 ## [2026-07-17] fix | Corregido bug de desaparición de galletas crudas en la bandeja
 - Se actualizó [[guia_resolucion_problemas|Guía de Resolución de Problemas]] con la sección 1.3 detallando la solución al bug que vaciaba prepTrayCookies al sacar galletas del horno.
 
