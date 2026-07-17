@@ -5,6 +5,7 @@
 - Se eliminaron las etiquetas de texto de CAFETERÍA y TAZAS, y se reubicó la pila de tazas vacías apoyándola físicamente en el techo de la cafetera (Y = startY - 68).
 - Se habilitó la pila de tazas como elemento editable en el Modo Editor de UI (`cupStack`) con persistencia en `ui-config.json` para facilitar su ajuste y reubicación.
 - Se corrigió `saveUIConfig()` para que clone `UI_CONFIG` inicialmente y no se pierdan propiedades estáticas de etiquetas al exportar el JSON.
+- Se unificó la coordenada Y inicial de la pila de tazas a 202 en `ui-config.json` para evitar que aparezca flotando al iniciar el juego.
 - Se actualizó [[guia_resolucion_problemas|Guía de Resolución de Problemas]] con la sección 1.4 detallando el diseño técnico de la estación de bebidas.
 
 ## [2026-07-17] fix | Corregido bug de desaparición de galletas crudas en la bandeja
