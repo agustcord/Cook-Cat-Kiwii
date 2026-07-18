@@ -765,21 +765,22 @@ export default class GameScene extends Phaser.Scene {
     });
 
     // 4. Ingredient Click Zones directly on the machine panel (Coffee Beans at left, Milk at center-right)
-    const btnSize = 32;
-    const beansX = startX - 35;
-    const milkX = startX + 5;
-    const btnY = startY - 42;
+    const beansX = startX - 34;
+    const milkX = startX + 18;
+    const btnY = startY - 44;
 
-    // Coffee Button Click Zone and Stock Text (styled like a digital display)
-    this.beansStockText = this.add.text(beansX, startY - 22, '0u', {
+    // Coffee Button Image & Stock Text (integrated inside the new asset display box)
+    this.btnCoffeeImage = this.add.image(beansX, btnY, 'btn_coffee_asset')
+      .setDisplaySize(44, 36)
+      .setDepth(3);
+
+    this.beansStockText = this.add.text(beansX, btnY + 6, '0u', {
       font: 'bold 11px "Outfit", sans-serif',
-      fill: '#5c3d2e',
-      stroke: '#ffffff',
-      strokeThickness: 2
-    }).setOrigin(0.5).setDepth(3);
+      fill: '#2b2b2b'
+    }).setOrigin(0.5).setDepth(4);
 
-    const beansDragZone = this.add.rectangle(beansX, btnY, btnSize, btnSize, 0x000000, 0)
-      .setDepth(4);
+    const beansDragZone = this.add.rectangle(beansX, btnY, 44, 36, 0x000000, 0)
+      .setDepth(5);
     beansDragZone.setInteractive({ useHandCursor: true });
 
     // Milk Button Click Zone and Stock Text (styled like a digital display)
@@ -790,7 +791,7 @@ export default class GameScene extends Phaser.Scene {
       strokeThickness: 2
     }).setOrigin(0.5).setDepth(3);
 
-    const milkDragZone = this.add.rectangle(milkX, btnY, btnSize, btnSize, 0x000000, 0)
+    const milkDragZone = this.add.rectangle(milkX, btnY, 32, 32, 0x000000, 0)
       .setDepth(4);
     milkDragZone.setInteractive({ useHandCursor: true });
 
@@ -798,9 +799,11 @@ export default class GameScene extends Phaser.Scene {
 
     // 5. Button click events (No drag-and-drop)
     beansDragZone.on('pointerover', () => {
-      this.beansStockText.setScale(1.25);
+      this.btnCoffeeImage.setScale(1.1 * (44 / this.btnCoffeeImage.width));
+      this.beansStockText.setScale(1.1);
     });
     beansDragZone.on('pointerout', () => {
+      this.btnCoffeeImage.setScale(44 / this.btnCoffeeImage.width);
       this.beansStockText.setScale(1.0);
     });
     beansDragZone.on('pointerdown', () => {
@@ -810,10 +813,11 @@ export default class GameScene extends Phaser.Scene {
         return;
       }
       
-      // Text bounce animation
+      // Bounce animation on tap
       this.tweens.add({
-        targets: this.beansStockText,
-        scale: 1.45,
+        targets: [this.btnCoffeeImage, this.beansStockText],
+        scaleX: '*=1.15',
+        scaleY: '*=1.15',
         duration: 80,
         yoyo: true,
         ease: 'Quad.easeInOut'

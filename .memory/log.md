@@ -4,7 +4,9 @@
 - Se reemplazó el cuerpo procedural de la máquina de café por la nueva ilustración `public/assets/cafeteteria_base.png`.
 - Se eliminaron los bloques de dibujo vector de `drink_machine` en `BootScene.js` y se configuró la escala de `160x160` px sobre el mostrador.
 - Se mantuvieron los botones de insumos (café, leche), contadores de stock, zonas de click e indicadores encima de la nueva cafetera.
-- Se actualizó [[guia_resolucion_problemas|Guía de Resolución de Problemas]] con la sección 3.2.
+- Se integró la nueva ilustración del botón rectangular de café `public/assets/boton_cafe.png`.
+- Se posicionó la cifra de stock dentro del recuadro gris claro inferior del botón y se vincularon animaciones de rebote (bounce tween) e interacción hover.
+- Se actualizó [[guia_resolucion_problemas|Guía de Resolución de Problemas]] con la sección 3.3.
 
 
 ## [2026-07-17] feat | Música de fondo y panel de control de volumen
