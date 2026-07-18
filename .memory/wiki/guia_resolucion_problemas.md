@@ -80,7 +80,7 @@ Esta guía documenta los problemas técnicos, de diseño y visuales encontrados 
 * **Síntoma**: Se añadieron los diseños originales de los botones rectangulares de café (`public/assets/boton_cafe.png`) y leche (`public/assets/boton_leche.png`), los cuales incluyen etiquetas superiores ("CAFE" / "LECHE") y un recuadro inferior gris claro diseñado para alojar los contadores digitales de insumos.
 * **Solución**:
   1. Se cargaron las texturas `btn_coffee_asset` y `btn_milk_asset` en `BootScene.js`.
-  2. En `GameScene.js`, se renderizaron los botones a dimensiones `44 x 36` px en las posiciones `beansX = startX - 34` y `milkX = startX + 18`.
+  2. En `GameScene.js`, se renderizaron los botones a dimensiones `44 x 36` px en las posiciones `beansX = startX - 34` y `milkX = startX + 18`, ajustando la Y de leche a `milkY = btnY - 1` para un alineamiento horizontal de precisión milimétrica a nivel de píxeles.
   3. Se colocaron las cifras numéricas de stock (`this.beansStockText` y `this.milkStockText`) centradas dentro de sus recuadros grises inferiores (`btnY + 6`).
   4. Se asociaron animaciones de escalado suave en hover (1.1x) y rebote sutil al presionar (tap bounce), sincronizadas entre las imágenes de los botones y los números del contador.
   5. Se eliminó el botón verde flotante "SERVIR" (`drinkServeBtnBg` y `drinkServeZone`) ya que quedó obsoleto con la integración del arrastre directo (`drag & drop`) de la taza servida hacia la Bandeja de Entrega.
