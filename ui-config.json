@@ -43,15 +43,15 @@
   },
   "deliveryTray": {
     "width": 200,
-    "height": 50,
+    "height": 74,
     "x": 553,
     "y": 360
   },
   "cupStack": {
     "width": 38,
-    "height": 38,
-    "x": 318,
-    "y": 190
+    "height": 31,
+    "x": 312,
+    "y": 187
   },
   "musicButton": {
     "width": 38,

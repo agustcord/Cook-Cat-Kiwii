@@ -119,3 +119,15 @@ Esta guía documenta los problemas técnicos, de diseño y visuales encontrados 
   1. *Sandwich de Capas*: Se dividió el dibujo del brazo en dos. El contorno del brazo se asignó a `setDepth(9998)` (detrás de la pata) y el relleno crema del brazo se asignó a `setDepth(10000)` (por encima de la pata a `depth 9999`). De este modo, el relleno crema cubre el corte del final de la muñeca fusionándose de forma invisible con el pelaje del mismo color, mientras que el contorno marrón queda oculto por detrás.
   2. *Acortamiento por Píxeles Fijos*: Se cambió el cálculo para que el trazo del brazo termine siempre exactamente **25 píxeles** antes de llegar al cursor (usando `tMax` dinámico en base al largo total de la curva Bezier).
 * **Lección**: Para transiciones impecables entre assets de rasterizado (imágenes) y vectores dibujados por código, combina el ordenamiento fino de capas (sandwiching) con offsets en píxeles fijos para evitar deformaciones dependientes de la escala o la distancia.
+
+### 3.6. Reemplazo del Asset de la Taza (`taza.png`) y Escala Proporcional Estática
+* **Síntoma**: Al reemplazar la taza geométrica procedural por la ilustración de taza personalizada (`taza.png`), la taza desaparecía sobre la cafetera o se agrandaba a un tamaño gigante (67x54 px) al pasar el puntero o colar café.
+* **Causa Raíz**:
+  1. La generación dinámica con `RenderTexture` en `BootScene.js` intentaba capturar un sprite no renderizado en la escena, produciendo una textura totalmente transparente.
+  2. Al usar una imagen opaca donde el líquido no es visible desde afuera, la manipulación de colores de líquidos resultó innecesaria.
+  3. En `GameScene.js`, los eventos `pointerover`/`pointerout` y los Tweens de animación usaban `setScale(1.1)` y `setScale(1.0)` / `scale: 1.15` en absoluto, lo que anulaba el `setDisplaySize` inicial y restablecía la taza a su tamaño original gigante (67x54 px).
+* **Solución**:
+  1. Se cargó directamente `assets/taza.png` de forma estática en `BootScene.js` para todas las claves (`beverage_empty_cup`, `beverage_coffee`, `beverage_milk`, `beverage_coffee_milk`).
+  2. Se ajustaron las dimensiones base respetando la relación de aspecto original (67x54, ~1.25:1): pila de tazas a `34x27` px y taza en dispensador a `36x29` px.
+  3. Se corrigieron los eventos y tweens para utilizar multiplicadores relativos (`scaleX * 1.1`, `scaleX: '*=1.12'`, etc.), garantizando que la taza vuelva a su escala reducida proporcional al finalizar las interacciones.
+* **Lección**: Al redimensionar sprites con `setDisplaySize()`, nunca uses `setScale(1.0)` o asignaciones absolutas de `scale` en animaciones/eventos; guarda siempre la escala base (`scaleX`, `scaleY`) resultante y aplica multiplicadores relativos para preservar el tamaño y las proporciones deseadas.

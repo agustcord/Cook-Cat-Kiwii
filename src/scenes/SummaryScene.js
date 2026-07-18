@@ -20,7 +20,7 @@ export default class SummaryScene extends Phaser.Scene {
     this.stockAtStart = safeData.stockAtStart || {
       dough: { classic: 10, chocolate: 0, oat: 0 },
       topping: { sprinkles: 0, choco: 0, glazing: 0 },
-      drink: { coffee_beans: 0, milk: 0 }
+      drink: { coffee_beans: 2, milk: 2 }
     };
 
     // Current state to carry over
@@ -28,7 +28,7 @@ export default class SummaryScene extends Phaser.Scene {
     this.stock = safeData.stock || {
       dough: { classic: 10, chocolate: 0, oat: 0 },
       topping: { sprinkles: 0, choco: 0, glazing: 0 },
-      drink: { coffee_beans: 0, milk: 0 }
+      drink: { coffee_beans: 2, milk: 2 }
     };
 
     // 1. Calculate Economy Deductions

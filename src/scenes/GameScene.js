@@ -52,9 +52,9 @@ export default class GameScene extends Phaser.Scene {
     this.stock = safeData.stock || {
       dough: { classic: 10, chocolate: 0, oat: 0 },
       topping: { sprinkles: 0, choco: 0, glazing: 0 },
-      drink: { coffee_beans: 0, milk: 0 }
+      drink: { coffee_beans: 2, milk: 2 }
     };
-    this.stock.drink = this.stock.drink || { coffee_beans: 0, milk: 0 };
+    this.stock.drink = this.stock.drink || { coffee_beans: 2, milk: 2 };
 
     // Save starting state of the day for re-tries
     this.coinsAtStart = this.coins;
@@ -848,13 +848,16 @@ export default class GameScene extends Phaser.Scene {
     const { cupStack } = UI_CONFIG;
     const cupStackX = cupStack ? cupStack.x : (startX + 52);
     const cupStackY = cupStack ? cupStack.y : (startY - 68);
-    const cupStackW = cupStack ? cupStack.width : 38;
-    const cupStackH = cupStack ? cupStack.height : 38;
+    const cupStackW = cupStack ? cupStack.width : 34;
+    const cupStackH = Math.round(cupStackW * (54 / 67));
 
     this.cupStackImage = this.add.image(cupStackX, cupStackY, 'beverage_empty_cup')
       .setDisplaySize(cupStackW, cupStackH)
       .setDepth(3)
       .setAlpha(0.85);
+
+    const stackBaseScaleX = this.cupStackImage.scaleX;
+    const stackBaseScaleY = this.cupStackImage.scaleY;
 
     this.cupStackZone = this.add.rectangle(cupStackX, cupStackY, cupStackW, cupStackH, 0x000000, 0)
       .setDepth(4);
@@ -862,10 +865,10 @@ export default class GameScene extends Phaser.Scene {
     this.input.setDraggable(this.cupStackZone);
 
     this.cupStackZone.on('pointerover', () => {
-      this.cupStackImage.setScale(1.1);
+      this.cupStackImage.setScale(stackBaseScaleX * 1.1, stackBaseScaleY * 1.1);
     });
     this.cupStackZone.on('pointerout', () => {
-      this.cupStackImage.setScale(1.0);
+      this.cupStackImage.setScale(stackBaseScaleX, stackBaseScaleY);
     });
 
     let tempDragCup = null;
@@ -882,7 +885,7 @@ export default class GameScene extends Phaser.Scene {
       dragBlocked = false;
       SoundEffects.playClick();
       tempDragCup = this.add.image(this.cupStackImage.x, this.cupStackImage.y, 'beverage_empty_cup')
-        .setDisplaySize(38, 38)
+        .setDisplaySize(42, 34)
         .setDepth(100)
         .setAlpha(0.85);
     });
@@ -910,7 +913,7 @@ export default class GameScene extends Phaser.Scene {
         tempDragCup = null;
 
         this.machineCupSprite = this.add.image(destX, destY, 'beverage_empty_cup')
-          .setDisplaySize(48, 48)
+          .setDisplaySize(36, 29)
           .setDepth(4);
 
         this.machineState = 'empty';
@@ -1010,10 +1013,14 @@ export default class GameScene extends Phaser.Scene {
             if (this.machineCupSprite) {
               this.machineCupSprite.setAlpha(1.0);
               
+              const baseScaleX = this.machineCupSprite.scaleX;
+              const baseScaleY = this.machineCupSprite.scaleY;
+
               // Pulsing visual effect to show it is ready
               this.tweens.add({
                 targets: this.machineCupSprite,
-                scale: 1.15,
+                scaleX: baseScaleX * 1.12,
+                scaleY: baseScaleY * 1.12,
                 duration: 250,
                 yoyo: true,
                 repeat: 1,
@@ -1042,9 +1049,12 @@ export default class GameScene extends Phaser.Scene {
       this.machineState = 'ready_coffee_milk';
       if (this.machineCupSprite) {
         this.machineCupSprite.setTexture('beverage_coffee_milk');
+        const baseScaleX = 36 / 67;
+        const baseScaleY = 29 / 54;
         this.tweens.add({
           targets: this.machineCupSprite,
-          scale: 1.2,
+          scaleX: baseScaleX * 1.12,
+          scaleY: baseScaleY * 1.12,
           duration: 150,
           yoyo: true,
           ease: 'Bounce.easeOut'
@@ -1063,9 +1073,12 @@ export default class GameScene extends Phaser.Scene {
       this.machineState = 'ready_coffee_milk';
       if (this.machineCupSprite) {
         this.machineCupSprite.setTexture('beverage_coffee_milk');
+        const baseScaleX = 36 / 67;
+        const baseScaleY = 29 / 54;
         this.tweens.add({
           targets: this.machineCupSprite,
-          scale: 1.2,
+          scaleX: baseScaleX * 1.12,
+          scaleY: baseScaleY * 1.12,
           duration: 150,
           yoyo: true,
           ease: 'Bounce.easeOut'
@@ -1087,11 +1100,14 @@ export default class GameScene extends Phaser.Scene {
 
     this.machineCupSprite.setData('origX', startX);
     this.machineCupSprite.setData('origY', startY + 38);
+    const baseScaleX = 36 / 67;
+    const baseScaleY = 29 / 54;
 
     this.machineCupSprite.on('dragstart', () => {
       this.isHoldingItem = true;
       SoundEffects.playClick();
       this.machineCupSprite.setDepth(1000);
+      this.machineCupSprite.setScale(baseScaleX * 1.15, baseScaleY * 1.15);
     });
 
     this.machineCupSprite.on('drag', (pointer, dragX, dragY) => {
@@ -1115,6 +1131,8 @@ export default class GameScene extends Phaser.Scene {
           targets: this.machineCupSprite,
           x: this.machineCupSprite.getData('origX'),
           y: this.machineCupSprite.getData('origY'),
+          scaleX: baseScaleX,
+          scaleY: baseScaleY,
           duration: 250,
           ease: 'Cubic.out',
           onComplete: () => {

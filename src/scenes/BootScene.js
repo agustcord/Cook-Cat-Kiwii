@@ -28,6 +28,11 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('drink_machine', 'assets/cafeteteria_base.png');
     this.load.image('btn_coffee_asset', 'assets/boton_cafe.png');
     this.load.image('btn_milk_asset', 'assets/boton_leche.png');
+    this.load.image('taza_base', 'assets/taza.png');
+    this.load.image('beverage_empty_cup', 'assets/taza.png');
+    this.load.image('beverage_coffee', 'assets/taza.png');
+    this.load.image('beverage_milk', 'assets/taza.png');
+    this.load.image('beverage_coffee_milk', 'assets/taza.png');
     this.load.image('bakery_counter', 'assets/backgrounds/bakery_counter_base.png');
     this.load.image('oven_off', 'assets/oven_off.png');
     this.load.image('oven_on', 'assets/oven_on.png');
@@ -147,45 +152,5 @@ export default class BootScene extends Phaser.Scene {
     g.lineStyle(1.5, 0x7f7f7f, 1);
     g.strokeRect(10, 10, 20, 26);
     g.generateTexture('drink_milk', 40, 40);
-
-    // 4. Base Cup Drawer helper
-    const drawCupBody = (fillColor) => {
-      // Cup outline/handle
-      g.fillStyle(0xffffff, 1);
-      g.fillCircle(32, 22, 6); // Handle
-      g.fillStyle(0xe5e5e5, 1);
-      g.fillCircle(32, 22, 3); // Handle inner cut
-      
-      g.fillStyle(0xffffff, 1);
-      g.fillRoundedRect(12, 12, 20, 20, { tl: 2, tr: 2, bl: 8, br: 8 }); // Cup body
-      g.lineStyle(1.5, 0x8a8a8a, 1);
-      g.strokeRoundedRect(12, 12, 20, 20, { tl: 2, tr: 2, bl: 8, br: 8 });
-
-      // Liquid Fill
-      if (fillColor !== null) {
-        g.fillStyle(fillColor, 1);
-        g.fillRect(14, 15, 16, 12);
-      }
-    };
-
-    // 5. Black Coffee Cup (beverage_coffee)
-    startDraw();
-    drawCupBody(0x4a2c2a); // Dark coffee color
-    g.generateTexture('beverage_coffee', 45, 45);
-
-    // 6. Warm Milk Cup (beverage_milk)
-    startDraw();
-    drawCupBody(0xfffaf0); // Off-white cream color
-    g.generateTexture('beverage_milk', 45, 45);
-
-    // 7. Coffee with Milk Cup (beverage_coffee_milk)
-    startDraw();
-    drawCupBody(0xc69c6d); // Light brown latte color
-    g.generateTexture('beverage_coffee_milk', 45, 45);
-
-    // 8. Empty Cup (beverage_empty_cup)
-    startDraw();
-    drawCupBody(null); // No fill color
-    g.generateTexture('beverage_empty_cup', 45, 45);
   }
 }

@@ -1,5 +1,12 @@
 # Bitácora de Cambios (Log)
 
+## [2026-07-18] fix | Reemplazo de asset de taza (`taza.png`), corrección de escala proporcional e inventario inicial
+- Se reemplazó la taza geométrica procedural por la ilustración estática `public/assets/taza.png` para todas las bebidas en `BootScene.js`.
+- Se corrigió el bug de escalado gigante en `GameScene.js` ajustando las proporciones reales (1.25:1) a `34x27` px en la pila superior y `36x29` px en el dispensador, usando multiplicadores de escala relativos en hover y tweens.
+- Se fijó el stock inicial de inicio de juego en 2 unidades de café y 2 de leche.
+- Se actualizó la regla de proyectos en `.agents/AGENTS.md` para requerir aprobación previa de planes de implementación (`implementation_plan.md`).
+- Se actualizó [[guia_resolucion_problemas|Guía de Resolución de Problemas]] con la sección 3.6.
+
 ## [2026-07-18] feat | Integrada nueva ilustración para la base de la cafetera
 - Se reemplazó el cuerpo procedural de la máquina de café por la nueva ilustración `public/assets/cafeteteria_base.png`.
 - Se eliminaron los bloques de dibujo vector de `drink_machine` en `BootScene.js` y se configuró la escala de `160x160` px sobre el mostrador.
