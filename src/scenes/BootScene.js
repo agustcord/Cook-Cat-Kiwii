@@ -27,6 +27,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.audio('bg_music', "assets/audio/Kiwi's Simple Bakehouse Loop.mp3");
     this.load.image('drink_machine', 'assets/cafeteteria_base.png');
     this.load.image('btn_coffee_asset', 'assets/boton_cafe.png');
+    this.load.image('btn_milk_asset', 'assets/boton_leche.png');
     this.load.image('bakery_counter', 'assets/backgrounds/bakery_counter_base.png');
     this.load.image('oven_off', 'assets/oven_off.png');
     this.load.image('oven_on', 'assets/oven_on.png');

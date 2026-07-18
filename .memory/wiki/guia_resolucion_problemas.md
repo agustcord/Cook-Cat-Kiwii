@@ -76,14 +76,15 @@ Esta guía documenta los problemas técnicos, de diseño y visuales encontrados 
   3. En `GameScene.js`, se ajustó el tamaño visual `setDisplaySize(160, 160)` para encajar de forma nítida y perfectamente alineada sobre el mostrador, preservando la interactividad de botones y tazas.
 * **Lección**: Al reemplazar gráficos procedimentales por ilustraciones artísticas en PNG, desacopla las capas de UI (botones y contadores) asignando profundidades de renderizado superiores (`setDepth`), permitiendo actualizar el arte base sin afectar la lógica de programación.
 
-### 3.3. Integración del Asset de Botón de Café (`boton_cafe.png`)
-* **Síntoma**: Se añadió el diseño original del botón rectangular de café (`public/assets/boton_cafe.png`), el cual incluye una etiqueta superior "CAFE" y un espacio inferior en gris claro diseñado para alojar el contador digital de insumos.
+### 3.3. Integración de los Assets de Botones de Bebidas (`boton_cafe.png` y `boton_leche.png`)
+* **Síntoma**: Se añadieron los diseños originales de los botones rectangulares de café (`public/assets/boton_cafe.png`) y leche (`public/assets/boton_leche.png`), los cuales incluyen etiquetas superiores ("CAFE" / "LECHE") y un recuadro inferior gris claro diseñado para alojar los contadores digitales de insumos.
 * **Solución**:
-  1. Se cargó la textura `btn_coffee_asset` en `BootScene.js`.
-  2. En `GameScene.js`, se renderizó la imagen en `beansX = startX - 34` y `btnY = startY - 44` con dimensiones `44 x 36` px.
-  3. Se colocó el contador numérico de stock (`this.beansStockText`) exactamente dentro del espacio gris claro inferior (`btnY + 6`).
+  1. Se cargaron las texturas `btn_coffee_asset` y `btn_milk_asset` en `BootScene.js`.
+  2. En `GameScene.js`, se renderizaron los botones a dimensiones `44 x 36` px en las posiciones `beansX = startX - 34` y `milkX = startX + 18`.
+  3. Se colocaron las cifras numéricas de stock (`this.beansStockText` y `this.milkStockText`) centradas dentro de sus recuadros grises inferiores (`btnY + 6`).
+  4. Se asociaron animaciones de escalado suave en hover (1.1x) y rebote sutil al presionar (tap bounce), sincronizadas entre las imágenes de los botones y los números del contador.
   5. Se eliminó el botón verde flotante "SERVIR" (`drinkServeBtnBg` y `drinkServeZone`) ya que quedó obsoleto con la integración del arrastre directo (`drag & drop`) de la taza servida hacia la Bandeja de Entrega.
-* **Lección**: Al evolucionar la mecánica de interacción de un objeto a física directa por arrastre (`drag & drop`), remueve los botones secundarios de la UI para mantener el espacio de cocina despejado y evitar redundancias.
+* **Lección**: Al integrar elementos visuales con contenedores de texto nativos dibujados por el usuario, utiliza offsets exactos de Y e integra los `targets` de las animaciones en arreglos de Phaser (`targets: [image, text]`) para garantizar una interactividad limpia y coordinada.
 
 ### 3.1. El Efecto "Guante de Boxeo" del Cursor
 * **Síntoma**: La pata de gato se veía gigante en comparación con el mostrador y parecía un guante de boxeo colgado de un brazo de Phaser muy delgado.

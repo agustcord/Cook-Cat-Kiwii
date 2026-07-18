@@ -4,8 +4,7 @@
 - Se reemplazó el cuerpo procedural de la máquina de café por la nueva ilustración `public/assets/cafeteteria_base.png`.
 - Se eliminaron los bloques de dibujo vector de `drink_machine` en `BootScene.js` y se configuró la escala de `160x160` px sobre el mostrador.
 - Se mantuvieron los botones de insumos (café, leche), contadores de stock, zonas de click e indicadores encima de la nueva cafetera.
-- Se integró la nueva ilustración del botón rectangular de café `public/assets/boton_cafe.png`.
-- Se posicionó la cifra de stock dentro del recuadro gris claro inferior del botón y se vincularon animaciones de rebote (bounce tween) e interacción hover.
+- Se integraron los nuevos botones ilustrados de café (`boton_cafe.png`) y leche (`boton_leche.png`), alineando sus números de stock dentro de los recuadros grises y vinculando animaciones sincronizadas de hover y rebote.
 - Se eliminó el botón de la UI "SERVIR" que quedó obsoleto con la mecánica de arrastre directo de la taza a la Bandeja de Entrega.
 - Se amplió la hitbox interactiva de la Bandeja de Entrega (`deliveryDragZone`) en 24px verticales y se vinculó la activación instantánea en `pointerdown` para permitir sostenerla sin fallos desde el borde inferior sin rasguñar clientes.
 - Se actualizó [[guia_resolucion_problemas|Guía de Resolución de Problemas]] con la sección 3.3.

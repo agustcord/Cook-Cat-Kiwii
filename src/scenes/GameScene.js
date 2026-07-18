@@ -770,16 +770,18 @@ export default class GameScene extends Phaser.Scene {
       .setDepth(5);
     beansDragZone.setInteractive({ useHandCursor: true });
 
-    // Milk Button Click Zone and Stock Text (styled like a digital display)
-    this.milkStockText = this.add.text(milkX, startY - 22, '0u', {
-      font: 'bold 11px "Outfit", sans-serif',
-      fill: '#0077b6',
-      stroke: '#ffffff',
-      strokeThickness: 2
-    }).setOrigin(0.5).setDepth(3);
+    // Milk Button Image & Stock Text (integrated inside the new asset display box)
+    this.btnMilkImage = this.add.image(milkX, btnY, 'btn_milk_asset')
+      .setDisplaySize(44, 36)
+      .setDepth(3);
 
-    const milkDragZone = this.add.rectangle(milkX, btnY, 32, 32, 0x000000, 0)
-      .setDepth(4);
+    this.milkStockText = this.add.text(milkX, btnY + 6, '0u', {
+      font: 'bold 11px "Outfit", sans-serif',
+      fill: '#2b2b2b'
+    }).setOrigin(0.5).setDepth(4);
+
+    const milkDragZone = this.add.rectangle(milkX, btnY, 44, 36, 0x000000, 0)
+      .setDepth(5);
     milkDragZone.setInteractive({ useHandCursor: true });
 
     this.updateDrinkStockTexts();
@@ -814,9 +816,11 @@ export default class GameScene extends Phaser.Scene {
     });
 
     milkDragZone.on('pointerover', () => {
-      this.milkStockText.setScale(1.25);
+      this.btnMilkImage.setScale(1.1 * (44 / this.btnMilkImage.width));
+      this.milkStockText.setScale(1.1);
     });
     milkDragZone.on('pointerout', () => {
+      this.btnMilkImage.setScale(44 / this.btnMilkImage.width);
       this.milkStockText.setScale(1.0);
     });
     milkDragZone.on('pointerdown', () => {
@@ -826,10 +830,11 @@ export default class GameScene extends Phaser.Scene {
         return;
       }
 
-      // Text bounce animation
+      // Bounce animation on tap
       this.tweens.add({
-        targets: this.milkStockText,
-        scale: 1.45,
+        targets: [this.btnMilkImage, this.milkStockText],
+        scaleX: '*=1.15',
+        scaleY: '*=1.15',
         duration: 80,
         yoyo: true,
         ease: 'Quad.easeInOut'
