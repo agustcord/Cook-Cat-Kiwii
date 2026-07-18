@@ -2505,14 +2505,20 @@ export default class GameScene extends Phaser.Scene {
     // Group or list to hold the rendered cookie sprites on the tray
     this.deliveryTraySprites = [];
     
-    // Make the delivery tray draggable via an invisible interactive zone
-    this.deliveryDragZone = this.add.rectangle(this.deliveryTrayX, this.deliveryTrayY, this.deliveryTrayWidth, this.deliveryTrayHeight, 0x000000, 0)
+    // Make the delivery tray draggable via an expanded interactive zone (height + 24px for easy bottom/top grabs)
+    const hitHeight = this.deliveryTrayHeight + 24;
+    this.deliveryDragZone = this.add.rectangle(this.deliveryTrayX, this.deliveryTrayY, this.deliveryTrayWidth, hitHeight, 0x000000, 0)
       .setInteractive({ useHandCursor: true })
       .setDepth(15);
     this.input.setDraggable(this.deliveryDragZone);
 
     this.customerHighlighted = false;
     this.trashHighlighted = false;
+
+    this.deliveryDragZone.on('pointerdown', () => {
+      if (this.isEditorMode) return;
+      this.isHoldingItem = true;
+    });
 
     this.deliveryDragZone.on('dragstart', () => {
       if (this.isEditorMode) return;
