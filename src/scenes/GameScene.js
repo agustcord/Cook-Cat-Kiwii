@@ -749,20 +749,7 @@ export default class GameScene extends Phaser.Scene {
       }
     });
 
-    // 3. Serve Button (drawn dynamically when a drink is ready)
-    this.drinkServeBtnBg = this.add.graphics().setDepth(5);
-    this.drinkServeBtnText = this.add.text(startX, startY + 66, 'SERVIR', {
-      font: 'bold 12px "Outfit", sans-serif',
-      fill: '#ffffff',
-      fontWeight: '800'
-    }).setOrigin(0.5).setDepth(6);
-    this.drinkServeBtnText.setVisible(false);
 
-    this.drinkServeZone = this.add.rectangle(startX, startY + 66, 84, 28, 0x000000, 0)
-      .setDepth(7);
-    this.drinkServeZone.on('pointerdown', () => {
-      this.pickupDrink();
-    });
 
     // 4. Ingredient Click Zones directly on the machine panel (Coffee Beans at left, Milk at center-right)
     const beansX = startX - 34;
@@ -952,21 +939,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   updateDrinkServeButtonState(startX, startY) {
-    const isReady = this.machineState.startsWith('ready_');
-    this.drinkServeBtnBg.clear();
-    
-    if (isReady) {
-      this.drinkServeBtnBg.fillStyle(0x38b000, 1);
-      this.drinkServeBtnBg.fillRoundedRect(startX - 42, startY + 52, 84, 28, 6);
-      this.drinkServeBtnBg.lineStyle(1.5, 0xffffff, 1);
-      this.drinkServeBtnBg.strokeRoundedRect(startX - 42, startY + 52, 84, 28, 6);
-      
-      this.drinkServeBtnText.setVisible(true);
-      this.drinkServeZone.setInteractive({ useHandCursor: true });
-    } else {
-      this.drinkServeBtnText.setVisible(false);
-      this.drinkServeZone.disableInteractive();
-    }
+    // Deprecated: Serving is now handled via direct cup drag-and-drop to the Delivery Tray
   }
 
   handleDrinkIngredientDrop(type, startX, startY) {

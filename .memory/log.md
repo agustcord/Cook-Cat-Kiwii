@@ -6,6 +6,7 @@
 - Se mantuvieron los botones de insumos (café, leche), contadores de stock, zonas de click e indicadores encima de la nueva cafetera.
 - Se integró la nueva ilustración del botón rectangular de café `public/assets/boton_cafe.png`.
 - Se posicionó la cifra de stock dentro del recuadro gris claro inferior del botón y se vincularon animaciones de rebote (bounce tween) e interacción hover.
+- Se eliminó el botón de la UI "SERVIR" que quedó obsoleto con la mecánica de arrastre directo de la taza a la Bandeja de Entrega.
 - Se actualizó [[guia_resolucion_problemas|Guía de Resolución de Problemas]] con la sección 3.3.
 
 

@@ -82,8 +82,8 @@ Esta guía documenta los problemas técnicos, de diseño y visuales encontrados 
   1. Se cargó la textura `btn_coffee_asset` en `BootScene.js`.
   2. En `GameScene.js`, se renderizó la imagen en `beansX = startX - 34` y `btnY = startY - 44` con dimensiones `44 x 36` px.
   3. Se colocó el contador numérico de stock (`this.beansStockText`) exactamente dentro del espacio gris claro inferior (`btnY + 6`).
-  4. Se asociaron animaciones de escalado suave (hover) y rebote (tap bounce) que aplican de forma simultánea a la imagen del botón y al texto del contador.
-* **Lección**: Al integrar elementos visuales con contenedores de texto nativos dibujados por el usuario, utiliza offsets exactos de Y e integra los `targets` de las animaciones en arreglos de Phaser (`targets: [image, text]`) para garantizar una interactividad limpia y coordinada.
+  5. Se eliminó el botón verde flotante "SERVIR" (`drinkServeBtnBg` y `drinkServeZone`) ya que quedó obsoleto con la integración del arrastre directo (`drag & drop`) de la taza servida hacia la Bandeja de Entrega.
+* **Lección**: Al evolucionar la mecánica de interacción de un objeto a física directa por arrastre (`drag & drop`), remueve los botones secundarios de la UI para mantener el espacio de cocina despejado y evitar redundancias.
 
 ### 3.1. El Efecto "Guante de Boxeo" del Cursor
 * **Síntoma**: La pata de gato se veía gigante en comparación con el mostrador y parecía un guante de boxeo colgado de un brazo de Phaser muy delgado.
