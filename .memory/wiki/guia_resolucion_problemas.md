@@ -68,6 +68,14 @@ Esta guía documenta los problemas técnicos, de diseño y visuales encontrados 
 
 ## 🎨 3. Arte, Assets y Cursor Dinámico (Pata de Gato)
 
+### 3.2. Reemplazo del Asset de la Cafetera Base (`cafeteteria_base.png`)
+* **Síntoma**: La cafetera previa era un gráfico vector dibujado de forma procedimental mediante código en `BootScene.js`. Se requirió reemplazar la estructura por la ilustración artística original subida por el usuario (`public/assets/cafeteteria_base.png`), manteniendo los botones, indicadores y tazas en capas superiores.
+* **Solución**:
+  1. Se eliminó la función de dibujado procedimental `generateTexture('drink_machine')` en `BootScene.js`.
+  2. Se cargó directamente la imagen nativa `assets/cafeteteria_base.png` asociándola a la clave `'drink_machine'`.
+  3. En `GameScene.js`, se ajustó el tamaño visual `setDisplaySize(160, 160)` para encajar de forma nítida y perfectamente alineada sobre el mostrador, preservando la interactividad de botones y tazas.
+* **Lección**: Al reemplazar gráficos procedimentales por ilustraciones artísticas en PNG, desacopla las capas de UI (botones y contadores) asignando profundidades de renderizado superiores (`setDepth`), permitiendo actualizar el arte base sin afectar la lógica de programación.
+
 ### 3.1. El Efecto "Guante de Boxeo" del Cursor
 * **Síntoma**: La pata de gato se veía gigante en comparación con el mostrador y parecía un guante de boxeo colgado de un brazo de Phaser muy delgado.
 * **Causa Raíz**: Las texturas generadas por la IA eran de $256 \times 256$ píxeles y se renderizaban a escala `1.0`, mientras que el brazo vectorial dinámico dibujado por Phaser tenía un grosor de solo `42px`.

@@ -1,5 +1,12 @@
 # Bitácora de Cambios (Log)
 
+## [2026-07-18] feat | Integrada nueva ilustración para la base de la cafetera
+- Se reemplazó el cuerpo procedural de la máquina de café por la nueva ilustración `public/assets/cafeteteria_base.png`.
+- Se eliminaron los bloques de dibujo vector de `drink_machine` en `BootScene.js` y se configuró la escala de `160x160` px sobre el mostrador.
+- Se mantuvieron los botones de insumos (café, leche), contadores de stock, zonas de click e indicadores encima de la nueva cafetera.
+- Se actualizó [[guia_resolucion_problemas|Guía de Resolución de Problemas]] con la sección 3.2.
+
+
 ## [2026-07-17] feat | Música de fondo y panel de control de volumen
 - Se cargó e integró en loop la canción de fondo `Kiwi's Simple Bakehouse Loop.mp3` provista por el usuario, configurando el volumen inicial por defecto al 15% (`0.15`).
 - Se agregó el botón de Nota Musical (`🎵`) y se habilitó como elemento editable en el Modo Editor de UI (`musicButton`) con persistencia en `ui-config.json` para facilitar su libre reubicación.

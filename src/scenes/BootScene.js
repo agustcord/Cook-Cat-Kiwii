@@ -25,6 +25,7 @@ export default class BootScene extends Phaser.Scene {
     // Preload background image
     this.load.image('bakery_background', 'assets/backgrounds/bakery_background_top.png');
     this.load.audio('bg_music', "assets/audio/Kiwi's Simple Bakehouse Loop.mp3");
+    this.load.image('drink_machine', 'assets/cafeteteria_base.png');
     this.load.image('bakery_counter', 'assets/backgrounds/bakery_counter_base.png');
     this.load.image('oven_off', 'assets/oven_off.png');
     this.load.image('oven_on', 'assets/oven_on.png');
@@ -144,48 +145,6 @@ export default class BootScene extends Phaser.Scene {
     g.lineStyle(1.5, 0x7f7f7f, 1);
     g.strokeRect(10, 10, 20, 26);
     g.generateTexture('drink_milk', 40, 40);
-
-    // 3. Espresso Machine (drink_machine)
-    startDraw();
-    // Main silver frame
-    g.fillStyle(0xd3d3d3, 1);
-    g.fillRoundedRect(10, 10, 140, 140, 10);
-    g.lineStyle(3, 0x7f8c8d, 1);
-    g.strokeRoundedRect(10, 10, 140, 140, 10);
-    // Dark brew area/grate
-    g.fillStyle(0x2c3e50, 1);
-    g.fillRect(25, 75, 110, 55);
-    // Silver tray plate
-    g.fillStyle(0xbdc3c7, 1);
-    g.fillRect(32, 118, 96, 8);
-    // Portafilter head (dispenser nozzle)
-    g.fillStyle(0x111111, 1);
-    g.fillRect(65, 63, 30, 12);
-    
-    // Coffee Button (circle at 45, 38)
-    g.fillStyle(0xffffff, 1);
-    g.fillCircle(45, 38, 15);
-    g.lineStyle(2, 0x5c3d2e, 1);
-    g.strokeCircle(45, 38, 15);
-    // Tiny coffee bean inside coffee button
-    g.fillStyle(0x5c3d2e, 1);
-    g.fillEllipse(45, 38, 4, 8);
-    
-    // Milk Button (circle at 85, 38)
-    g.fillStyle(0xffffff, 1);
-    g.fillCircle(85, 38, 15);
-    g.lineStyle(2, 0x00b4d8, 1);
-    g.strokeCircle(85, 38, 15);
-    // Tiny milk carton inside milk button
-    g.fillStyle(0x00b4d8, 1);
-    g.fillRect(82, 32, 6, 12);
-    
-    // Steam knob (at 125, 38)
-    g.fillStyle(0x7f8c8d, 1);
-    g.fillCircle(125, 38, 9);
-    g.lineStyle(1.5, 0x333333, 1);
-    g.strokeCircle(125, 38, 9);
-    g.generateTexture('drink_machine', 160, 160);
 
     // 4. Base Cup Drawer helper
     const drawCupBody = (fillColor) => {

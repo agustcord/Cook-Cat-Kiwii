@@ -732,8 +732,9 @@ export default class GameScene extends Phaser.Scene {
   createDrinkStation(startX, startY) {
 
 
-    // 2. Espresso Machine (Large 160x160)
+    // 2. Espresso Machine (New asset: cafeteteria_base.png)
     this.drinkMachine = this.add.image(startX, startY, 'drink_machine')
+      .setDisplaySize(160, 160)
       .setDepth(2);
     
     // Set machine interactive to provide helpful hints on tap
