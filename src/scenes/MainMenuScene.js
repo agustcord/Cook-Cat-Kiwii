@@ -18,35 +18,35 @@ export default class MainMenuScene extends Phaser.Scene {
 
     // Title text with white stroke and shadow for high legibility
     this.add.text(width / 2, height / 4, 'Kiwipaw Bakehouse', {
-      font: '54px "Outfit", sans-serif',
+      font: '90px "Outfit", sans-serif',
       fill: '#582f0e',
       stroke: '#ffffff',
-      strokeThickness: 8,
-      shadow: { color: '#000000', fill: false, offsetX: 2, offsetY: 2, blur: 4 },
+      strokeThickness: 12,
+      shadow: { color: '#000000', fill: false, offsetX: 4, offsetY: 4, blur: 6 },
       fontWeight: '800'
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height / 4 + 55, 'El gato Kiwi repostero para CrazyGames', {
-      font: '18px "Outfit", sans-serif',
+    this.add.text(width / 2, height / 4 + 95, 'El gato Kiwi repostero para CrazyGames', {
+      font: '32px "Outfit", sans-serif',
       fill: '#7f5539',
       stroke: '#ffffff',
-      strokeThickness: 4,
-      shadow: { color: '#000000', fill: false, offsetX: 1, offsetY: 1, blur: 2 },
+      strokeThickness: 6,
+      shadow: { color: '#000000', fill: false, offsetX: 2, offsetY: 2, blur: 4 },
       fontWeight: '600'
     }).setOrigin(0.5);
 
     // Play Button Box
-    const btnX = width / 2 - 110;
-    const btnY = height / 2 + 130;
-    const btnW = 220;
-    const btnH = 60;
+    const btnX = width / 2 - 190;
+    const btnY = height / 2 + 180;
+    const btnW = 380;
+    const btnH = 100;
 
     const playBtnBg = this.add.graphics();
     playBtnBg.fillStyle(0x7f5539, 1);
-    playBtnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 15);
+    playBtnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 25);
 
     const playText = this.add.text(width / 2, btnY + btnH / 2, 'JUGAR', {
-      font: '24px "Outfit", sans-serif',
+      font: '42px "Outfit", sans-serif',
       fill: '#fff1e6',
       fontWeight: '800'
     }).setOrigin(0.5);
@@ -75,7 +75,7 @@ export default class MainMenuScene extends Phaser.Scene {
     playZone.on('pointerover', () => {
       playBtnBg.clear();
       playBtnBg.fillStyle(0x9c6644, 1); // Lighter brown on hover
-      playBtnBg.fillRoundedRect(btnX - 5, btnY - 3, btnW + 10, btnH + 6, 18);
+      playBtnBg.fillRoundedRect(btnX - 8, btnY - 5, btnW + 16, btnH + 10, 28);
       playText.setScale(1.08);
       playText.setColor('#ffe5d9');
     });
@@ -83,14 +83,14 @@ export default class MainMenuScene extends Phaser.Scene {
     playZone.on('pointerout', () => {
       playBtnBg.clear();
       playBtnBg.fillStyle(0x7f5539, 1);
-      playBtnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 15);
+      playBtnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 25);
       playText.setScale(1);
       playText.setColor('#fff1e6');
     });
 
     // Subtext
-    this.add.text(width / 2, height - 30, 'Soporta Mouse & Pantalla Táctil', {
-      font: '14px "Outfit", sans-serif',
+    this.add.text(width / 2, height - 50, 'Soporta Mouse & Pantalla Táctil', {
+      font: '24px "Outfit", sans-serif',
       fill: '#7f5539',
       fontWeight: '600'
     }).setOrigin(0.5);

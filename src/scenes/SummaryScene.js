@@ -69,23 +69,23 @@ export default class SummaryScene extends Phaser.Scene {
     const titleText = this.isBankrupt ? '¡DÍA FALLIDO!' : `DÍA ${this.day} COMPLETADO`;
     const titleColor = this.isBankrupt ? '#d90429' : '#38b000';
 
-    this.add.text(width / 2, 45, titleText, {
-      font: '36px "Outfit", sans-serif',
+    this.add.text(width / 2, 84, titleText, {
+      font: '68px "Outfit", sans-serif',
       fill: titleColor,
       fontWeight: '800'
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, 85, 'Balance de Cuentas y Gastos Diarios', {
-      font: '15px "Outfit", sans-serif',
+    this.add.text(width / 2, 159, 'Balance de Cuentas y Gastos Diarios', {
+      font: '28px "Outfit", sans-serif',
       fill: '#7f5539',
       fontWeight: '600'
     }).setOrigin(0.5);
 
     // --- RECEIPT/BILL CARD VISUALS ---
-    const cardX = width / 2 - 200;
-    const cardY = 115;
-    const cardW = 400;
-    const cardH = 260;
+    const cardX = width / 2 - 375;
+    const cardY = 216;
+    const cardW = 750;
+    const cardH = 488;
 
     const receipt = this.add.graphics();
     // Paper background
@@ -97,54 +97,54 @@ export default class SummaryScene extends Phaser.Scene {
 
     // Invoice decorative lines
     receipt.lineStyle(1.5, 0xddb892, 0.5);
-    receipt.lineBetween(cardX + 20, cardY + 50, cardX + cardW - 20, cardY + 50);
-    receipt.lineBetween(cardX + 20, cardY + 185, cardX + cardW - 20, cardY + 185);
+    receipt.lineBetween(cardX + 20, cardY + 94, cardX + cardW - 20, cardY + 94);
+    receipt.lineBetween(cardX + 20, cardY + 347, cardX + cardW - 20, cardY + 347);
 
     // Receipt header
-    this.add.text(width / 2, cardY + 25, 'DETALLE DE FACTURACIÓN', {
-      font: '14px "Outfit", sans-serif',
+    this.add.text(width / 2, cardY + 47, 'DETALLE DE FACTURACIÓN', {
+      font: '26px "Outfit", sans-serif',
       fill: '#7f5539',
       fontWeight: '800',
       letterSpacing: 2
     }).setOrigin(0.5);
 
     // Invoice items details
-    const textStyleLeft = { font: '14px "Outfit", sans-serif', fill: '#582f0e', fontWeight: '600' };
-    const textStyleRight = { font: '14px "Outfit", sans-serif', fill: '#582f0e', fontWeight: '800' };
+    const textStyleLeft = { font: '26px "Outfit", sans-serif', fill: '#582f0e', fontWeight: '600' };
+    const textStyleRight = { font: '26px "Outfit", sans-serif', fill: '#582f0e', fontWeight: '800' };
 
     // Item 1: Revenue
-    this.add.text(cardX + 30, cardY + 70, 'Ingresos por Ventas (Caja):', textStyleLeft);
-    this.add.text(cardX + cardW - 30, cardY + 70, `+${this.coins} 🪙`, textStyleRight).setOrigin(1, 0);
+    this.add.text(cardX + 30, cardY + 131, 'Ingresos por Ventas (Caja):', textStyleLeft);
+    this.add.text(cardX + cardW - 30, cardY + 131, `+${this.coins} 🪙`, textStyleRight).setOrigin(1, 0);
 
     // Item 2: Rent
-    this.add.text(cardX + 30, cardY + 100, 'Alquiler del Local (Fijo):', textStyleLeft);
-    this.add.text(cardX + cardW - 30, cardY + 100, `-${this.rent} 🪙`, textStyleRight).setOrigin(1, 0);
+    this.add.text(cardX + 30, cardY + 188, 'Alquiler del Local (Fijo):', textStyleLeft);
+    this.add.text(cardX + cardW - 30, cardY + 188, `-${this.rent} 🪙`, textStyleRight).setOrigin(1, 0);
 
     // Item 3: Maintenance/Utilities
-    this.add.text(cardX + 30, cardY + 130, 'Servicios de Luz/Agua/Gas:', textStyleLeft);
-    this.add.text(cardX + cardW - 30, cardY + 130, `-${this.maintenance} 🪙`, textStyleRight).setOrigin(1, 0);
+    this.add.text(cardX + 30, cardY + 244, 'Servicios de Luz/Agua/Gas:', textStyleLeft);
+    this.add.text(cardX + cardW - 30, cardY + 244, `-${this.maintenance} 🪙`, textStyleRight).setOrigin(1, 0);
 
     // Item 4: Loan installment
-    this.add.text(cardX + 30, cardY + 160, 'Cuota del Préstamo Bancario:', textStyleLeft);
-    this.add.text(cardX + cardW - 30, cardY + 160, `-${this.loanPayment} 🪙`, textStyleRight).setOrigin(1, 0);
+    this.add.text(cardX + 30, cardY + 300, 'Cuota del Préstamo Bancario:', textStyleLeft);
+    this.add.text(cardX + cardW - 30, cardY + 300, `-${this.loanPayment} 🪙`, textStyleRight).setOrigin(1, 0);
 
     // Item 5: Net Balance (Grand Total)
-    this.add.text(cardX + 30, cardY + 200, 'SALDO NETO RESTANTE:', {
-      font: '16px "Outfit", sans-serif',
+    this.add.text(cardX + 30, cardY + 375, 'SALDO NETO RESTANTE:', {
+      font: '30px "Outfit", sans-serif',
       fill: '#7f5539',
       fontWeight: '800'
     });
     
     const balanceColor = this.netCoins >= 0 ? '#38b000' : '#d90429';
-    this.add.text(cardX + cardW - 30, cardY + 200, `${this.netCoins} 🪙`, {
-      font: '18px "Outfit", sans-serif',
+    this.add.text(cardX + cardW - 30, cardY + 375, `${this.netCoins} 🪙`, {
+      font: '34px "Outfit", sans-serif',
       fill: balanceColor,
       fontWeight: '800'
     }).setOrigin(1, 0);
 
     // Debt status under card
-    this.add.text(width / 2, cardY + 240, `Préstamo restante al banco: 🪙 ${this.updatedLoanRemaining} (Inicial: 200)`, {
-      font: '11px "Outfit", sans-serif',
+    this.add.text(width / 2, cardY + 450, `Préstamo restante al banco: 🪙 ${this.updatedLoanRemaining} (Inicial: 200)`, {
+      font: '21px "Outfit", sans-serif',
       fill: '#b5838d',
       fontWeight: '700'
     }).setOrigin(0.5);
@@ -186,16 +186,16 @@ export default class SummaryScene extends Phaser.Scene {
     }
 
     // Buttons Container
-    const btnW = 260;
-    const btnH = 54;
+    const btnW = 488;
+    const btnH = 101;
     const btnX = width / 2 - btnW / 2;
-    const btnY = height - 120;
+    const btnY = height - 225;
 
     // Retry / Repeat day button if player hasn't bankrupted but wants to retry for more profit
     if (!this.isBankrupt && this.coins < this.meta) {
       // Prompt warning about low profit
-      this.add.text(width / 2, btnY - 20, '⚠️ Ganancias bajas. Puedes reintentar el día para ahorrar más.', {
-        font: '12px "Outfit", sans-serif',
+      this.add.text(width / 2, btnY - 38, '⚠️ Ganancias bajas. Puedes reintentar el día para ahorrar más.', {
+        font: '23px "Outfit", sans-serif',
         fill: '#d90429',
         fontWeight: '700'
       }).setOrigin(0.5);
@@ -206,7 +206,7 @@ export default class SummaryScene extends Phaser.Scene {
     actionBtnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 12);
 
     const btnText = this.add.text(width / 2, btnY + btnH / 2, btnTextString, {
-      font: '16px "Outfit", sans-serif',
+      font: '30px "Outfit", sans-serif',
       fill: '#ffffff',
       fontWeight: '800'
     }).setOrigin(0.5);
@@ -235,8 +235,8 @@ export default class SummaryScene extends Phaser.Scene {
 
     // Optional retry button for non-bankruptcy state to optimize money
     if (!this.isBankrupt) {
-      const retryText = this.add.text(width / 2, height - 30, 'O REINTENTAR EL DÍA 🔄', {
-        font: '12px "Outfit", sans-serif',
+      const retryText = this.add.text(width / 2, height - 56, 'O REINTENTAR EL DÍA 🔄', {
+        font: '23px "Outfit", sans-serif',
         fill: '#7f5539',
         fontWeight: '800'
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });

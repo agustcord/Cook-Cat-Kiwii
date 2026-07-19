@@ -28,21 +28,21 @@ export default class ShopScene extends Phaser.Scene {
     bgGraphics.fillRect(0, 0, width, height);
 
     // Title
-    this.add.text(width / 2, 45, 'TIENDA KIWI BAKERY', {
-      font: '36px "Outfit", sans-serif',
+    this.add.text(width / 2, 84, 'TIENDA KIWI BAKERY', {
+      font: '68px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800'
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, 85, `¡Abastece tus ingredientes antes del Día ${this.day + 1}!`, {
-      font: '16px "Outfit", sans-serif',
+    this.add.text(width / 2, 159, `¡Abastece tus ingredientes antes del Día ${this.day + 1}!`, {
+      font: '30px "Outfit", sans-serif',
       fill: '#7f5539',
       fontWeight: '600'
     }).setOrigin(0.5);
 
     // Coins balance display
-    this.coinBalanceText = this.add.text(width / 2, 125, `🪙 Monedas Disponibles: ${this.coins}`, {
-      font: '24px "Outfit", sans-serif',
+    this.coinBalanceText = this.add.text(width / 2, 234, `🪙 Monedas Disponibles: ${this.coins}`, {
+      font: '45px "Outfit", sans-serif',
       fill: '#d48c47',
       fontWeight: '800'
     }).setOrigin(0.5);
@@ -71,17 +71,17 @@ export default class ShopScene extends Phaser.Scene {
 
     // Layout arrangement: 4 columns (Moldes, Masas, Toppings, Bebidas)
     const columns = {
-      mold: { title: 'MOLDES (P.)', x: 145 },
-      dough: { title: 'MASAS (x5)', x: 390 },
-      topping: { title: 'TOPPINGS (x5)', x: 635 },
-      drink: { title: 'BEBIDAS (x5)', x: 880 }
+      mold: { title: 'MOLDES (P.)', x: 272 },
+      dough: { title: 'MASAS (x5)', x: 731 },
+      topping: { title: 'TOPPINGS (x5)', x: 1191 },
+      drink: { title: 'BEBIDAS (x5)', x: 1650 }
     };
 
     // Draw Column Headers
     Object.keys(columns).forEach(key => {
       const col = columns[key];
-      this.add.text(col.x, 160, col.title, {
-        font: '15px "Outfit", sans-serif',
+      this.add.text(col.x, 300, col.title, {
+        font: '28px "Outfit", sans-serif',
         fill: '#7f5539',
         fontWeight: '800'
       }).setOrigin(0.5);
@@ -98,90 +98,90 @@ export default class ShopScene extends Phaser.Scene {
       const index = colCounters[colKey]++;
 
       const x = col.x;
-      const y = 240 + index * 95; // Adjusted starting Y to 240 to clear headers
+      const y = 450 + index * 178; // Adjusted starting Y to 450 to clear headers
 
-      // Draw background card for item (wider: 230px wide to avoid overlaps)
+      // Draw background card for item (wider: 431px wide to avoid overlaps)
       const card = this.add.graphics();
       card.fillStyle(0xfff1e6, 0.95);
-      card.fillRoundedRect(x - 115, y - 40, 230, 80, 10);
+      card.fillRoundedRect(x - 216, y - 75, 431, 150, 19);
       card.lineStyle(2, 0xddb892, 1);
-      card.strokeRoundedRect(x - 115, y - 40, 230, 80, 10);
+      card.strokeRoundedRect(x - 216, y - 75, 431, 150, 19);
 
       // Draw circular background for the icon (shifted left to x - 82)
       const iconCircle = this.add.graphics();
       iconCircle.fillStyle(0xffffff, 1);
-      iconCircle.fillCircle(x - 82, y, 22);
+      iconCircle.fillCircle(x - 154, y, 41);
       iconCircle.lineStyle(1.5, 0xddb892, 1);
-      iconCircle.strokeCircle(x - 82, y, 22);
+      iconCircle.strokeCircle(x - 154, y, 41);
 
       // Draw item icon sprite inside the circle
       let iconTexture = '';
-      let targetW = 32;
-      let targetH = 32;
+      let targetW = 60;
+      let targetH = 60;
 
       if (item.type === 'mold') {
         iconTexture = 'shape_' + item.id;
-        targetW = 30;
-        targetH = 30;
+        targetW = 56;
+        targetH = 56;
       } else if (item.type === 'dough') {
         iconTexture = 'dough_' + item.id;
-        targetW = 34;
-        targetH = 34;
+        targetW = 64;
+        targetH = 64;
       } else if (item.type === 'topping') {
         iconTexture = 'topping_' + item.id;
-        targetW = 30;
-        targetH = 30;
+        targetW = 56;
+        targetH = 56;
       } else if (item.type === 'drink') {
         iconTexture = 'drink_' + item.id;
-        targetW = 30;
-        targetH = 30;
+        targetW = 56;
+        targetH = 56;
       }
       
-      const itemIcon = this.add.image(x - 82, y, iconTexture);
+      const itemIcon = this.add.image(x - 154, y, iconTexture);
       itemIcon.setDisplaySize(targetW, targetH);
 
       // Render Item details (x offset shifted to x - 52, slightly smaller fonts for extra safety)
       let nameTxt, descTxt, statusTxt;
       
       if (item.type === 'mold') {
-        nameTxt = this.add.text(x - 52, y - 18, item.name, {
-          font: 'bold 12px "Outfit", sans-serif',
+        nameTxt = this.add.text(x - 98, y - 18, item.name, {
+          font: 'bold 23px "Outfit", sans-serif',
           fill: '#582f0e'
         });
 
-        statusTxt = this.add.text(x - 52, y + 4, this.getStatusString(item), {
-          font: '10px "Outfit", sans-serif',
+        statusTxt = this.add.text(x - 98, y + 4, this.getStatusString(item), {
+          font: '19px "Outfit", sans-serif',
           fill: '#7f5539',
           fontWeight: '700'
         });
       } else {
-        nameTxt = this.add.text(x - 52, y - 28, item.name, {
-          font: 'bold 12px "Outfit", sans-serif',
+        nameTxt = this.add.text(x - 98, y - 28, item.name, {
+          font: 'bold 23px "Outfit", sans-serif',
           fill: '#582f0e'
         });
 
-        descTxt = this.add.text(x - 52, y - 10, item.desc, {
-          font: '9px "Outfit", sans-serif',
+        descTxt = this.add.text(x - 98, y - 10, item.desc, {
+          font: '17px "Outfit", sans-serif',
           fill: '#b5838d',
           fontWeight: '600'
         });
 
-        statusTxt = this.add.text(x - 52, y + 8, this.getStatusString(item), {
-          font: '10px "Outfit", sans-serif',
+        statusTxt = this.add.text(x - 98, y + 8, this.getStatusString(item), {
+          font: '19px "Outfit", sans-serif',
           fill: '#7f5539',
           fontWeight: '700'
         });
       }
 
       // Buy Button container (placed to the right of text: btnX = x + 38, width = 66)
-      const btnW = 66;
-      const btnH = 30;
+      const btnW = 124;
+      const btnH = 56;
       const btnX = x + 38;
       const btnY = y - 15;
 
       const btnBg = this.add.graphics();
       const btnText = this.add.text(btnX + btnW / 2, btnY + btnH / 2, `🪙 ${item.cost}`, {
-        font: '11px "Outfit", sans-serif',
+        font: '21px "Outfit", sans-serif',
         fill: '#fff1e6',
         fontWeight: '800'
       }).setOrigin(0.5);
@@ -264,17 +264,17 @@ export default class ShopScene extends Phaser.Scene {
     });
 
     // START NEXT DAY BUTTON
-    const startBtnW = 260;
-    const startBtnH = 50;
+    const startBtnW = 488;
+    const startBtnH = 94;
     const startBtnX = width / 2 - startBtnW / 2;
-    const startBtnY = height - 85;
+    const startBtnY = height - 159;
 
     const startBtnBg = this.add.graphics();
     startBtnBg.fillStyle(0x38b000, 1); // Lush green
     startBtnBg.fillRoundedRect(startBtnX, startBtnY, startBtnW, startBtnH, 12);
 
     const startBtnText = this.add.text(width / 2, startBtnY + startBtnH / 2, 'EMPEZAR SIGUIENTE DÍA ☕', {
-      font: '16px "Outfit", sans-serif',
+      font: '30px "Outfit", sans-serif',
       fill: '#ffffff',
       fontWeight: '800'
     }).setOrigin(0.5);
@@ -320,14 +320,14 @@ export default class ShopScene extends Phaser.Scene {
 
   showFeedback(text, x, y, color) {
     const feedback = this.add.text(x, y, text, {
-      font: '15px "Outfit", sans-serif',
+      font: '28px "Outfit", sans-serif',
       fill: color,
       fontWeight: '800'
     }).setOrigin(0.5).setDepth(200);
 
     this.tweens.add({
       targets: feedback,
-      y: y - 40,
+      y: y - 75,
       alpha: 0,
       duration: 1200,
       ease: 'Cubic.out',

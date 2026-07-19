@@ -26,17 +26,17 @@ export default class VictoryScene extends Phaser.Scene {
     this.createConfetti(width, height);
 
     // Title
-    this.add.text(width / 2, height / 4 - 30, 'VICTORIA COMERCIAL', {
-      font: '44px "Outfit", sans-serif',
+    this.add.text(width / 2, height / 4 - 56, 'VICTORIA COMERCIAL', {
+      font: '83px "Outfit", sans-serif',
       fill: '#38b000',
       fontWeight: '800',
       stroke: '#ffffff',
-      strokeThickness: 6
+      strokeThickness: 11
     }).setOrigin(0.5);
 
     // Happy Michi emoji
-    this.add.text(width / 2, height / 2 - 80, '😸👑✨', {
-      font: '54px "Outfit", sans-serif'
+    this.add.text(width / 2, height / 2 - 150, '😸👑✨', {
+      font: '101px "Outfit", sans-serif'
     }).setOrigin(0.5);
 
     // Narrative Text
@@ -47,26 +47,26 @@ export default class VictoryScene extends Phaser.Scene {
       "destino y deliciosas galletas.\n\n" +
       `Te has quedado con un capital neto final de: 🪙 ${this.coins}`;
 
-    this.add.text(width / 2, height / 2 + 50, narrative, {
-      font: '15px "Outfit", sans-serif',
+    this.add.text(width / 2, height / 2 + 94, narrative, {
+      font: '28px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '600',
       align: 'center',
-      lineSpacing: 8
+      lineSpacing: 15
     }).setOrigin(0.5);
 
     // Button: VOLVER AL MENÚ
-    const btnW = 220;
-    const btnH = 50;
+    const btnW = 413;
+    const btnH = 94;
     const btnX = width / 2 - btnW / 2;
-    const btnY = height - 100;
+    const btnY = height - 188;
 
     const btnBg = this.add.graphics();
     btnBg.fillStyle(0x7f5539, 1);
     btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 12);
 
     const btnText = this.add.text(width / 2, btnY + btnH / 2, 'VOLVER AL MENÚ 🏠', {
-      font: '15px "Outfit", sans-serif',
+      font: '28px "Outfit", sans-serif',
       fill: '#fff1e6',
       fontWeight: '800'
     }).setOrigin(0.5);
@@ -97,9 +97,9 @@ export default class VictoryScene extends Phaser.Scene {
   createConfetti(width, height) {
     const colors = [0xffb703, 0xfb8500, 0x219ebc, 0x8ecae6, 0x38b000, 0xff0a54];
     for (let i = 0; i < 40; i++) {
-      const x = Phaser.Math.Between(50, width - 50);
-      const y = Phaser.Math.Between(50, height - 150);
-      const size = Phaser.Math.Between(4, 10);
+      const x = Phaser.Math.Between(94, width - 94);
+      const y = Phaser.Math.Between(94, height - 150);
+      const size = Phaser.Math.Between(8, 19);
       const color = Phaser.Math.RND.pick(colors);
       
       const confetti = this.add.rectangle(x, y, size, size, color);
@@ -108,7 +108,7 @@ export default class VictoryScene extends Phaser.Scene {
       // Floating animation
       this.tweens.add({
         targets: confetti,
-        y: y + Phaser.Math.Between(30, 80),
+        y: y + Phaser.Math.Between(56, 150),
         angle: confetti.angle + Phaser.Math.Between(-90, 90),
         duration: Phaser.Math.Between(2000, 4000),
         repeat: -1,

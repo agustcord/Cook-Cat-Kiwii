@@ -20,16 +20,16 @@ export default class GameOverScene extends Phaser.Scene {
 
     // Title
     this.add.text(width / 2, height / 4, 'BANCARROTA', {
-      font: '46px "Outfit", sans-serif',
+      font: '86px "Outfit", sans-serif',
       fill: '#d90429',
       fontWeight: '800',
       stroke: '#000000',
-      strokeThickness: 4
+      strokeThickness: 8
     }).setOrigin(0.5);
 
     // Michi Triste emoji or text
-    this.add.text(width / 2, height / 2 - 80, '😿', {
-      font: '64px "Outfit", sans-serif'
+    this.add.text(width / 2, height / 2 - 150, '😿', {
+      font: '120px "Outfit", sans-serif'
     }).setOrigin(0.5);
 
     // Narrative Text
@@ -40,26 +40,26 @@ export default class GameOverScene extends Phaser.Scene {
       "la cuota del banco, el michi se declaró en quiebra y tuvo\n" +
       "que cerrar sus puertas definitivamente.";
 
-    this.add.text(width / 2, height / 2 + 30, narrative, {
-      font: '15px "Outfit", sans-serif',
+    this.add.text(width / 2, height / 2 + 56, narrative, {
+      font: '28px "Outfit", sans-serif',
       fill: '#f5f3f4',
       fontWeight: '600',
       align: 'center',
-      lineSpacing: 8
+      lineSpacing: 15
     }).setOrigin(0.5);
 
     // Button: VOLVER A INTENTAR
-    const btnW = 240;
-    const btnH = 50;
+    const btnW = 450;
+    const btnH = 94;
     const btnX = width / 2 - btnW / 2;
-    const btnY = height - 120;
+    const btnY = height - 225;
 
     const btnBg = this.add.graphics();
     btnBg.fillStyle(0xd90429, 1);
     btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 12);
 
     const btnText = this.add.text(width / 2, btnY + btnH / 2, 'REINTENTAR CAMPAÑA 🔄', {
-      font: '16px "Outfit", sans-serif',
+      font: '30px "Outfit", sans-serif',
       fill: '#ffffff',
       fontWeight: '800'
     }).setOrigin(0.5);

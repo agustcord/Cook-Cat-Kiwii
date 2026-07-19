@@ -10,8 +10,8 @@ import VictoryScene from './scenes/VictoryScene.js';
 
 const config = {
   type: Phaser.AUTO,
-  width: 1024,
-  height: 576,
+  width: 1920,
+  height: 1080,
   parent: 'game-container',
   backgroundColor: '#fff1e6', // Cozy, warm pastel cream base color
   resolution: window.devicePixelRatio || 1,

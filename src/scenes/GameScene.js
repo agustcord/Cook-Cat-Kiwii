@@ -134,15 +134,15 @@ export default class GameScene extends Phaser.Scene {
     // Draw the Wooden Counter and Floor (in front of the customer, behind UI)
     const counterBg = this.add.graphics();
     
-    // Wooden Counter Base Image (from Y=230 to Y=576)
-    this.add.image(0, 230, 'bakery_counter').setOrigin(0, 0).setDisplaySize(1024, 346);
+    // Wooden Counter Base Image (from Y=431 to Y=1080)
+    this.add.image(0, 431, 'bakery_counter').setOrigin(0, 0).setDisplaySize(1920, 649);
 
-    // Station dividers (X: 170, 410, 710, 860 starting at Y=295)
-    counterBg.lineStyle(2, 0xddb892, 0.5);
-    counterBg.lineBetween(170, 295, 170, height);
-    counterBg.lineBetween(410, 295, 410, height);
-    counterBg.lineBetween(710, 295, 710, height);
-    counterBg.lineBetween(860, 295, 860, height);
+    // Station dividers (X: 319, 769, 1331, 1613 starting at Y=553)
+    counterBg.lineStyle(4, 0xddb892, 0.5);
+    counterBg.lineBetween(319, 553, 319, height);
+    counterBg.lineBetween(769, 553, 769, height);
+    counterBg.lineBetween(1331, 553, 1331, height);
+    counterBg.lineBetween(1613, 553, 1613, height);
 
     // Setup HUD (Day, Meta, Coins)
     this.setupHUD(width);
@@ -168,7 +168,7 @@ export default class GameScene extends Phaser.Scene {
     // Custom Cat Paw Cursor Initialization
     this.input.setDefaultCursor('none');
     this.shoulderX = width / 2;
-    this.shoulderY = height + 50;
+    this.shoulderY = height + 90;
     this.pawX = width / 2;
     this.pawY = height / 2;
 
@@ -177,20 +177,20 @@ export default class GameScene extends Phaser.Scene {
     this.catPawSprite = this.add.image(this.pawX, this.pawY, 'cat_paw_open')
       .setDepth(9999)
       .setOrigin(0.5, 0.55)
-      .setDisplaySize(98, 98);
+      .setDisplaySize(184, 184);
 
     // Track pointerdown/pointerup to trigger grab animation (texture swap)
     this.input.on('pointerdown', () => {
       if (this.catPawSprite) {
         this.catPawSprite.setTexture('cat_paw_closed');
-        this.catPawSprite.setDisplaySize(98, 98);
+        this.catPawSprite.setDisplaySize(184, 184);
         this.catPawSprite.setOrigin(0.5, 0.61);
       }
     });
     this.input.on('pointerup', () => {
       if (this.catPawSprite) {
         this.catPawSprite.setTexture('cat_paw_open');
-        this.catPawSprite.setDisplaySize(98, 98);
+        this.catPawSprite.setDisplaySize(184, 184);
         this.catPawSprite.setOrigin(0.5, 0.55);
       }
     });
@@ -404,20 +404,20 @@ export default class GameScene extends Phaser.Scene {
 
   createStations(width, height) {
     // Column 1: Estación de Masa (Masa)
-    this.createDoughButtons(45, 310);
+    this.createDoughButtons(84, 581);
 
     // Column 2: Estación de Forma (Cortadores)
     const { formaLabel } = UI_CONFIG;
-    this.createShapeButtons(formaLabel.x - 88, formaLabel.y + 13);
+    this.createShapeButtons(formaLabel.x - 165, formaLabel.y + 24);
 
     // Column 3: Horno (Oven minigame)
-    this.createOvenStation(725, 310);
+    this.createOvenStation(1359, 581);
 
     // Column 3.5: Bebidas (Drinks Station) - Moved to left side where 2. Forma was
-    this.createDrinkStation(269, 270);
+    this.createDrinkStation(504, 506);
 
     // Column 4: Decoración (Toppings)
-    this.createToppingButtons(890, 310);
+    this.createToppingButtons(1669, 581);
   }
 
   createDoughButtons(startX, startY) {
@@ -429,16 +429,16 @@ export default class GameScene extends Phaser.Scene {
       { id: 'oat', label: 'Avena', color: 0xd5bdaf }
     ];
 
-    const doughSize = 105;
-    const doughHoverSize = 115;
-    const portionSize = 55;
+    const doughSize = 197;
+    const doughHoverSize = 216;
+    const portionSize = 103;
 
     this.doughButtons = {};
     this.doughStockTexts = {};
 
     bases.forEach((b, index) => {
-      const x = startX + 35;
-      const y = startY + 45 + index * 80;
+      const x = startX + 66;
+      const y = startY + 84 + index * 150;
 
       // Dough source image
       const doughImg = this.add.image(x, y, 'dough_' + b.id)
@@ -448,11 +448,11 @@ export default class GameScene extends Phaser.Scene {
       this.doughButtons[b.id] = doughImg;
 
       // Add stock indicator text
-      const stockText = this.add.text(x, y + 42, '', {
-        font: '11px "Outfit", sans-serif',
+      const stockText = this.add.text(x, y + 79, '', {
+        font: '21px "Outfit", sans-serif',
         fill: '#ffffff',
         stroke: '#582f0e',
-        strokeThickness: 3,
+        strokeThickness: 5,
         fontWeight: '800'
       }).setOrigin(0.5).setDepth(3);
       
@@ -480,7 +480,7 @@ export default class GameScene extends Phaser.Scene {
         const currentStock = this.stock.dough[b.id] || 0;
         if (currentStock <= 0) {
           SoundEffects.playAngry();
-          this.showFeedbackText('¡Sin stock! Cómpralo en la tienda 🛒', this.trayX, 200, '#d90429');
+          this.showFeedbackText('¡Sin stock! Cómpralo en la tienda 🛒', this.trayX, 375, '#d90429');
           return;
         }
 
@@ -496,7 +496,7 @@ export default class GameScene extends Phaser.Scene {
       dragZone.on('drag', (pointer, dragX, dragY) => {
         if (portionSprite) {
           portionSprite.x = dragX;
-          portionSprite.y = Math.max(180, dragY);
+          portionSprite.y = Math.max(338, dragY);
         }
       });
 
@@ -514,7 +514,7 @@ export default class GameScene extends Phaser.Scene {
           this.trayX, this.trayY
         );
 
-        if (dist < 120) {
+        if (dist < 225) {
           if (this.prepTrayCookies.length < 3) {
             // Consume stock!
             this.stock.dough[b.id]--;
@@ -525,10 +525,10 @@ export default class GameScene extends Phaser.Scene {
             this.prepTrayCookies.push(newCookie);
             this.updateCookieVisuals();
             SoundEffects.playClick();
-            this.showFeedbackText(`¡Masa de ${b.label}!`, this.trayX, 200, '#38b000');
+            this.showFeedbackText(`¡Masa de ${b.label}!`, this.trayX, 375, '#38b000');
           } else {
             SoundEffects.playAngry();
-            this.showFeedbackText('¡Mesa llena! (Máx 3)', this.trayX, 200, '#d90429');
+            this.showFeedbackText('¡Mesa llena! (Máx 3)', this.trayX, 375, '#d90429');
           }
         } else {
           SoundEffects.playClick();
@@ -562,17 +562,17 @@ export default class GameScene extends Phaser.Scene {
     shapes.forEach((s, index) => {
       const isUnlocked = this.unlockedShapes.includes(s.id);
 
-      // Horizontal layout (X spacing: 60, starting at startX - 5, Y is startY + 45)
-      const x = startX - 5 + index * 60;
-      const y = startY + 45;
+      // Horizontal layout (X spacing: 113, starting at startX - 9, Y is startY + 84)
+      const x = startX - 9 + index * 113;
+      const y = startY + 84;
 
       const container = this.add.container(x, y).setDepth(2);
       container.setData('origX', x);
       container.setData('origY', y);
       this.shapeContainers.push(container);
 
-      // Cutter Image (116x116 texture displayed at 58x58 — 2x downscale for HiDPI)
-      const shapeSprite = this.add.image(29, 29, 'shape_' + s.id).setDisplaySize(58, 58);
+      // Cutter Image (displayed at 109x109)
+      const shapeSprite = this.add.image(54, 54, 'shape_' + s.id).setDisplaySize(109, 109);
       if (!isUnlocked) {
         shapeSprite.setTint(0x777777);
         shapeSprite.setAlpha(0.4);
@@ -581,16 +581,16 @@ export default class GameScene extends Phaser.Scene {
 
       if (isUnlocked) {
         // Create a flat transparent rectangle as the interactive drag zone
-        const dragZone = this.add.rectangle(x + 29, y + 29, 58, 58, 0x000000, 0);
+        const dragZone = this.add.rectangle(x + 54, y + 54, 109, 109, 0x000000, 0);
         dragZone.setInteractive({ useHandCursor: true });
         this.input.setDraggable(dragZone);
         this.shapeDragZones.push(dragZone);
 
         dragZone.on('pointerover', () => {
-          shapeSprite.setDisplaySize(64, 64);
+          shapeSprite.setDisplaySize(120, 120);
         });
         dragZone.on('pointerout', () => {
-          shapeSprite.setDisplaySize(58, 58);
+          shapeSprite.setDisplaySize(109, 109);
         });
 
         // Drag handlers
@@ -603,10 +603,10 @@ export default class GameScene extends Phaser.Scene {
 
         dragZone.on('drag', (pointer, dragX, dragY) => {
           dragZone.x = dragX;
-          dragZone.y = Math.max(180, dragY);
+          dragZone.y = Math.max(338, dragY);
           // Shift visual container to follow the drag zone
           container.x = dragX - 29;
-          container.y = Math.max(180, dragY) - 29;
+          container.y = Math.max(338, dragY) - 29;
         });
 
         dragZone.on('dragend', () => {
@@ -615,14 +615,14 @@ export default class GameScene extends Phaser.Scene {
           let closestCookie = null;
           let minDist = 99999;
           const count = this.prepTrayCookies.length;
-          const spacing = 35;
+          const spacing = 66;
           const startX = this.trayX - ((count - 1) * spacing) / 2;
 
           this.prepTrayCookies.forEach((cookie, index) => {
             const cx = startX + index * spacing;
             const cy = this.trayY;
             const dist = Phaser.Math.Distance.Between(dragZone.x, dragZone.y, cx, cy);
-            if (dist < 120 && dist < minDist) {
+            if (dist < 225 && dist < minDist) {
               minDist = dist;
               closestCookie = cookie;
             }
@@ -632,12 +632,12 @@ export default class GameScene extends Phaser.Scene {
             closestCookie.shape = s.id;
             this.updateCookieVisuals();
             SoundEffects.playClick();
-            this.showFeedbackText(`¡Forma de ${s.label}!`, this.trayX, 200, '#38b000');
+            this.showFeedbackText(`¡Forma de ${s.label}!`, this.trayX, 375, '#38b000');
           } else {
             const distToTrayCenter = Phaser.Math.Distance.Between(dragZone.x, dragZone.y, this.trayX, this.trayY);
-            if (distToTrayCenter < 120) {
+            if (distToTrayCenter < 225) {
               SoundEffects.playAngry();
-              this.showFeedbackText('¡Primero selecciona la masa!', this.trayX, 200, '#d90429');
+              this.showFeedbackText('¡Primero selecciona la masa!', this.trayX, 375, '#d90429');
             } else {
               SoundEffects.playClick();
             }
@@ -667,18 +667,19 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createOvenStation(startX, startY) {
-    this.ovenX = startX + 55;
-    this.ovenY = startY - 40;
+    this.ovenX = startX + 103;
+    this.ovenY = startY - 75;
     this.ovenStartX = startX;
     this.ovenStartY = startY;
 
-    // Oven Image placed higher (startY - 40, which is Y = 295). Starts with oven OFF
+    // Oven Image placed higher (startY - 75). Starts with oven OFF
     this.ovenImage = this.add.image(this.ovenX, this.ovenY, 'oven_off')
+      .setDisplaySize(300, 300)
       .setDepth(2);
     
     // Set a custom bounded hit area to prevent clicking outside the visible oven
-    const hitW = 90;
-    const hitH = 95;
+    const hitW = 169;
+    const hitH = 178;
     const hitX = (this.ovenImage.width - hitW) / 2;
     const hitY = (this.ovenImage.height - hitH) / 2;
     this.ovenImage.setInteractive(new Phaser.Geom.Rectangle(hitX, hitY, hitW, hitH), Phaser.Geom.Rectangle.Contains);
@@ -687,38 +688,38 @@ export default class GameScene extends Phaser.Scene {
       this.handleOvenImageClick();
     });
  
-    // ENCENDER Button (placed below the oven at startY + 45)
+    // ENCENDER Button (placed below the oven at startY + 84)
     const btnBg = this.add.graphics().setDepth(10);
     btnBg.fillStyle(0x7f5539, 1);
-    btnBg.fillRoundedRect(startX, startY + 45, 110, 35, 8);
-    this.ovenBtnText = this.add.text(startX + 55, startY + 62, 'ENCENDER', {
-      font: '13px "Outfit", sans-serif',
+    btnBg.fillRoundedRect(startX, startY + 84, 206, 66, 15);
+    this.ovenBtnText = this.add.text(startX + 103, startY + 116, 'ENCENDER', {
+      font: '24px "Outfit", sans-serif',
       fill: '#fff1e6',
       fontWeight: '800'
     }).setOrigin(0.5).setDepth(11);
  
-    this.ovenZone = this.add.rectangle(startX + 55, startY + 62, 95, 35, 0x000000, 0).setInteractive({ useHandCursor: true }).setDepth(12);
+    this.ovenZone = this.add.rectangle(startX + 103, startY + 116, 178, 66, 0x000000, 0).setInteractive({ useHandCursor: true }).setDepth(12);
     this.ovenZone.on('pointerdown', () => {
       this.handleOvenClick();
     });
  
-    // Timing Bar (placed below the button at startY + 95)
-    this.ovenBarX = startX - 20;
-    this.ovenBarY = startY + 95;
+    // Timing Bar (placed below the button at startY + 178)
+    this.ovenBarX = startX - 38;
+    this.ovenBarY = startY + 178;
  
     this.ovenBarBg = this.add.graphics().setDepth(2);
     this.ovenBarFill = this.add.graphics().setDepth(2);
     this.drawOvenBarBackground();
 
-    // SACAR Button (placed below the Timing Bar at startY + 125)
+    // SACAR Button (placed below the Timing Bar at startY + 234)
     this.ovenExtractBtnBg = this.add.graphics().setDepth(10);
-    this.ovenExtractBtnText = this.add.text(startX + 55, startY + 140, 'SACAR GALLETAS', {
-      font: '11px "Outfit", sans-serif',
+    this.ovenExtractBtnText = this.add.text(startX + 103, startY + 263, 'SACAR GALLETAS', {
+      font: '21px "Outfit", sans-serif',
       fill: '#fff1e6',
       fontWeight: '800'
     }).setOrigin(0.5).setDepth(11);
 
-    this.ovenExtractZone = this.add.rectangle(startX + 55, startY + 140, 95, 30, 0x000000, 0)
+    this.ovenExtractZone = this.add.rectangle(startX + 103, startY + 263, 178, 56, 0x000000, 0)
       .setInteractive({ useHandCursor: true })
       .setDepth(12);
 
@@ -734,54 +735,52 @@ export default class GameScene extends Phaser.Scene {
 
     // 2. Espresso Machine (New asset: cafeteteria_base.png)
     this.drinkMachine = this.add.image(startX, startY, 'drink_machine')
-      .setDisplaySize(160, 160)
+      .setDisplaySize(300, 300)
       .setDepth(2);
     
     // Set machine interactive to provide helpful hints on tap
     this.drinkMachine.setInteractive({ useHandCursor: true });
     this.drinkMachine.on('pointerdown', () => {
       if (this.machineState === 'empty') {
-        this.showFeedbackText('¡Presiona Café o Leche en el panel! ☕🥛', startX, 200, '#582f0e');
+        this.showFeedbackText('¡Presiona Café o Leche en el panel! ☕🥛', startX, 375, '#582f0e');
       } else if (this.machineState.startsWith('ready_')) {
         this.pickupDrink();
       } else {
-        this.showFeedbackText('¡Preparando bebida...! ⏳', startX, 200, '#582f0e');
+        this.showFeedbackText('¡Preparando bebida...! ⏳', startX, 375, '#582f0e');
       }
     });
 
-
-
     // 4. Ingredient Click Zones directly on the machine panel (Coffee Beans at left, Milk at center-right)
-    const beansX = startX - 34;
-    const milkX = startX + 18;
-    const btnY = startY - 44;
+    const beansX = startX - 64;
+    const milkX = startX + 34;
+    const btnY = startY - 83;
 
     // Coffee Button Image & Stock Text (integrated inside the new asset display box)
     this.btnCoffeeImage = this.add.image(beansX, btnY, 'btn_coffee_asset')
-      .setDisplaySize(44, 36)
+      .setDisplaySize(83, 68)
       .setDepth(3);
 
-    this.beansStockText = this.add.text(beansX, btnY + 6, '0u', {
-      font: 'bold 11px "Outfit", sans-serif',
+    this.beansStockText = this.add.text(beansX, btnY + 11, '0u', {
+      font: 'bold 21px "Outfit", sans-serif',
       fill: '#2b2b2b'
     }).setOrigin(0.5).setDepth(4);
 
-    const beansDragZone = this.add.rectangle(beansX, btnY, 44, 36, 0x000000, 0)
+    const beansDragZone = this.add.rectangle(beansX, btnY, 83, 68, 0x000000, 0)
       .setDepth(5);
     beansDragZone.setInteractive({ useHandCursor: true });
 
     // Milk Button Image & Stock Text (integrated inside the new asset display box)
-    const milkY = btnY - 1;
+    const milkY = btnY - 2;
     this.btnMilkImage = this.add.image(milkX, milkY, 'btn_milk_asset')
-      .setDisplaySize(44, 36)
+      .setDisplaySize(83, 68)
       .setDepth(3);
 
-    this.milkStockText = this.add.text(milkX, milkY + 6, '0u', {
-      font: 'bold 11px "Outfit", sans-serif',
+    this.milkStockText = this.add.text(milkX, milkY + 11, '0u', {
+      font: 'bold 21px "Outfit", sans-serif',
       fill: '#2b2b2b'
     }).setOrigin(0.5).setDepth(4);
 
-    const milkDragZone = this.add.rectangle(milkX, milkY, 44, 36, 0x000000, 0)
+    const milkDragZone = this.add.rectangle(milkX, milkY, 83, 68, 0x000000, 0)
       .setDepth(5);
     milkDragZone.setInteractive({ useHandCursor: true });
 
@@ -799,7 +798,7 @@ export default class GameScene extends Phaser.Scene {
     beansDragZone.on('pointerdown', () => {
       const stock = this.stock.drink.coffee_beans || 0;
       if (stock <= 0) {
-        this.showFeedbackText('¡Sin stock de Café! Cómpralo en la tienda 🛒', startX, 200, '#d90429');
+        this.showFeedbackText('¡Sin stock de Café! Cómpralo en la tienda 🛒', startX, 375, '#d90429');
         return;
       }
       
@@ -827,7 +826,7 @@ export default class GameScene extends Phaser.Scene {
     milkDragZone.on('pointerdown', () => {
       const stock = this.stock.drink.milk || 0;
       if (stock <= 0) {
-        this.showFeedbackText('¡Sin stock de Leche! Cómpralo en la tienda 🛒', startX, 200, '#d90429');
+        this.showFeedbackText('¡Sin stock de Leche! Cómpralo en la tienda 🛒', startX, 375, '#d90429');
         return;
       }
 
@@ -877,7 +876,7 @@ export default class GameScene extends Phaser.Scene {
     this.cupStackZone.on('dragstart', () => {
       if (this.machineState !== 'no_cup') {
         SoundEffects.playAngry();
-        this.showFeedbackText('¡Ya hay una taza en la cafetera! ☕', startX, 200, '#d90429');
+        this.showFeedbackText('¡Ya hay una taza en la cafetera! ☕', startX, 375, '#d90429');
         dragBlocked = true;
         return;
       }
@@ -917,7 +916,7 @@ export default class GameScene extends Phaser.Scene {
           .setDepth(4);
 
         this.machineState = 'empty';
-        this.showFeedbackText('¡Taza colocada! ☕', startX, 200, '#38b000');
+        this.showFeedbackText('¡Taza colocada! ☕', startX, 375, '#38b000');
         SoundEffects.playClick();
       } else {
         const activeCup = tempDragCup;
@@ -954,7 +953,7 @@ export default class GameScene extends Phaser.Scene {
   handleDrinkIngredientDrop(type, startX, startY) {
     if (this.machineState === 'no_cup') {
       SoundEffects.playAngry();
-      this.showFeedbackText('¡Primero coloca una taza! ☕🥛', startX, 200, '#d90429');
+      this.showFeedbackText('¡Primero coloca una taza! ☕🥛', startX, 375, '#d90429');
       return;
     }
 
@@ -971,7 +970,7 @@ export default class GameScene extends Phaser.Scene {
       // Draw progress bar above the machine (Y = startY - 78)
       const progressBg = this.add.graphics().setDepth(20);
       progressBg.fillStyle(0xdddddd, 1);
-      progressBg.fillRoundedRect(startX - 40, startY - 78, 80, 8, 4);
+      progressBg.fillRoundedRect(startX - 75, startY - 146, 150, 15, 8);
 
       const progressBar = this.add.graphics().setDepth(21);
       
@@ -980,8 +979,8 @@ export default class GameScene extends Phaser.Scene {
       if (this.machineCupSprite) {
         this.machineCupSprite.setTexture(cupKey).setAlpha(0.4);
       } else {
-        this.machineCupSprite = this.add.image(startX, startY + 38, cupKey)
-          .setDisplaySize(48, 48)
+        this.machineCupSprite = this.add.image(startX, startY + 71, cupKey)
+          .setDisplaySize(90, 90)
           .setAlpha(0.4)
           .setDepth(4);
       }
@@ -998,7 +997,7 @@ export default class GameScene extends Phaser.Scene {
           
           progressBar.clear();
           progressBar.fillStyle(0x38b000, 1);
-          progressBar.fillRoundedRect(startX - 40, startY - 78, 80 * ratio, 8, 4);
+          progressBar.fillRoundedRect(startX - 75, startY - 146, 150 * ratio, 15, 8);
 
           if (elapsed >= duration) {
             progressBg.destroy();
@@ -1034,7 +1033,7 @@ export default class GameScene extends Phaser.Scene {
             // Show serve button
             this.updateDrinkServeButtonState(startX, startY);
             
-            this.showFeedbackText('¡Bebida lista! ☕', startX, 200, '#38b000');
+            this.showFeedbackText('¡Bebida lista! ☕', startX, 375, '#38b000');
           }
         }
       });
@@ -1061,7 +1060,7 @@ export default class GameScene extends Phaser.Scene {
         });
       }
       this.updateDrinkServeButtonState(startX, startY);
-      this.showFeedbackText('¡Café con leche! ☕🥛', startX, 200, '#38b000');
+      this.showFeedbackText('¡Café con leche! ☕🥛', startX, 375, '#38b000');
     } else if (this.machineState === 'ready_milk' && type === 'coffee_beans') {
       // Upgrade Milk to Coffee with Milk
       this.stock.drink.coffee_beans--;
@@ -1085,10 +1084,10 @@ export default class GameScene extends Phaser.Scene {
         });
       }
       this.updateDrinkServeButtonState(startX, startY);
-      this.showFeedbackText('¡Café con leche! ☕🥛', startX, 200, '#38b000');
+      this.showFeedbackText('¡Café con leche! ☕🥛', startX, 375, '#38b000');
     } else {
       SoundEffects.playAngry();
-      this.showFeedbackText('¡La máquina está ocupada! ☕', startX, 200, '#d90429');
+      this.showFeedbackText('¡La máquina está ocupada! ☕', startX, 375, '#d90429');
     }
   }
 
@@ -1172,14 +1171,14 @@ export default class GameScene extends Phaser.Scene {
     let label = 'Café';
     if (drinkKey === 'milk') label = 'Leche';
     else if (drinkKey === 'coffee_milk') label = 'Café c/Leche';
-    this.showFeedbackText(`¡${label} servido! ☕`, startX, 200, '#38b000');
+    this.showFeedbackText(`¡${label} servido! ☕`, startX, 375, '#38b000');
   }
 
   handleOvenClick() {
     if (!this.isBaking) {
       if (this.cookiesInOven.length === 0) {
         SoundEffects.playAngry();
-        this.showFeedbackText('¡El horno está vacío!', this.trayX, 200, '#d90429');
+        this.showFeedbackText('¡El horno está vacío!', this.trayX, 375, '#d90429');
         return;
       }
       // Start baking
@@ -1239,7 +1238,7 @@ export default class GameScene extends Phaser.Scene {
         color = '#38b000';
       }
  
-      this.showFeedbackText(feedback, this.trayX, 200, color);
+      this.showFeedbackText(feedback, this.trayX, 375, color);
       this.ovenBarFill.clear();
       this.updateCookieVisuals();
       this.updateExtractButtonState();
@@ -1251,36 +1250,36 @@ export default class GameScene extends Phaser.Scene {
 
     const bakeMin = this.config.bakeMin || 4.0;
     const bakeMax = this.config.bakeMax || 8.0;
-    const pxPerSec = 15; // 150px / 10s
+    const pxPerSec = 28; // 281px / 10s
 
     // 1. Raw zone (Gray background rounded)
     this.ovenBarBg.fillStyle(0xe0e0e0, 1);
-    this.ovenBarBg.fillRoundedRect(this.ovenBarX, this.ovenBarY, 150, 15, 5);
+    this.ovenBarBg.fillRoundedRect(this.ovenBarX, this.ovenBarY, 281, 28, 9);
 
     // 2. Baked zone (Green perfect area)
     const greenStartX = this.ovenBarX + (bakeMin * pxPerSec);
     const greenWidth = (bakeMax - bakeMin) * pxPerSec;
     this.ovenBarBg.fillStyle(0x38b000, 1);
-    this.ovenBarBg.fillRect(greenStartX, this.ovenBarY, greenWidth, 15);
+    this.ovenBarBg.fillRect(greenStartX, this.ovenBarY, greenWidth, 28);
 
     // 3. Burnt zone (Red danger area)
     const redStartX = this.ovenBarX + (bakeMax * pxPerSec);
     const redWidth = (10 - bakeMax) * pxPerSec;
     if (redWidth > 0) {
       this.ovenBarBg.fillStyle(0xd90429, 1);
-      this.ovenBarBg.fillRect(redStartX, this.ovenBarY, redWidth, 15);
+      this.ovenBarBg.fillRect(redStartX, this.ovenBarY, redWidth, 28);
     }
   }
 
   updateOvenBar() {
     this.ovenBarFill.clear();
     if (this.isBaking) {
-      const pxPerSec = 15;
+      const pxPerSec = 28;
       const progressX = Math.min(10, this.ovenTimeElapsed) * pxPerSec;
       
       // Draw a vertical black indicator needle
       this.ovenBarFill.fillStyle(0x2b2b2b, 1); // Dark charcoal needle
-      this.ovenBarFill.fillRect(this.ovenBarX + progressX - 2, this.ovenBarY - 3, 4, 21);
+      this.ovenBarFill.fillRect(this.ovenBarX + progressX - 4, this.ovenBarY - 6, 8, 39);
     }
   }
 
@@ -1297,26 +1296,26 @@ export default class GameScene extends Phaser.Scene {
       { id: 'glazing', label: 'Glaseado', color: 0xff0a54 }
     ];
 
-    const jarSize = 84;
-    const jarHoverSize = 92;
+    const jarSize = 158;
+    const jarHoverSize = 173;
 
     this.toppingButtons = {};
     this.toppingStockTexts = {};
 
     toppings.forEach((t, index) => {
-      const x = startX + 10 + 42; // center of jar
-      const y = startY + index * 80 + 42;
+      const x = startX + 19 + 79; // center of jar
+      const y = startY + index * 150 + 79;
 
       // Topping Jar sprite
       const jarSource = this.add.image(x, y, 'topping_' + t.id).setDisplaySize(jarSize, jarSize).setDepth(2);
       this.toppingButtons[t.id] = jarSource;
 
       // Stock indicator text
-      const stockText = this.add.text(x, y + 36, '', {
-        font: '11px "Outfit", sans-serif',
+      const stockText = this.add.text(x, y + 68, '', {
+        font: '21px "Outfit", sans-serif',
         fill: '#ffffff',
         stroke: '#582f0e',
-        strokeThickness: 3,
+        strokeThickness: 5,
         fontWeight: '800'
       }).setOrigin(0.5).setDepth(3);
       this.toppingStockTexts[t.id] = stockText;
@@ -1344,7 +1343,7 @@ export default class GameScene extends Phaser.Scene {
         const currentStock = this.stock.topping[t.id] || 0;
         if (currentStock <= 0) {
           SoundEffects.playAngry();
-          this.showFeedbackText('¡Sin stock! Cómpralo en la tienda 🛒', this.trayX, 200, '#d90429');
+          this.showFeedbackText('¡Sin stock! Cómpralo en la tienda 🛒', this.trayX, 375, '#d90429');
           return;
         }
 
@@ -1358,7 +1357,7 @@ export default class GameScene extends Phaser.Scene {
 
       dragZone.on('drag', (pointer, dragX, dragY) => {
         if (!jarClone) return;
-        const clampedY = Math.max(180, dragY);
+        const clampedY = Math.max(338, dragY);
         jarClone.x = dragX;
         jarClone.y = clampedY;
 
@@ -1378,19 +1377,19 @@ export default class GameScene extends Phaser.Scene {
 
         const dist = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, this.trayX, this.trayY);
 
-        if (dist < 120) {
+        if (dist < 225) {
           // Find closest cookie on preparation tray
           let closestCookie = null;
           let minDist = 99999;
           const count = this.prepTrayCookies.length;
-          const spacing = 35;
+          const spacing = 66;
           const startXLoc = this.trayX - ((count - 1) * spacing) / 2;
 
           this.prepTrayCookies.forEach((cookie, index) => {
             const cx = startXLoc + index * spacing;
             const cy = this.trayY;
             const distCookie = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, cx, cy);
-            if (distCookie < 120 && distCookie < minDist) {
+            if (distCookie < 225 && distCookie < minDist) {
               minDist = distCookie;
               closestCookie = cookie;
             }
@@ -1404,12 +1403,12 @@ export default class GameScene extends Phaser.Scene {
             closestCookie.toppings = [t.id];
             this.updateCookieVisuals();
             SoundEffects.playClick();
-            this.showFeedbackText(`¡Añadido ${t.label}! ✨`, this.trayX, 200, '#38b000');
+            this.showFeedbackText(`¡Añadido ${t.label}! ✨`, this.trayX, 375, '#38b000');
           } else {
             const distToTrayCenter = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, this.trayX, this.trayY);
-            if (distToTrayCenter < 120) {
+            if (distToTrayCenter < 225) {
               SoundEffects.playAngry();
-              this.showFeedbackText('¡Primero selecciona la masa!', this.trayX, 200, '#d90429');
+              this.showFeedbackText('¡Primero selecciona la masa!', this.trayX, 375, '#d90429');
             } else {
               SoundEffects.playClick();
             }
@@ -1476,7 +1475,7 @@ export default class GameScene extends Phaser.Scene {
 
   createCookieTray(width, height) {
     this.trayX = width / 2;
-    this.trayY = height - 90;
+    this.trayY = height - 169;
 
     const trayX = this.trayX;
     const trayY = this.trayY;
@@ -1484,9 +1483,9 @@ export default class GameScene extends Phaser.Scene {
     // Draw tray plate placeholder
     const trayBg = this.add.graphics().setDepth(2);
     trayBg.fillStyle(0xcccccc, 1); // Metallic tray
-    trayBg.fillRoundedRect(trayX - 100, trayY - 45, 200, 90, 10);
-    trayBg.lineStyle(3, 0x999999, 1);
-    trayBg.strokeRoundedRect(trayX - 100, trayY - 45, 200, 90, 10);
+    trayBg.fillRoundedRect(trayX - 188, trayY - 84, 375, 169, 19);
+    trayBg.lineStyle(6, 0x999999, 1);
+    trayBg.strokeRoundedRect(trayX - 188, trayY - 84, 375, 169, 19);
 
 
     this.prepTraySprites = [];
@@ -1502,7 +1501,7 @@ export default class GameScene extends Phaser.Scene {
     // If we have cookies in prepTrayCookies, draw them in a row
     if (this.prepTrayCookies && this.prepTrayCookies.length > 0) {
       const count = this.prepTrayCookies.length;
-      const spacing = 45;
+      const spacing = 84;
       const startX = this.trayX - ((count - 1) * spacing) / 2;
 
       this.prepTrayCookies.forEach((cookie, index) => {
@@ -1526,7 +1525,7 @@ export default class GameScene extends Phaser.Scene {
         const x = startX + index * spacing;
         const y = this.trayY;
 
-        const size = isShaped ? 55 : 45;
+        const size = isShaped ? 103 : 84;
         const sprite = this.add.image(x, y, key).setDisplaySize(size, size).setDepth(3);
         sprite.setInteractive({ useHandCursor: true });
         this.input.setDraggable(sprite);
@@ -1543,11 +1542,11 @@ export default class GameScene extends Phaser.Scene {
 
         sprite.on('drag', (pointer, dragX, dragY) => {
           sprite.x = dragX;
-          sprite.y = Math.max(180, dragY);
+          sprite.y = Math.max(338, dragY);
 
           // Check if hovering over trash bin
-          const distToTrash = Phaser.Math.Distance.Between(dragX, Math.max(180, dragY), this.trashBinX, this.trashBinY);
-          if (distToTrash < 70) {
+          const distToTrash = Phaser.Math.Distance.Between(dragX, Math.max(338, dragY), this.trashBinX, this.trashBinY);
+          if (distToTrash < 131) {
             if (!this.trashHighlighted) {
               this.trashHighlighted = true;
               this.tweens.add({
@@ -1587,7 +1586,7 @@ export default class GameScene extends Phaser.Scene {
           const cookieInstance = this.prepTrayCookies[cookieIdx];
 
           // 1. Drop on Trash Bin
-          if (distTrash < 70) {
+          if (distTrash < 131) {
             SoundEffects.playTrash();
             this.prepTrayCookies.splice(cookieIdx, 1);
             this.updateCookieVisuals();
@@ -1610,33 +1609,33 @@ export default class GameScene extends Phaser.Scene {
           }
 
           // 2. Drop on Delivery Tray
-          if (distDelivery < 100) {
+          if (distDelivery < 188) {
             if (!cookieInstance.shape) {
-              this.showFeedbackText('¡Primero corta la forma!', this.trayX, 200, '#d90429');
+              this.showFeedbackText('¡Primero corta la forma!', this.trayX, 375, '#d90429');
             } else {
               this.deliveryTrayCookies.push(cookieInstance);
               this.prepTrayCookies.splice(cookieIdx, 1);
               this.drawDeliveryTray();
               this.updateCookieVisuals();
-              this.showFeedbackText('¡Galleta lista para entrega! 📦', this.deliveryTrayX, 200, '#38b000');
+              this.showFeedbackText('¡Galleta lista para entrega! 📦', this.deliveryTrayX, 375, '#38b000');
               return;
             }
           }
 
           // 3. Drop on Oven (only if shaped, oven has space, and not baking)
-          if (distOven < 120) {
+          if (distOven < 225) {
             if (this.isBaking) {
-              this.showFeedbackText('¡El horno está encendido!', this.trayX, 200, '#d90429');
+              this.showFeedbackText('¡El horno está encendido!', this.trayX, 375, '#d90429');
             } else if (this.cookiesInOven.length >= 3) {
-              this.showFeedbackText('¡El horno está lleno! (Máx 3)', this.trayX, 200, '#d90429');
+              this.showFeedbackText('¡El horno está lleno! (Máx 3)', this.trayX, 375, '#d90429');
             } else if (!cookieInstance.shape) {
-              this.showFeedbackText('¡Primero corta la forma!', this.trayX, 200, '#d90429');
+              this.showFeedbackText('¡Primero corta la forma!', this.trayX, 375, '#d90429');
             } else {
               // Valid drop in oven!
               this.cookiesInOven.push(cookieInstance);
               this.prepTrayCookies.splice(cookieIdx, 1);
               this.updateExtractButtonState();
-              this.showFeedbackText(`Galleta introducida (${this.cookiesInOven.length}/3) 🍪`, this.trayX, 200, '#38b000');
+              this.showFeedbackText(`Galleta introducida (${this.cookiesInOven.length}/3) 🍪`, this.trayX, 375, '#38b000');
 
               // Play shrink and fade animation
               this.tweens.add({
@@ -1804,11 +1803,11 @@ export default class GameScene extends Phaser.Scene {
       }
     }
 
-    // Spawn customer in the counter area (centered at 512, 230)
+    // Spawn customer in the counter area (centered at 960, 431)
     this.currentCustomer = new Customer(
       this, 
-      512, 
-      230, 
+      960, 
+      431, 
       this.config,
       () => this.handleCustomerTimeout(), // callback when patience runs out
       customerId,
@@ -1853,7 +1852,7 @@ export default class GameScene extends Phaser.Scene {
         if (requestedDrink === 'milk') drinkName = 'Leche';
         else if (requestedDrink === 'coffee_milk') drinkName = 'Café c/Leche';
         
-        this.showFeedbackText(`¡Falta la bebida: ${drinkName}! ☕`, this.trayX, 200, '#d90429');
+        this.showFeedbackText(`¡Falta la bebida: ${drinkName}! ☕`, this.trayX, 375, '#d90429');
         
         // Angry customer feedback
         const patienceLoss = this.currentCustomer.maxPatience * 0.25;
@@ -1862,13 +1861,13 @@ export default class GameScene extends Phaser.Scene {
 
         this.tweens.add({
           targets: this.currentCustomer.container,
-          x: { from: 512 - 10, to: 512 + 10 },
+          x: { from: 960 - 19, to: 960 + 19 },
           duration: 50,
           yoyo: true,
           repeat: 5,
           onComplete: () => {
             if (this.currentCustomer && this.currentCustomer.container) {
-              this.currentCustomer.container.x = 512;
+              this.currentCustomer.container.x = 960;
             }
           }
         });
@@ -1896,9 +1895,9 @@ export default class GameScene extends Phaser.Scene {
       this.coinsText.setText(`Monedas: ${this.coins}`);
 
       if (excessCount > 0) {
-        this.showFeedbackText(`¡Pedido completo! +${drinkReward} (Exceso: -${wastePenalty}) 🗑️`, this.trayX, 200, '#ffb703');
+        this.showFeedbackText(`¡Pedido completo! +${drinkReward} (Exceso: -${wastePenalty}) 🗑️`, this.trayX, 375, '#ffb703');
       } else {
-        this.showFeedbackText(`¡Entrega perfecta! ☕ +${drinkReward} Monedas`, this.trayX, 200, '#38b000');
+        this.showFeedbackText(`¡Entrega perfecta! ☕ +${drinkReward} Monedas`, this.trayX, 375, '#38b000');
         this.triggerConfetti();
       }
 
@@ -1916,7 +1915,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     if (this.deliveryTrayCookies.length === 0) {
-      this.showFeedbackText('¡La bandeja de entrega está vacía!', this.trayX, 200, '#d90429');
+      this.showFeedbackText('¡La bandeja de entrega está vacía!', this.trayX, 375, '#d90429');
       return;
     }
 
@@ -1948,20 +1947,20 @@ export default class GameScene extends Phaser.Scene {
     }
 
     if (rejected) {
-      this.showFeedbackText(rejectReason, this.trayX, 200, '#d90429');
+      this.showFeedbackText(rejectReason, this.trayX, 375, '#d90429');
 
       // Angry customer feedback shake (no patience penalty)
       SoundEffects.playAngry();
 
       this.tweens.add({
         targets: this.currentCustomer.container,
-        x: { from: 512 - 10, to: 512 + 10 },
+        x: { from: 960 - 19, to: 960 + 19 },
         duration: 50,
         yoyo: true,
         repeat: 5,
         onComplete: () => {
           if (this.currentCustomer && this.currentCustomer.container) {
-            this.currentCustomer.container.x = 512;
+            this.currentCustomer.container.x = 960;
           }
         }
       });
@@ -2013,7 +2012,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.coins += totalReward;
         this.coinsText.setText(`Monedas: ${this.coins}`);
-        this.showFeedbackText(`¡Aceptado parcialmente! 👍 +${totalReward} Monedas`, this.trayX, 200, '#38b000');
+        this.showFeedbackText(`¡Aceptado parcialmente! 👍 +${totalReward} Monedas`, this.trayX, 375, '#38b000');
 
         if (anyPerfect) {
           SoundEffects.playPerfect();
@@ -2042,18 +2041,18 @@ export default class GameScene extends Phaser.Scene {
 
         // Keep patience as-is (no patience penalty for partial rejection)
 
-        this.showFeedbackText(`¡Incompleto! Faltan ${requested - totalCount} galletas 😡`, this.trayX, 200, '#d90429');
+        this.showFeedbackText(`¡Incompleto! Faltan ${requested - totalCount} galletas 😡`, this.trayX, 375, '#d90429');
 
         // Play an angry shake tween on the customer container
         this.tweens.add({
           targets: this.currentCustomer.container,
-          x: { from: 512 - 10, to: 512 + 10 },
+          x: { from: 960 - 19, to: 960 + 19 },
           duration: 50,
           yoyo: true,
           repeat: 5,
           onComplete: () => {
             if (this.currentCustomer && this.currentCustomer.container) {
-              this.currentCustomer.container.x = 512;
+              this.currentCustomer.container.x = 960;
             }
           }
         });
@@ -2083,7 +2082,7 @@ export default class GameScene extends Phaser.Scene {
 
       if (excessCount > 0) {
         SoundEffects.playCoin();
-        this.showFeedbackText(`¡Pedido completo! +${totalReward} (Exceso: -${wastePenalty}) 🗑️`, this.trayX, 200, '#ffb703');
+        this.showFeedbackText(`¡Pedido completo! +${totalReward} (Exceso: -${wastePenalty}) 🗑️`, this.trayX, 375, '#ffb703');
       } else {
         const avgSim = (totalReward - drinkReward) / (requested * maxVal);
         let feedback = '¡Pedido completado! 👍';
@@ -2099,7 +2098,7 @@ export default class GameScene extends Phaser.Scene {
             color = '#ffb703';
           }
         }
-        this.showFeedbackText(`${feedback} +${totalReward} Monedas`, this.trayX, 200, color);
+        this.showFeedbackText(`${feedback} +${totalReward} Monedas`, this.trayX, 375, color);
       }
 
       // Clean up and spawn next
@@ -2117,7 +2116,7 @@ export default class GameScene extends Phaser.Scene {
 
   handleCustomerTimeout() {
     SoundEffects.playAngry();
-    this.showFeedbackText('¡Me cansé de esperar! 😡', this.trayX, 200, '#d90429');
+    this.showFeedbackText('¡Me cansé de esperar! 😡', this.trayX, 375, '#d90429');
     
     // Do NOT reset the cookie or oven state — the player may still want to
     // retrieve the cookie from the oven and reuse it for the next customer.
@@ -2146,16 +2145,16 @@ export default class GameScene extends Phaser.Scene {
       '¡Me rasguñó! ¡No volveré jamás! 😡'
     ];
     const chosenText = dialogues[Math.floor(Math.random() * dialogues.length)];
-    this.showFeedbackText(chosenText, this.currentCustomer.container.x, this.currentCustomer.container.y - 130, '#d90429');
+    this.showFeedbackText(chosenText, this.currentCustomer.container.x, this.currentCustomer.container.y - 244, '#d90429');
 
     const cx = this.currentCustomer.container.x;
-    const cy = this.currentCustomer.container.y + 40;
+    const cy = this.currentCustomer.container.y + 75;
     const scratchGraphics = this.add.graphics().setDepth(20);
-    scratchGraphics.lineStyle(4, 0xd90429, 1);
+    scratchGraphics.lineStyle(8, 0xd90429, 1);
 
-    scratchGraphics.lineBetween(cx - 30, cy - 30, cx - 10, cy + 30);
-    scratchGraphics.lineBetween(cx - 10, cy - 35, cx + 10, cy + 25);
-    scratchGraphics.lineBetween(cx + 10, cy - 30, cx + 30, cy + 30);
+    scratchGraphics.lineBetween(cx - 56, cy - 56, cx - 19, cy + 56);
+    scratchGraphics.lineBetween(cx - 19, cy - 66, cx + 19, cy + 47);
+    scratchGraphics.lineBetween(cx + 19, cy - 56, cx + 56, cy + 56);
 
     this.tweens.add({
       targets: scratchGraphics,
@@ -2168,8 +2167,8 @@ export default class GameScene extends Phaser.Scene {
 
     this.tweens.add({
       targets: this.currentCustomer.container,
-      x: cx + Phaser.Math.Between(-12, 12),
-      y: this.currentCustomer.container.y + Phaser.Math.Between(-10, 10),
+      x: cx + Phaser.Math.Between(-23, 23),
+      y: this.currentCustomer.container.y + Phaser.Math.Between(-19, 19),
       duration: 50,
       yoyo: true,
       repeat: 4,
@@ -2197,21 +2196,21 @@ export default class GameScene extends Phaser.Scene {
   }
 
   showFeedbackText(text, x, y, color) {
-    // Lower the Y coordinate to be right above the preparation table (Y ~ 366)
-    const targetY = (y === 200) ? (this.trayY - 120) : y;
+    // Lower the Y coordinate to be right above the preparation table
+    const targetY = (y === 375) ? (this.trayY - 225) : y;
 
     const feedbackText = this.add.text(x, targetY, text, {
       font: '26px "Outfit", sans-serif',
       fill: color,
       fontWeight: '800',
       stroke: '#ffffff',
-      strokeThickness: 4
+      strokeThickness: 8
     }).setOrigin(0.5).setDepth(15000);
 
     // Simple tween animation (fly up and fade out)
     this.tweens.add({
       targets: feedbackText,
-      y: targetY - 40,
+      y: targetY - 75,
       alpha: 0,
       duration: 1200,
       onComplete: () => {
@@ -2221,9 +2220,9 @@ export default class GameScene extends Phaser.Scene {
   }
 
   triggerConfetti() {
-    const particles = this.add.particles(this.trayX, 200, '__WHITE', {
-      x: { min: this.trayX - 200, max: this.trayX + 200 },
-      y: 100,
+    const particles = this.add.particles(this.trayX, 375, '__WHITE', {
+      x: { min: this.trayX - 375, max: this.trayX + 375 },
+      y: 188,
       speedY: { min: 100, max: 300 },
       speedX: { min: -50, max: 50 },
       gravityY: 150,
@@ -2239,9 +2238,9 @@ export default class GameScene extends Phaser.Scene {
   }
 
   getClampedY(x, targetY) {
-    const centerX = 512;
-    const centerMaxY = 215; // Highest reach in the middle (lowest Y)
-    const edgeMaxY = 330;   // Lowest reach at the edges (highest Y)
+    const centerX = 960;
+    const centerMaxY = 403; // Highest reach in the middle (lowest Y)
+    const edgeMaxY = 619;   // Lowest reach at the edges (highest Y)
     const deltaY = edgeMaxY - centerMaxY;
     const dx = x - centerX;
     const limitY = centerMaxY + deltaY * (dx * dx) / (centerX * centerX);
@@ -2287,7 +2286,7 @@ export default class GameScene extends Phaser.Scene {
 
     if (pointer && this.catPawSprite && this.catArmOutlineGraphics && this.catArmFillGraphics) {
       // Lerp paw position to pointer position with a Y clamp limit at Y=180 (top of oven)
-      const clampedTargetY = Math.max(180, pointer.y);
+      const clampedTargetY = Math.max(338, pointer.y);
       const lerpSpeed = 0.22;
       this.pawX += (pointer.x - this.pawX) * lerpSpeed;
       this.pawY += (clampedTargetY - this.pawY) * lerpSpeed;
@@ -2319,9 +2318,9 @@ export default class GameScene extends Phaser.Scene {
         new Phaser.Math.Vector2(this.pawX, this.pawY)
       );
       
-      // Shorten the arm by a fixed 25 pixels to prevent detaching as the paw moves up
+      // Shorten the arm by a fixed 47 pixels to prevent detaching as the paw moves up
       const curveLength = curve.getLength();
-      const shortenPixels = 25;
+      const shortenPixels = 47;
       const tMax = curveLength > shortenPixels ? (curveLength - shortenPixels) / curveLength : 1.0;
 
       const points = [];
@@ -2332,11 +2331,11 @@ export default class GameScene extends Phaser.Scene {
       }
 
       // Outer outline (matching the sprite's exact dark brown #553523) - drawn behind paw
-      this.catArmOutlineGraphics.lineStyle(40, 0x553523);
+      this.catArmOutlineGraphics.lineStyle(75, 0x553523);
       this.catArmOutlineGraphics.strokePoints(points);
 
       // Inner fill (matching the sprite's exact cream fur #f4e7d4) - drawn on top of paw
-      this.catArmFillGraphics.lineStyle(36, 0xf4e7d4);
+      this.catArmFillGraphics.lineStyle(68, 0xf4e7d4);
       this.catArmFillGraphics.strokePoints(points);
 
       // Check if scratching the active customer
@@ -2352,9 +2351,9 @@ export default class GameScene extends Phaser.Scene {
           this.pawX,
           this.pawY,
           this.currentCustomer.container.x,
-          this.currentCustomer.container.y + 40
+          this.currentCustomer.container.y + 75
         );
-        if (distToCustomer < 95) {
+        if (distToCustomer < 178) {
           this.scratchCustomer();
         }
       }
@@ -2430,7 +2429,7 @@ export default class GameScene extends Phaser.Scene {
       if (element.key === 'deliveryTray') {
         this.drawDeliveryTrayBg(0xccffcc); // Green highlight for delivery tray background
       }
-      this.showFeedbackText(`Seleccionado: ${element.key}`, this.cameras.main.width / 2, 100, '#38b000');
+      this.showFeedbackText(`Seleccionado: ${element.key}`, this.cameras.main.width / 2, 188, '#38b000');
     }
   }
 
@@ -2492,17 +2491,17 @@ export default class GameScene extends Phaser.Scene {
     // Copy to clipboard
     if (navigator.clipboard) {
       navigator.clipboard.writeText(jsonStr).then(() => {
-        this.showFeedbackText('¡Configuración copiada al portapapeles! 📋', this.cameras.main.width / 2, 100, '#38b000');
+        this.showFeedbackText('¡Configuración copiada al portapapeles! 📋', this.cameras.main.width / 2, 188, '#38b000');
         console.log('--- NUEVO UI CONFIG (COPIADO) ---');
         console.log(jsonStr);
       }).catch(err => {
         console.error('Error al copiar al portapapeles:', err);
-        this.showFeedbackText('Error al copiar. Mira la consola (F12). ⚠️', this.cameras.main.width / 2, 100, '#d90429');
+        this.showFeedbackText('Error al copiar. Mira la consola (F12). ⚠️', this.cameras.main.width / 2, 188, '#d90429');
         console.log('--- NUEVO UI CONFIG (Copia manual) ---');
         console.log(jsonStr);
       });
     } else {
-      this.showFeedbackText('Copiado fallido. Mira la consola (F12). ⚠️', this.cameras.main.width / 2, 100, '#d90429');
+      this.showFeedbackText('Copiado fallido. Mira la consola (F12). ⚠️', this.cameras.main.width / 2, 188, '#d90429');
       console.log('--- NUEVO UI CONFIG ---');
       console.log(jsonStr);
     }
@@ -2510,18 +2509,18 @@ export default class GameScene extends Phaser.Scene {
 
   createDeliveryTray() {
     const { deliveryTray } = UI_CONFIG;
-    this.deliveryTrayX = deliveryTray ? deliveryTray.x : 512;
-    this.deliveryTrayY = deliveryTray ? deliveryTray.y : 370;
-    this.deliveryTrayWidth = deliveryTray ? deliveryTray.width : 200;
-    this.deliveryTrayHeight = deliveryTray ? deliveryTray.height : 50;
+    this.deliveryTrayX = deliveryTray ? deliveryTray.x : 960;
+    this.deliveryTrayY = deliveryTray ? deliveryTray.y : 694;
+    this.deliveryTrayWidth = deliveryTray ? deliveryTray.width : 375;
+    this.deliveryTrayHeight = deliveryTray ? deliveryTray.height : 94;
 
     // Draw the wooden tray background
     this.deliveryTrayBg = this.add.graphics().setDepth(1);
     this.drawDeliveryTrayBg();
 
     // Text label on the tray
-    this.deliveryTrayLabel = this.add.text(this.deliveryTrayX, this.deliveryTrayY - 33, 'BANDEJA DE ENTREGA', {
-      font: '9px "Outfit", sans-serif',
+    this.deliveryTrayLabel = this.add.text(this.deliveryTrayX, this.deliveryTrayY - 62, 'BANDEJA DE ENTREGA', {
+      font: '17px "Outfit", sans-serif',
       fill: '#7f5539',
       fontWeight: '800'
     }).setOrigin(0.5).setDepth(2);
@@ -2556,7 +2555,7 @@ export default class GameScene extends Phaser.Scene {
     this.deliveryDragZone.on('drag', (pointer, dragX, dragY) => {
       if (this.isEditorMode) return;
       // Limit Y-axis to counter and customer area
-      const clampedY = Math.max(160, Math.min(450, dragY));
+      const clampedY = Math.max(300, Math.min(844, dragY));
       this.deliveryDragZone.x = dragX;
       this.deliveryDragZone.y = clampedY;
 
@@ -2565,7 +2564,7 @@ export default class GameScene extends Phaser.Scene {
       this.deliveryTrayBg.y = clampedY - this.deliveryTrayY;
 
       this.deliveryTrayLabel.x = dragX;
-      this.deliveryTrayLabel.y = clampedY - 33;
+      this.deliveryTrayLabel.y = clampedY - 62;
 
       // Translate all sprites on the tray (cookies and drinks combined)
       const cookiesCount = this.deliveryTrayCookies.length;
@@ -2573,7 +2572,7 @@ export default class GameScene extends Phaser.Scene {
       const totalCount = cookiesCount + drinksCount;
       
       if (totalCount > 0) {
-        const spacing = 35;
+        const spacing = 66;
         const startX = dragX - ((totalCount - 1) * spacing) / 2;
         
         // Translate cookie sprites
@@ -2590,14 +2589,14 @@ export default class GameScene extends Phaser.Scene {
           const sprite = this.deliveryTraySprites[cookiesCount + i];
           if (sprite) {
             sprite.x = startX + (cookiesCount + i) * spacing;
-            sprite.y = clampedY - 4; // Maintain drink height offset
+            sprite.y = clampedY - 8; // Maintain drink height offset
           }
         }
       }
 
       // Check distance to trash bin
       const distToTrash = Phaser.Math.Distance.Between(dragX, clampedY, this.trashBinX, this.trashBinY);
-      if (distToTrash < 70) {
+      if (distToTrash < 131) {
         if (!this.trashHighlighted) {
           this.trashHighlighted = true;
           this.tweens.add({
@@ -2622,7 +2621,7 @@ export default class GameScene extends Phaser.Scene {
           }
           this.tweens.add({
             targets: this.currentCustomer.container,
-            y: 230,
+            y: 431,
             duration: 150,
             ease: 'Back.easeOut'
           });
@@ -2638,10 +2637,10 @@ export default class GameScene extends Phaser.Scene {
           if (this.trashIconText) this.trashIconText.clearTint();
         }
 
-        // Check distance to the customer (centered at 512, 230)
+        // Check distance to the customer (centered at 960, 431)
         if (this.currentCustomer && this.currentCustomer.sprite) {
-          const distToCustomer = Phaser.Math.Distance.Between(dragX, clampedY, 512, 230);
-          if (distToCustomer < 130) {
+          const distToCustomer = Phaser.Math.Distance.Between(dragX, clampedY, 960, 431);
+          if (distToCustomer < 188) {
             if (!this.customerHighlighted) {
               this.customerHighlighted = true;
               
@@ -2653,7 +2652,7 @@ export default class GameScene extends Phaser.Scene {
 
               this.currentCustomerBounceTween = this.tweens.add({
                 targets: this.currentCustomer.container,
-                y: 230 - 15,
+                y: 431 - 28,
                 duration: 200,
                 yoyo: true,
                 repeat: -1,
@@ -2676,7 +2675,7 @@ export default class GameScene extends Phaser.Scene {
               }
               this.tweens.add({
                 targets: this.currentCustomer.container,
-                y: 230,
+                y: 431,
                 duration: 150,
                 ease: 'Back.easeOut'
               });
@@ -2699,7 +2698,7 @@ export default class GameScene extends Phaser.Scene {
         this.currentCustomerBounceTween = null;
       }
       if (this.currentCustomer && this.currentCustomer.container) {
-        this.currentCustomer.container.y = 230;
+        this.currentCustomer.container.y = 431;
       }
 
       // Check if dropped on trash
@@ -2742,7 +2741,7 @@ export default class GameScene extends Phaser.Scene {
           // Redraw sprites dynamic positions
           const count = this.deliveryTrayCookies.length;
           if (count > 0) {
-            const spacing = 35;
+            const spacing = 66;
             const startX = this.deliveryDragZone.x - ((count - 1) * spacing) / 2;
             this.deliveryTraySprites.forEach((sprite, index) => {
               sprite.x = startX + index * spacing;
@@ -2771,13 +2770,13 @@ export default class GameScene extends Phaser.Scene {
     } else {
       this.deliveryTrayBg.fillStyle(0xe6ccb2, 1);
     }
-    this.deliveryTrayBg.lineStyle(3, 0x7f5539, 1);
+    this.deliveryTrayBg.lineStyle(6, 0x7f5539, 1);
     
     // Draw relative to deliveryTrayX and Y using dynamic width and height
     const w = this.deliveryTrayWidth;
     const h = this.deliveryTrayHeight;
-    this.deliveryTrayBg.fillRoundedRect(this.deliveryTrayX - w / 2, this.deliveryTrayY - h / 2, w, h, 8);
-    this.deliveryTrayBg.strokeRoundedRect(this.deliveryTrayX - w / 2, this.deliveryTrayY - h / 2, w, h, 8);
+    this.deliveryTrayBg.fillRoundedRect(this.deliveryTrayX - w / 2, this.deliveryTrayY - h / 2, w, h, 15);
+    this.deliveryTrayBg.strokeRoundedRect(this.deliveryTrayX - w / 2, this.deliveryTrayY - h / 2, w, h, 15);
   }
 
   drawDeliveryTray() {
@@ -2790,7 +2789,7 @@ export default class GameScene extends Phaser.Scene {
     const totalItems = cookiesCount + drinksCount;
     if (totalItems === 0) return;
 
-    const spacing = 35;
+    const spacing = 66;
     const trayX = this.deliveryDragZone ? this.deliveryDragZone.x : this.deliveryTrayX;
     const trayY = this.deliveryDragZone ? this.deliveryDragZone.y : this.deliveryTrayY;
     const startX = trayX - ((totalItems - 1) * spacing) / 2;
@@ -2805,7 +2804,7 @@ export default class GameScene extends Phaser.Scene {
       const x = startX + index * spacing;
       const y = trayY;
 
-      const sprite = this.add.image(x, y, key).setDisplaySize(40, 40).setDepth(14);
+      const sprite = this.add.image(x, y, key).setDisplaySize(75, 75).setDepth(14);
       this.deliveryTraySprites.push(sprite);
     });
 
@@ -2817,9 +2816,9 @@ export default class GameScene extends Phaser.Scene {
         else if (drinkType === 'coffee_milk') key = 'beverage_coffee_milk';
 
         const x = startX + (cookiesCount + index) * spacing;
-        const y = trayY - 4; // Shift up slightly to fit nicely
+        const y = trayY - 8; // Shift up slightly to fit nicely
 
-        const sprite = this.add.image(x, y, key).setDisplaySize(32, 32).setDepth(14);
+        const sprite = this.add.image(x, y, key).setDisplaySize(60, 60).setDepth(14);
         this.deliveryTraySprites.push(sprite);
       });
     }
@@ -2829,12 +2828,12 @@ export default class GameScene extends Phaser.Scene {
   handleOvenImageClick() {
     if (this.isBaking) {
       SoundEffects.playAngry();
-      this.showFeedbackText('¡El horno está encendido!', this.ovenX, 200, '#d90429');
+      this.showFeedbackText('¡El horno está encendido!', this.ovenX, 375, '#d90429');
       return;
     }
     if (this.cookiesInOven.length === 0) {
       SoundEffects.playAngry();
-      this.showFeedbackText('¡El horno está vacío!', this.ovenX, 200, '#d90429');
+      this.showFeedbackText('¡El horno está vacío!', this.ovenX, 375, '#d90429');
       return;
     }
 
@@ -2868,7 +2867,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.cookiesInOven = [];
     SoundEffects.playClick();
-    this.showFeedbackText('¡Retirando al mostrador! 🍪', this.ovenX, 200, '#38b000');
+    this.showFeedbackText('¡Retirando al mostrador! 🍪', this.ovenX, 375, '#38b000');
     this.updateExtractButtonState();
   }
 
@@ -2879,7 +2878,7 @@ export default class GameScene extends Phaser.Scene {
     } else {
       this.ovenExtractBtnBg.fillStyle(0x7f5539, 0.4); // Semi-transparent disabled state
     }
-    this.ovenExtractBtnBg.fillRoundedRect(this.ovenStartX, this.ovenStartY + 125, 110, 30, 8);
+    this.ovenExtractBtnBg.fillRoundedRect(this.ovenStartX, this.ovenStartY + 234, 206, 56, 15);
   }
 
   updateExtractButtonState() {
@@ -2891,8 +2890,8 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createTrashBin() {
-    this.trashBinX = 330;
-    this.trashBinY = 470;
+    this.trashBinX = 619;
+    this.trashBinY = 881;
 
     // Create a container for the trash bin so we can scale the whole thing easily!
     this.trashContainer = this.add.container(this.trashBinX, this.trashBinY).setDepth(2);
@@ -2900,31 +2899,31 @@ export default class GameScene extends Phaser.Scene {
     this.trashBinGraphics = this.add.graphics();
     // Draw body (around 0,0)
     this.trashBinGraphics.fillStyle(0x6c757d, 1); // Steel grey
-    this.trashBinGraphics.lineStyle(3, 0x495057, 1);
-    this.trashBinGraphics.fillRoundedRect(-22, -18, 44, 48, 6);
-    this.trashBinGraphics.strokeRoundedRect(-22, -18, 44, 48, 6);
+    this.trashBinGraphics.lineStyle(6, 0x495057, 1);
+    this.trashBinGraphics.fillRoundedRect(-41, -34, 83, 90, 11);
+    this.trashBinGraphics.strokeRoundedRect(-41, -34, 83, 90, 11);
     
     // Draw silver lid
     this.trashBinGraphics.fillStyle(0xced4da, 1);
-    this.trashBinGraphics.fillRoundedRect(-25, -25, 50, 9, 3);
-    this.trashBinGraphics.strokeRoundedRect(-25, -25, 50, 9, 3);
+    this.trashBinGraphics.fillRoundedRect(-47, -47, 94, 17, 6);
+    this.trashBinGraphics.strokeRoundedRect(-47, -47, 94, 17, 6);
     
     // Handle
     this.trashBinGraphics.fillStyle(0x495057, 1);
-    this.trashBinGraphics.fillRect(-6, -30, 12, 5);
+    this.trashBinGraphics.fillRect(-11, -56, 23, 9);
 
     this.trashContainer.add(this.trashBinGraphics);
 
     // Trash can text icon
-    this.trashIconText = this.add.text(0, 8, '🗑️', {
-      font: '18px "Outfit", sans-serif',
+    this.trashIconText = this.add.text(0, 15, '🗑️', {
+      font: '34px "Outfit", sans-serif',
       fill: '#ffffff'
     }).setOrigin(0.5);
     this.trashContainer.add(this.trashIconText);
 
     // Label under the trash bin
-    this.trashLabel = this.add.text(0, 39, 'BASURA', {
-      font: '9px "Outfit", sans-serif',
+    this.trashLabel = this.add.text(0, 73, 'BASURA', {
+      font: '17px "Outfit", sans-serif',
       fill: '#495057',
       fontWeight: '800'
     }).setOrigin(0.5);
@@ -2954,21 +2953,21 @@ export default class GameScene extends Phaser.Scene {
     this.audioPanelContainer.add(overlay);
 
     // 3. Panel Container Box
-    const boxW = 340;
-    const boxH = 220;
+    const boxW = 638;
+    const boxH = 413;
     const boxX = width / 2;
     const boxY = height / 2;
 
     const panelBg = this.add.graphics();
     panelBg.fillStyle(0xf5ebe0, 1);
-    panelBg.lineStyle(4, 0x582f0e, 1);
-    panelBg.fillRoundedRect(boxX - boxW / 2, boxY - boxH / 2, boxW, boxH, 16);
-    panelBg.strokeRoundedRect(boxX - boxW / 2, boxY - boxH / 2, boxW, boxH, 16);
+    panelBg.lineStyle(8, 0x582f0e, 1);
+    panelBg.fillRoundedRect(boxX - boxW / 2, boxY - boxH / 2, boxW, boxH, 30);
+    panelBg.strokeRoundedRect(boxX - boxW / 2, boxY - boxH / 2, boxW, boxH, 30);
     this.audioPanelContainer.add(panelBg);
 
     // 4. Title
-    const titleText = this.add.text(boxX, boxY - 75, 'MÚSICA DE FONDO', {
-      font: '20px "Outfit", sans-serif',
+    const titleText = this.add.text(boxX, boxY - 141, 'MÚSICA DE FONDO', {
+      font: '38px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800'
     }).setOrigin(0.5);
@@ -2977,7 +2976,7 @@ export default class GameScene extends Phaser.Scene {
     // 5. Volume control bar indicator
     const volumeBarBg = this.add.graphics();
     volumeBarBg.fillStyle(0xe6ccb2, 1);
-    volumeBarBg.fillRoundedRect(boxX - 70, boxY - 15, 140, 14, 4);
+    volumeBarBg.fillRoundedRect(boxX - 131, boxY - 28, 263, 26, 8);
     this.audioPanelContainer.add(volumeBarBg);
 
     const volumeFill = this.add.graphics();
@@ -2987,101 +2986,101 @@ export default class GameScene extends Phaser.Scene {
       volumeFill.clear();
       if (this.musicMuted) return;
       volumeFill.fillStyle(0x38b000, 1); // Green fill
-      volumeFill.fillRoundedRect(boxX - 68, boxY - 13, 136 * this.musicVolume, 10, 3);
+      volumeFill.fillRoundedRect(boxX - 128, boxY - 24, 255 * this.musicVolume, 19, 6);
     };
     drawVolumeBar();
 
     // 6. Volume Percentage Text
-    const volumePercentText = this.add.text(boxX, boxY + 15, `Volumen: ${Math.round(this.musicVolume * 100)}%`, {
-      font: '13px "Outfit", sans-serif',
+    const volumePercentText = this.add.text(boxX, boxY + 28, `Volumen: ${Math.round(this.musicVolume * 100)}%`, {
+      font: '24px "Outfit", sans-serif',
       fill: '#7f5539',
       fontWeight: '700'
     }).setOrigin(0.5);
     this.audioPanelContainer.add(volumePercentText);
 
     // 7. Interactive volume adjustment buttons (+ and -)
-    const btnSize = 32;
+    const btnSize = 60;
 
     // Minus Button
     const minusBtnBg = this.add.graphics();
     minusBtnBg.fillStyle(0xddb892, 1);
-    minusBtnBg.lineStyle(2, 0x582f0e, 1);
-    minusBtnBg.fillCircle(boxX - 95, boxY - 8, btnSize / 2);
-    minusBtnBg.strokeCircle(boxX - 95, boxY - 8, btnSize / 2);
+    minusBtnBg.lineStyle(4, 0x582f0e, 1);
+    minusBtnBg.fillCircle(boxX - 178, boxY - 15, btnSize / 2);
+    minusBtnBg.strokeCircle(boxX - 178, boxY - 15, btnSize / 2);
     this.audioPanelContainer.add(minusBtnBg);
 
-    const minusText = this.add.text(boxX - 95, boxY - 8, '-', {
-      font: '20px "Outfit", sans-serif',
+    const minusText = this.add.text(boxX - 178, boxY - 15, '-', {
+      font: '38px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800'
     }).setOrigin(0.5);
     this.audioPanelContainer.add(minusText);
 
-    const minusZone = this.add.circle(boxX - 95, boxY - 8, btnSize / 2, 0x000000, 0)
+    const minusZone = this.add.circle(boxX - 178, boxY - 15, btnSize / 2, 0x000000, 0)
       .setInteractive({ useHandCursor: true });
     this.audioPanelContainer.add(minusZone);
 
     // Plus Button
     const plusBtnBg = this.add.graphics();
     plusBtnBg.fillStyle(0xddb892, 1);
-    plusBtnBg.lineStyle(2, 0x582f0e, 1);
-    plusBtnBg.fillCircle(boxX + 95, boxY - 8, btnSize / 2);
-    plusBtnBg.strokeCircle(boxX + 95, boxY - 8, btnSize / 2);
+    plusBtnBg.lineStyle(4, 0x582f0e, 1);
+    plusBtnBg.fillCircle(boxX + 178, boxY - 15, btnSize / 2);
+    plusBtnBg.strokeCircle(boxX + 178, boxY - 15, btnSize / 2);
     this.audioPanelContainer.add(plusBtnBg);
 
-    const plusText = this.add.text(boxX + 95, boxY - 8, '+', {
-      font: '20px "Outfit", sans-serif',
+    const plusText = this.add.text(boxX + 178, boxY - 15, '+', {
+      font: '38px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800'
     }).setOrigin(0.5);
     this.audioPanelContainer.add(plusText);
 
-    const plusZone = this.add.circle(boxX + 95, boxY - 8, btnSize / 2, 0x000000, 0)
+    const plusZone = this.add.circle(boxX + 178, boxY - 15, btnSize / 2, 0x000000, 0)
       .setInteractive({ useHandCursor: true });
     this.audioPanelContainer.add(plusZone);
 
     // 8. Mute / Unmute Button
     const muteBtnX = boxX;
-    const muteBtnY = boxY + 50;
+    const muteBtnY = boxY + 94;
 
     const muteBtnBg = this.add.graphics();
     muteBtnBg.fillStyle(0xb7b7a4, 1);
-    muteBtnBg.lineStyle(2.5, 0x582f0e, 1);
-    muteBtnBg.fillRoundedRect(muteBtnX - 70, muteBtnY - 16, 140, 32, 8);
-    muteBtnBg.strokeRoundedRect(muteBtnX - 70, muteBtnY - 16, 140, 32, 8);
+    muteBtnBg.lineStyle(5, 0x582f0e, 1);
+    muteBtnBg.fillRoundedRect(muteBtnX - 131, muteBtnY - 30, 263, 60, 15);
+    muteBtnBg.strokeRoundedRect(muteBtnX - 131, muteBtnY - 30, 263, 60, 15);
     this.audioPanelContainer.add(muteBtnBg);
 
     const getMuteLabel = () => this.musicMuted ? '🔇 Silenciado' : '🔊 Activado';
     const muteText = this.add.text(muteBtnX, muteBtnY, getMuteLabel(), {
-      font: '14px "Outfit", sans-serif',
+      font: '26px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800'
     }).setOrigin(0.5);
     this.audioPanelContainer.add(muteText);
 
-    const muteZone = this.add.rectangle(muteBtnX, muteBtnY, 140, 32, 0x000000, 0)
+    const muteZone = this.add.rectangle(muteBtnX, muteBtnY, 263, 60, 0x000000, 0)
       .setInteractive({ useHandCursor: true });
     this.audioPanelContainer.add(muteZone);
 
     // 9. Close Button (X)
-    const closeBtnX = boxX + boxW / 2 - 22;
-    const closeBtnY = boxY - boxH / 2 + 22;
+    const closeBtnX = boxX + boxW / 2 - 41;
+    const closeBtnY = boxY - boxH / 2 + 41;
 
     const closeBtnBg = this.add.graphics();
     closeBtnBg.fillStyle(0xd90429, 1);
-    closeBtnBg.lineStyle(2, 0xffffff, 1);
-    closeBtnBg.fillCircle(closeBtnX, closeBtnY, 13);
-    closeBtnBg.strokeCircle(closeBtnX, closeBtnY, 13);
+    closeBtnBg.lineStyle(4, 0xffffff, 1);
+    closeBtnBg.fillCircle(closeBtnX, closeBtnY, 24);
+    closeBtnBg.strokeCircle(closeBtnX, closeBtnY, 24);
     this.audioPanelContainer.add(closeBtnBg);
 
     const closeText = this.add.text(closeBtnX, closeBtnY, 'X', {
-      font: '13px "Outfit", sans-serif',
+      font: '24px "Outfit", sans-serif',
       fill: '#ffffff',
       fontWeight: '800'
     }).setOrigin(0.5);
     this.audioPanelContainer.add(closeText);
 
-    const closeZone = this.add.circle(closeBtnX, closeBtnY, 13, 0x000000, 0)
+    const closeZone = this.add.circle(closeBtnX, closeBtnY, 24, 0x000000, 0)
       .setInteractive({ useHandCursor: true });
     this.audioPanelContainer.add(closeZone);
 

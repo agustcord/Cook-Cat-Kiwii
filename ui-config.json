@@ -1,62 +1,62 @@
 {
   "daySign": {
-    "width": 180,
-    "height": 120,
-    "x": -15,
-    "y": 70,
-    "textFontSize": 24,
+    "width": 338,
+    "height": 225,
+    "x": -28,
+    "y": 131,
+    "textFontSize": 45,
     "textOffsetY": 0
   },
   "coinsSign": {
-    "width": 280,
-    "height": 150,
-    "x": 725,
-    "y": 70,
-    "textFontSize": 18,
-    "textOffsetY": 8
+    "width": 525,
+    "height": 281,
+    "x": 1359,
+    "y": 131,
+    "textFontSize": 34,
+    "textOffsetY": 15
   },
   "metaSign": {
-    "width": 280,
-    "height": 150,
-    "x": 1024,
-    "y": 70,
-    "textFontSize": 22,
-    "textOffsetY": 10
+    "width": 525,
+    "height": 281,
+    "x": 1920,
+    "y": 131,
+    "textFontSize": 41,
+    "textOffsetY": 19
   },
   "masaLabel": {
-    "width": 90,
-    "height": 50,
-    "x": 81,
-    "y": 300
+    "width": 169,
+    "height": 94,
+    "x": 152,
+    "y": 563
   },
   "formaLabel": {
-    "width": 70,
-    "height": 66,
-    "x": 269,
-    "y": 298
+    "width": 131,
+    "height": 124,
+    "x": 504,
+    "y": 559
   },
   "toppingLabel": {
-    "width": 75,
-    "height": 65,
-    "x": 968,
-    "y": 295
+    "width": 141,
+    "height": 122,
+    "x": 1815,
+    "y": 553
   },
   "deliveryTray": {
-    "width": 200,
-    "height": 74,
-    "x": 553,
-    "y": 360
+    "width": 375,
+    "height": 94,
+    "x": 1037,
+    "y": 675
   },
   "cupStack": {
-    "width": 38,
-    "height": 31,
-    "x": 312,
-    "y": 187
+    "width": 64,
+    "height": 51,
+    "x": 596,
+    "y": 356
   },
   "musicButton": {
-    "width": 38,
-    "height": 38,
-    "x": 75,
-    "y": 214
+    "width": 71,
+    "height": 71,
+    "x": 141,
+    "y": 401
   }
 }

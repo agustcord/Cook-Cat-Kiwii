@@ -89,14 +89,14 @@ export default class Customer {
 
   createVisuals() {
     // 1. Draw customer character (uses the preloaded PNG sprite)
-    this.sprite = this.scene.add.image(0, 40, 'customer_' + this.customerId);
-    this.sprite.setDisplaySize(180, 180);
+    this.sprite = this.scene.add.image(0, 75, 'customer_' + this.customerId);
+    this.sprite.setDisplaySize(338, 338);
     this.container.add(this.sprite);
 
     // 2. Patience Bar (Background)
     this.patienceBarBg = this.scene.add.graphics();
     this.patienceBarBg.fillStyle(0xe0e0e0, 1);
-    this.patienceBarBg.fillRoundedRect(-50, -168, 100, 12, 4);
+    this.patienceBarBg.fillRoundedRect(-94, -315, 188, 23, 8);
     this.container.add(this.patienceBarBg);
 
     // 3. Patience Bar (Active Fill)
@@ -104,12 +104,12 @@ export default class Customer {
     this.container.add(this.patienceBar);
 
     // Patience Text (Countdown)
-    this.patienceText = this.scene.add.text(0, -162, '', {
-      font: '9px "Outfit", sans-serif',
+    this.patienceText = this.scene.add.text(0, -304, '', {
+      font: '17px "Outfit", sans-serif',
       fill: '#ffffff',
       fontWeight: '800',
       stroke: '#352f44',
-      strokeThickness: 2
+      strokeThickness: 4
     }).setOrigin(0.5);
     this.container.add(this.patienceText);
 
@@ -118,23 +118,23 @@ export default class Customer {
     // 4. Thought Bubble (Dynamic width if drink is requested)
     this.bubbleBg = this.scene.add.graphics();
     this.bubbleBg.fillStyle(0xffffff, 1);
-    this.bubbleBg.lineStyle(3, 0x582f0e, 1);
+    this.bubbleBg.lineStyle(6, 0x582f0e, 1);
     
-    let bubbleW = 170;
+    let bubbleW = 319;
     if (this.requestedQuantity === 0) {
-      bubbleW = 120; // Smaller bubble for drink-only
+      bubbleW = 225; // Smaller bubble for drink-only
     } else if (this.requestedDrink) {
-      bubbleW = 230; // Wider bubble for cookie + drink
+      bubbleW = 431; // Wider bubble for cookie + drink
     }
     const bubbleHalf = bubbleW / 2;
-    this.bubbleBg.fillRoundedRect(-bubbleHalf, -145, bubbleW, 90, 15);
-    this.bubbleBg.strokeRoundedRect(-bubbleHalf, -145, bubbleW, 90, 15);
+    this.bubbleBg.fillRoundedRect(-bubbleHalf, -272, bubbleW, 169, 28);
+    this.bubbleBg.strokeRoundedRect(-bubbleHalf, -272, bubbleW, 169, 28);
     
     // Bubble pointer tail
     this.bubbleBg.fillStyle(0xffffff, 1);
-    this.bubbleBg.fillTriangle(0, -45, -10, -55, 10, -55);
-    this.bubbleBg.lineBetween(-10, -55, 0, -45);
-    this.bubbleBg.lineBetween(10, -55, 0, -45);
+    this.bubbleBg.fillTriangle(0, -84, -19, -103, 19, -103);
+    this.bubbleBg.lineBetween(-19, -103, 0, -84);
+    this.bubbleBg.lineBetween(19, -103, 0, -84);
     
     this.container.add(this.bubbleBg);
 
@@ -157,28 +157,28 @@ export default class Customer {
         prepText += ` + ${drinkName}`;
       }
     }
-    this.progressText = this.scene.add.text(0, 140, prepText, {
-      font: '12px "Outfit", sans-serif',
+    this.progressText = this.scene.add.text(0, 263, prepText, {
+      font: '23px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800',
       backgroundColor: '#f5ebe0',
-      padding: { x: 8, y: 4 }
+      padding: { x: 15, y: 8 }
     }).setOrigin(0.5);
     this.container.add(this.progressText);
   }
 
   drawOrderImage() {
-    const cy = -100;
+    const cy = -188;
 
     if (this.requestedQuantity === 0) {
       // Drink-only order: draw only the drink, centered in the thought bubble
       if (this.requestedDrink) {
-        let drinkTexture = 'beverage_coffee';
-        if (this.requestedDrink === 'milk') drinkTexture = 'beverage_milk';
-        else if (this.requestedDrink === 'coffee_milk') drinkTexture = 'beverage_coffee_milk';
+        let drinkTexture = 'order_beverage_coffee';
+        if (this.requestedDrink === 'milk') drinkTexture = 'order_beverage_milk';
+        else if (this.requestedDrink === 'coffee_milk') drinkTexture = 'order_beverage_coffee_milk';
 
         const drinkSprite = this.scene.add.image(0, cy, drinkTexture);
-        drinkSprite.setDisplaySize(55, 55);
+        drinkSprite.setDisplaySize(103, 103);
         this.container.add(drinkSprite);
       }
       return;
@@ -188,7 +188,7 @@ export default class Customer {
     if (!recipe) return;
 
     // Center of the thought bubble
-    const cx = this.requestedDrink ? -40 : 0;
+    const cx = this.requestedDrink ? -75 : 0;
 
     // Construct key name matching our preloaded baked cookie assets
     let key = `cookie_${recipe.shape}_${recipe.base}_baked`;
@@ -198,7 +198,7 @@ export default class Customer {
 
     // Add cookie image to container
     const orderSprite = this.scene.add.image(cx, cy, key);
-    orderSprite.setDisplaySize(60, 60);
+    orderSprite.setDisplaySize(113, 113);
     this.container.add(orderSprite);
 
     // If quantity is more than 1, draw a small xQ badge at the bottom-right of the cookie image
@@ -206,14 +206,14 @@ export default class Customer {
       // Draw a small background circle for the badge
       const badgeBg = this.scene.add.graphics();
       badgeBg.fillStyle(0xd90429, 1); // Red badge
-      badgeBg.lineStyle(1.5, 0xffffff, 1);
-      badgeBg.fillCircle(cx + 20, cy + 20, 11);
-      badgeBg.strokeCircle(cx + 20, cy + 20, 11);
+      badgeBg.lineStyle(3, 0xffffff, 1);
+      badgeBg.fillCircle(cx + 38, cy + 38, 21);
+      badgeBg.strokeCircle(cx + 38, cy + 38, 21);
       this.container.add(badgeBg);
 
       // Draw the text
-      const badgeText = this.scene.add.text(cx + 20, cy + 20, `x${this.requestedQuantity}`, {
-        font: '9px "Outfit", sans-serif',
+      const badgeText = this.scene.add.text(cx + 38, cy + 38, `x${this.requestedQuantity}`, {
+        font: '17px "Outfit", sans-serif',
         fill: '#ffffff',
         fontWeight: '800'
       }).setOrigin(0.5);
@@ -224,19 +224,19 @@ export default class Customer {
     if (this.requestedDrink) {
       // Draw a "+" sign in the middle
       const plusText = this.scene.add.text(0, cy, '+', {
-        font: '16px "Outfit", sans-serif',
+        font: '30px "Outfit", sans-serif',
         fill: '#582f0e',
         fontWeight: '800'
       }).setOrigin(0.5);
       this.container.add(plusText);
 
       // Determine drink texture key
-      let drinkTexture = 'beverage_coffee';
-      if (this.requestedDrink === 'milk') drinkTexture = 'beverage_milk';
-      else if (this.requestedDrink === 'coffee_milk') drinkTexture = 'beverage_coffee_milk';
+      let drinkTexture = 'order_beverage_coffee';
+      if (this.requestedDrink === 'milk') drinkTexture = 'order_beverage_milk';
+      else if (this.requestedDrink === 'coffee_milk') drinkTexture = 'order_beverage_coffee_milk';
 
-      const drinkSprite = this.scene.add.image(45, cy, drinkTexture);
-      drinkSprite.setDisplaySize(50, 50);
+      const drinkSprite = this.scene.add.image(84, cy, drinkTexture);
+      drinkSprite.setDisplaySize(94, 94);
       this.container.add(drinkSprite);
     }
   }
@@ -273,7 +273,7 @@ export default class Customer {
     else if (ratio < 0.6) color = 0xffb703; // Yellow
 
     this.patienceBar.fillStyle(color, 1);
-    this.patienceBar.fillRoundedRect(-48, -166, 96 * ratio, 8, 3);
+    this.patienceBar.fillRoundedRect(-90, -311, 180 * ratio, 15, 6);
 
     if (this.patienceText) {
       const rushText = this.isBadDay ? ' ⚡' : '';
