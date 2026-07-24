@@ -134,18 +134,8 @@ export default class GameScene extends Phaser.Scene {
     // Create the customer layer container (behind the counter)
     this.customerContainer = this.add.container(0, 0);
 
-    // Draw the Wooden Counter and Floor (in front of the customer, behind UI)
-    const counterBg = this.add.graphics();
-    
-    // Wooden Counter Base Image (from Y=431 to Y=1080)
-    this.add.image(0, 431, 'bakery_counter').setOrigin(0, 0).setDisplaySize(1920, 649);
-
-    // Station dividers (X: 319, 769, 1331, 1613 starting at Y=553)
-    counterBg.lineStyle(4, 0xddb892, 0.5);
-    counterBg.lineBetween(319, 553, 319, height);
-    counterBg.lineBetween(769, 553, 769, height);
-    counterBg.lineBetween(1331, 553, 1331, height);
-    counterBg.lineBetween(1613, 553, 1613, height);
+    // Final Table Illustration Image (1920x1080 canvas with transparency)
+    this.add.image(0, 0, 'bakery_counter').setOrigin(0, 0);
 
     // Setup HUD (Day, Meta, Coins)
     this.setupHUD(width);
