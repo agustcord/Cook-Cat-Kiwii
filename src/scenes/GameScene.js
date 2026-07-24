@@ -51,9 +51,12 @@ export default class GameScene extends Phaser.Scene {
     this.unlockedShapes = safeData.unlockedShapes || ['star'];
     this.stock = safeData.stock || {
       dough: { classic: 10, chocolate: 0, oat: 0 },
-      topping: { sprinkles: 0, choco: 0, glazing: 0 },
+      topping: { sprinkles: 2, choco: 0, glazing: 0 },
       drink: { coffee_beans: 2, milk: 2 }
     };
+    if (this.day === 1) {
+      this.stock.topping.sprinkles = Math.max(2, (this.stock.topping.sprinkles || 0));
+    }
     this.stock.drink = this.stock.drink || { coffee_beans: 2, milk: 2 };
 
     // Save starting state of the day for re-tries
@@ -744,7 +747,7 @@ export default class GameScene extends Phaser.Scene {
       if (this.machineState === 'empty') {
         this.showFeedbackText('¡Presiona Café o Leche en el panel! ☕🥛', startX, 375, '#582f0e');
       } else if (this.machineState.startsWith('ready_')) {
-        this.pickupDrink();
+        this.showFeedbackText('¡Arrastra la taza a la bandeja! ☕➡️', startX, 375, '#582f0e');
       } else {
         this.showFeedbackText('¡Preparando bebida...! ⏳', startX, 375, '#582f0e');
       }
@@ -759,6 +762,9 @@ export default class GameScene extends Phaser.Scene {
     this.btnCoffeeImage = this.add.image(beansX, btnY, 'btn_coffee_asset')
       .setDisplaySize(83, 68)
       .setDepth(3);
+
+    const coffeeBaseScaleX = this.btnCoffeeImage.scaleX;
+    const coffeeBaseScaleY = this.btnCoffeeImage.scaleY;
 
     this.beansStockText = this.add.text(beansX, btnY + 11, '0u', {
       font: 'bold 21px "Outfit", sans-serif',
@@ -775,6 +781,9 @@ export default class GameScene extends Phaser.Scene {
       .setDisplaySize(83, 68)
       .setDepth(3);
 
+    const milkBaseScaleX = this.btnMilkImage.scaleX;
+    const milkBaseScaleY = this.btnMilkImage.scaleY;
+
     this.milkStockText = this.add.text(milkX, milkY + 11, '0u', {
       font: 'bold 21px "Outfit", sans-serif',
       fill: '#2b2b2b'
@@ -788,11 +797,11 @@ export default class GameScene extends Phaser.Scene {
 
     // 5. Button click events (No drag-and-drop)
     beansDragZone.on('pointerover', () => {
-      this.btnCoffeeImage.setScale(1.1 * (44 / this.btnCoffeeImage.width));
-      this.beansStockText.setScale(1.1);
+      this.btnCoffeeImage.setScale(coffeeBaseScaleX * 1.06, coffeeBaseScaleY * 1.06);
+      this.beansStockText.setScale(1.06);
     });
     beansDragZone.on('pointerout', () => {
-      this.btnCoffeeImage.setScale(44 / this.btnCoffeeImage.width);
+      this.btnCoffeeImage.setScale(coffeeBaseScaleX, coffeeBaseScaleY);
       this.beansStockText.setScale(1.0);
     });
     beansDragZone.on('pointerdown', () => {
@@ -805,22 +814,26 @@ export default class GameScene extends Phaser.Scene {
       // Bounce animation on tap
       this.tweens.add({
         targets: [this.btnCoffeeImage, this.beansStockText],
-        scaleX: '*=1.15',
-        scaleY: '*=1.15',
+        scaleX: '*=1.08',
+        scaleY: '*=1.08',
         duration: 80,
         yoyo: true,
-        ease: 'Quad.easeInOut'
+        ease: 'Quad.easeInOut',
+        onComplete: () => {
+          this.btnCoffeeImage.setScale(coffeeBaseScaleX, coffeeBaseScaleY);
+          this.beansStockText.setScale(1.0);
+        }
       });
 
       this.handleDrinkIngredientDrop('coffee_beans', startX, startY);
     });
 
     milkDragZone.on('pointerover', () => {
-      this.btnMilkImage.setScale(1.1 * (44 / this.btnMilkImage.width));
-      this.milkStockText.setScale(1.1);
+      this.btnMilkImage.setScale(milkBaseScaleX * 1.06, milkBaseScaleY * 1.06);
+      this.milkStockText.setScale(1.06);
     });
     milkDragZone.on('pointerout', () => {
-      this.btnMilkImage.setScale(44 / this.btnMilkImage.width);
+      this.btnMilkImage.setScale(milkBaseScaleX, milkBaseScaleY);
       this.milkStockText.setScale(1.0);
     });
     milkDragZone.on('pointerdown', () => {
@@ -833,11 +846,15 @@ export default class GameScene extends Phaser.Scene {
       // Bounce animation on tap
       this.tweens.add({
         targets: [this.btnMilkImage, this.milkStockText],
-        scaleX: '*=1.15',
-        scaleY: '*=1.15',
+        scaleX: '*=1.08',
+        scaleY: '*=1.08',
         duration: 80,
         yoyo: true,
-        ease: 'Quad.easeInOut'
+        ease: 'Quad.easeInOut',
+        onComplete: () => {
+          this.btnMilkImage.setScale(milkBaseScaleX, milkBaseScaleY);
+          this.milkStockText.setScale(1.0);
+        }
       });
 
       this.handleDrinkIngredientDrop('milk', startX, startY);
@@ -884,7 +901,7 @@ export default class GameScene extends Phaser.Scene {
       dragBlocked = false;
       SoundEffects.playClick();
       tempDragCup = this.add.image(this.cupStackImage.x, this.cupStackImage.y, 'beverage_empty_cup')
-        .setDisplaySize(42, 34)
+        .setDisplaySize(cupStackW, cupStackH)
         .setDepth(100)
         .setAlpha(0.85);
     });
@@ -904,7 +921,7 @@ export default class GameScene extends Phaser.Scene {
       if (!tempDragCup) return;
 
       const destX = startX;
-      const destY = startY + 38;
+      const destY = startY + 75;
       const dist = Phaser.Math.Distance.Between(tempDragCup.x, tempDragCup.y, destX, destY);
 
       if (dist < 75) {
@@ -912,7 +929,7 @@ export default class GameScene extends Phaser.Scene {
         tempDragCup = null;
 
         this.machineCupSprite = this.add.image(destX, destY, 'beverage_empty_cup')
-          .setDisplaySize(36, 29)
+          .setDisplaySize(cupStackW, cupStackH)
           .setDepth(4);
 
         this.machineState = 'empty';
@@ -976,11 +993,14 @@ export default class GameScene extends Phaser.Scene {
       
       // Update texture and alpha of the existing cup
       const cupKey = type === 'coffee_beans' ? 'beverage_coffee' : 'beverage_milk';
+      const { cupStack } = UI_CONFIG;
+      const cupStackW = cupStack ? cupStack.width : 64;
+      const cupStackH = Math.round(cupStackW * (54 / 67));
       if (this.machineCupSprite) {
         this.machineCupSprite.setTexture(cupKey).setAlpha(0.4);
       } else {
-        this.machineCupSprite = this.add.image(startX, startY + 71, cupKey)
-          .setDisplaySize(90, 90)
+        this.machineCupSprite = this.add.image(startX, startY + 75, cupKey)
+          .setDisplaySize(cupStackW, cupStackH)
           .setAlpha(0.4)
           .setDepth(4);
       }
@@ -1037,54 +1057,81 @@ export default class GameScene extends Phaser.Scene {
           }
         }
       });
-    } else if (this.machineState === 'ready_coffee' && type === 'milk') {
-      // Upgrade Coffee to Coffee with Milk
-      this.stock.drink.milk--;
+    } else if ((this.machineState === 'ready_coffee' && type === 'milk') || (this.machineState === 'ready_milk' && type === 'coffee_beans')) {
+      // Upgrade Coffee or Milk to Coffee with Milk
+      if (type === 'milk') {
+        this.stock.drink.milk--;
+      } else {
+        this.stock.drink.coffee_beans--;
+      }
       this.updateDrinkStockTexts();
 
-      // Play pouring sound
+      // Play pouring sound & set state to brewing combined drink
       SoundEffects.playCoffeePour();
+      this.machineState = 'brewing_coffee_milk';
 
-      this.machineState = 'ready_coffee_milk';
+      // Disable drag interaction while brewing second ingredient
       if (this.machineCupSprite) {
-        this.machineCupSprite.setTexture('beverage_coffee_milk');
-        const baseScaleX = 36 / 67;
-        const baseScaleY = 29 / 54;
-        this.tweens.add({
-          targets: this.machineCupSprite,
-          scaleX: baseScaleX * 1.12,
-          scaleY: baseScaleY * 1.12,
-          duration: 150,
-          yoyo: true,
-          ease: 'Bounce.easeOut'
-        });
+        this.machineCupSprite.disableInteractive();
+        this.machineCupSprite.setTexture('beverage_coffee_milk').setAlpha(0.4);
       }
-      this.updateDrinkServeButtonState(startX, startY);
-      this.showFeedbackText('¡Café con leche! ☕🥛', startX, 375, '#38b000');
-    } else if (this.machineState === 'ready_milk' && type === 'coffee_beans') {
-      // Upgrade Milk to Coffee with Milk
-      this.stock.drink.coffee_beans--;
-      this.updateDrinkStockTexts();
 
-      // Play pouring sound
-      SoundEffects.playCoffeePour();
+      // Draw progress bar above the machine (Y = startY - 146)
+      const progressBg = this.add.graphics().setDepth(20);
+      progressBg.fillStyle(0xdddddd, 1);
+      progressBg.fillRoundedRect(startX - 75, startY - 146, 150, 15, 8);
 
-      this.machineState = 'ready_coffee_milk';
-      if (this.machineCupSprite) {
-        this.machineCupSprite.setTexture('beverage_coffee_milk');
-        const baseScaleX = 36 / 67;
-        const baseScaleY = 29 / 54;
-        this.tweens.add({
-          targets: this.machineCupSprite,
-          scaleX: baseScaleX * 1.12,
-          scaleY: baseScaleY * 1.12,
-          duration: 150,
-          yoyo: true,
-          ease: 'Bounce.easeOut'
-        });
-      }
-      this.updateDrinkServeButtonState(startX, startY);
-      this.showFeedbackText('¡Café con leche! ☕🥛', startX, 375, '#38b000');
+      const progressBar = this.add.graphics().setDepth(21);
+
+      let elapsed = 0;
+      const duration = 3000; // 3 seconds brew time
+
+      this.machineTimer = this.time.addEvent({
+        delay: 100,
+        repeat: 30,
+        callback: () => {
+          elapsed += 100;
+          const ratio = Math.min(1, elapsed / duration);
+
+          progressBar.clear();
+          progressBar.fillStyle(0x38b000, 1);
+          progressBar.fillRoundedRect(startX - 75, startY - 146, 150 * ratio, 15, 8);
+
+          if (elapsed >= duration) {
+            progressBg.destroy();
+            progressBar.destroy();
+
+            // Upgrade finished!
+            this.machineState = 'ready_coffee_milk';
+
+            // Play ready sound
+            SoundEffects.playDing();
+
+            if (this.machineCupSprite) {
+              this.machineCupSprite.setAlpha(1.0);
+
+              const baseScaleX = this.machineCupSprite.scaleX;
+              const baseScaleY = this.machineCupSprite.scaleY;
+
+              // Pulsing visual effect to show it is ready
+              this.tweens.add({
+                targets: this.machineCupSprite,
+                scaleX: baseScaleX * 1.12,
+                scaleY: baseScaleY * 1.12,
+                duration: 250,
+                yoyo: true,
+                repeat: 1,
+                ease: 'Quad.easeInOut'
+              });
+
+              // Make cup draggable to delivery tray
+              this.makeCupDraggable(startX, startY);
+            }
+
+            this.showFeedbackText('¡Café con leche listo! ☕🥛', startX, 375, '#38b000');
+          }
+        }
+      });
     } else {
       SoundEffects.playAngry();
       this.showFeedbackText('¡La máquina está ocupada! ☕', startX, 375, '#d90429');
@@ -1098,9 +1145,9 @@ export default class GameScene extends Phaser.Scene {
     this.input.setDraggable(this.machineCupSprite);
 
     this.machineCupSprite.setData('origX', startX);
-    this.machineCupSprite.setData('origY', startY + 38);
-    const baseScaleX = 36 / 67;
-    const baseScaleY = 29 / 54;
+    this.machineCupSprite.setData('origY', startY + 75);
+    const baseScaleX = this.machineCupSprite.scaleX;
+    const baseScaleY = this.machineCupSprite.scaleY;
 
     this.machineCupSprite.on('dragstart', () => {
       this.isHoldingItem = true;
@@ -1123,7 +1170,12 @@ export default class GameScene extends Phaser.Scene {
         this.deliveryTrayY
       );
 
-      if (dist < 85) {
+      const halfW = (this.deliveryTrayWidth || 375) / 2 + 40;
+      const halfH = (this.deliveryTrayHeight || 94) / 2 + 40;
+      const inBounds = Math.abs(this.machineCupSprite.x - this.deliveryTrayX) <= halfW &&
+                       Math.abs(this.machineCupSprite.y - this.deliveryTrayY) <= halfH;
+
+      if (dist < 188 || inBounds) {
         this.pickupDrink();
       } else {
         this.tweens.add({
@@ -1698,108 +1750,114 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // Get the unique customer ID
+    const customerIndex = this.customersSpawned;
     const customerId = this.customerSequence[this.customersSpawned];
     this.customersSpawned++;
 
-    // Generate available recipes dynamically based on what's unlocked and in stock!
-    const availableRecipes = [];
-    
-    // Get bases (dough) with stock > 0
-    const availableBases = Object.keys(this.stock.dough).filter(base => (Number(this.stock.dough[base]) || 0) > 0);
-    
-    // Get toppings with stock > 0
-    const availableToppings = Object.keys(this.stock.topping).filter(t => (Number(this.stock.topping[t]) || 0) > 0);
+    let selectedRecipe = null;
+    let qty = 1;
+    let requestedDrink = null;
 
-    // Translation names for friendly displaying
-    const baseNames = { classic: 'Vainilla', chocolate: 'Chocolate', oat: 'Avena' };
-    const shapeNames = { star: 'Estrella', heart: 'Corazón', cat: 'Gato', fish: 'Pez' };
-    const toppingNames = { sprinkles: 'con Chispas', choco: 'con Chips', glazing: 'con Glaseado' };
+    if (this.day === 1) {
+      // Day 1 Fixed Tutorial Sequence
+      if (customerIndex === 0) {
+        // Customer 1: 1 Vanilla Cookie + Coffee
+        selectedRecipe = { name: 'Estrella de Vainilla', base: 'classic', shape: 'star', toppings: [] };
+        qty = 1;
+        requestedDrink = 'coffee';
+      } else if (customerIndex === 1) {
+        // Customer 2: 1 Vanilla Cookie with Caramel (sprinkles) + Milk
+        selectedRecipe = { name: 'Estrella de Vainilla con Caramelo', base: 'classic', shape: 'star', toppings: ['sprinkles'] };
+        qty = 1;
+        requestedDrink = 'milk';
+      } else {
+        // Customer 3: 1 Vanilla Cookie with Caramel (sprinkles) + Coffee with Milk
+        selectedRecipe = { name: 'Estrella de Vainilla con Caramelo', base: 'classic', shape: 'star', toppings: ['sprinkles'] };
+        qty = 1;
+        requestedDrink = 'coffee_milk';
+      }
+    } else {
+      // Days 2+ Procedural Order Generation
+      const availableRecipes = [];
+      const availableBases = Object.keys(this.stock.dough).filter(base => (Number(this.stock.dough[base]) || 0) > 0);
+      const availableToppings = Object.keys(this.stock.topping).filter(t => (Number(this.stock.topping[t]) || 0) > 0);
 
-    // Generate valid combinations
-    if (this.unlockedShapes) {
-      this.unlockedShapes.forEach(shape => {
-        availableBases.forEach(base => {
-          // Plain version (no toppings)
-          const plainName = `${shapeNames[shape] || shape} de ${baseNames[base] || base}`;
-          availableRecipes.push({
-            name: plainName,
-            base: base,
-            shape: shape,
-            toppings: []
-          });
+      const baseNames = { classic: 'Vainilla', chocolate: 'Chocolate', oat: 'Avena' };
+      const shapeNames = { star: 'Estrella', heart: 'Corazón', cat: 'Gato', fish: 'Pez' };
+      const toppingNames = { sprinkles: 'con Chispas', choco: 'con Chips', glazing: 'con Glaseado' };
 
-          // Version with each available topping
-          availableToppings.forEach(topping => {
-            const toppedName = `${shapeNames[shape] || shape} de ${baseNames[base] || base} ${toppingNames[topping] || topping}`;
+      if (this.unlockedShapes) {
+        this.unlockedShapes.forEach(shape => {
+          availableBases.forEach(base => {
+            const plainName = `${shapeNames[shape] || shape} de ${baseNames[base] || base}`;
             availableRecipes.push({
-              name: toppedName,
+              name: plainName,
               base: base,
               shape: shape,
-              toppings: [topping]
+              toppings: []
+            });
+
+            availableToppings.forEach(topping => {
+              const toppedName = `${shapeNames[shape] || shape} de ${baseNames[base] || base} ${toppingNames[topping] || topping}`;
+              availableRecipes.push({
+                name: toppedName,
+                base: base,
+                shape: shape,
+                toppings: [topping]
+              });
             });
           });
         });
-      });
-    }
-
-    let selectedRecipe = null;
-    let qty = 1;
-
-    if (availableRecipes.length > 0) {
-      // Pick a random valid recipe from the ones we have ingredients for
-      selectedRecipe = Phaser.Utils.Array.GetRandom(availableRecipes);
-
-      // Determine requested quantity based on customer personality and day limits
-      const QUANTITY_RANGES = {
-        1: { min: 1, max: 3 }, // Dormilón
-        2: { min: 2, max: 4 }, // Oficinista
-        3: { min: 3, max: 5 }, // Abuelita
-        4: { min: 1, max: 2 }, // Estudiante
-        5: { min: 2, max: 5 }  // Gamer
-      };
-      const range = QUANTITY_RANGES[customerId] || { min: 1, max: 2 };
-      const capD = Math.min(5, 1 + this.day);
-      let rawQty = Phaser.Math.Between(range.min, range.max);
-      rawQty = Math.max(1, Math.min(rawQty, capD));
-
-      // Clamp quantity to remaining stock of dough and toppings
-      let stockLimit = this.stock.dough[selectedRecipe.base] || 0;
-      if (selectedRecipe.toppings && selectedRecipe.toppings.length > 0) {
-        selectedRecipe.toppings.forEach(topping => {
-          stockLimit = Math.min(stockLimit, this.stock.topping[topping] || 0);
-        });
       }
-      qty = Math.min(rawQty, stockLimit);
-      qty = Math.max(1, qty); // Ensure at least 1
-    } else {
-      // Fallback: no cookie ingredients left.
-      // Can we offer drinks instead? (Only from Day 2 onwards and if we have drinks stock)
-      const hasBeans = (this.stock.drink.coffee_beans || 0) > 0;
-      const hasMilk = (this.stock.drink.milk || 0) > 0;
-      if (this.day >= 2 && (hasBeans || hasMilk)) {
-        selectedRecipe = null;
-        qty = 0;
+
+      if (availableRecipes.length > 0) {
+        selectedRecipe = Phaser.Utils.Array.GetRandom(availableRecipes);
+
+        const QUANTITY_RANGES = {
+          1: { min: 1, max: 3 },
+          2: { min: 2, max: 4 },
+          3: { min: 3, max: 5 },
+          4: { min: 1, max: 2 },
+          5: { min: 2, max: 5 }
+        };
+        const range = QUANTITY_RANGES[customerId] || { min: 1, max: 2 };
+        const capD = Math.min(5, 1 + this.day);
+        let rawQty = Phaser.Math.Between(range.min, range.max);
+        rawQty = Math.max(1, Math.min(rawQty, capD));
+
+        let stockLimit = this.stock.dough[selectedRecipe.base] || 0;
+        if (selectedRecipe.toppings && selectedRecipe.toppings.length > 0) {
+          selectedRecipe.toppings.forEach(topping => {
+            stockLimit = Math.min(stockLimit, this.stock.topping[topping] || 0);
+          });
+        }
+        qty = Math.min(rawQty, stockLimit);
+        qty = Math.max(1, qty);
       } else {
-        // Technical bankruptcy fallback: ask for 1 Classic Star
-        selectedRecipe = { name: 'Estrella Clásica', base: 'classic', shape: 'star', toppings: [] };
-        qty = 1;
+        const hasBeans = (this.stock.drink.coffee_beans || 0) > 0;
+        const hasMilk = (this.stock.drink.milk || 0) > 0;
+        if (this.day >= 2 && (hasBeans || hasMilk)) {
+          selectedRecipe = null;
+          qty = 0;
+        } else {
+          selectedRecipe = { name: 'Estrella Clásica', base: 'classic', shape: 'star', toppings: [] };
+          qty = 1;
+        }
       }
-    }
 
-    // Determine if they want a drink
-    let requestedDrink = null;
-    const forceDrink = (qty === 0);
-    if (this.day >= 2 && (forceDrink || Math.random() < 0.45)) {
-      const hasBeans = (this.stock.drink.coffee_beans || 0) > 0;
-      const hasMilk = (this.stock.drink.milk || 0) > 0;
+      const forceDrink = (qty === 0);
+      if (this.day >= 2 && (forceDrink || Math.random() < 0.45)) {
+        const hasBeans = (this.stock.drink.coffee_beans || 0) > 0;
+        const hasMilk = (this.stock.drink.milk || 0) > 0;
 
-      const drinkOptions = [];
-      if (hasBeans) drinkOptions.push('coffee');
-      if (hasMilk) drinkOptions.push('milk');
-      if (hasBeans && hasMilk) drinkOptions.push('coffee_milk');
+        const drinkOptions = [];
+        if (hasBeans) drinkOptions.push('coffee');
+        if (hasMilk) drinkOptions.push('milk');
+        if (hasBeans && hasMilk) drinkOptions.push('coffee_milk');
 
-      if (drinkOptions.length > 0) {
-        requestedDrink = Phaser.Utils.Array.GetRandom(drinkOptions);
+        if (drinkOptions.length > 0) {
+          requestedDrink = Phaser.Utils.Array.GetRandom(drinkOptions);
+        }
       }
     }
 
@@ -1809,7 +1867,7 @@ export default class GameScene extends Phaser.Scene {
       960, 
       431, 
       this.config,
-      () => this.handleCustomerTimeout(), // callback when patience runs out
+      () => this.handleCustomerTimeout(),
       customerId,
       selectedRecipe,
       qty,
