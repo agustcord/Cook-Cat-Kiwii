@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# ── Memoria local del proyecto (bóveda Obsidian) — privada, no publicar ──
+.memory/
+
+# ── Prompts de IA y trabajo interno ──
+PROMPTS_UI.md
+PROMPTS_PAW.md
+scratch/
+
+# ── Configs de asistentes IA (Gemini/Antigravity, Agents) ──
+.gemini/
+.agents/
