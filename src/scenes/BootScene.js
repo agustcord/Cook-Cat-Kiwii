@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
 
+const ASSET_VERSION = '11';
+const assetUrl = (path) => `${path}?v=${ASSET_VERSION}`;
+
 export default class BootScene extends Phaser.Scene {
   constructor() {
     super('BootScene');
@@ -22,58 +25,58 @@ export default class BootScene extends Phaser.Scene {
     });
     loadingText.setOrigin(0.5);
 
-    // Preload background image
-    this.load.image('bakery_background', 'assets/backgrounds/bakery_background_top.png');
-    this.load.audio('bg_music', "assets/audio/Kiwi's Simple Bakehouse Loop.mp3");
-    this.load.image('drink_machine', 'assets/cafeteteria_base.png');
-    this.load.image('btn_coffee_asset', 'assets/boton_cafe.png');
-    this.load.image('btn_milk_asset', 'assets/boton_leche.png');
-    this.load.image('taza_base', 'assets/taza.png');
-    this.load.image('beverage_empty_cup', 'assets/taza.png');
-    this.load.image('beverage_coffee', 'assets/taza.png');
-    this.load.image('beverage_milk', 'assets/taza.png');
-    this.load.image('beverage_coffee_milk', 'assets/taza.png');
-    this.load.image('order_beverage_coffee', 'assets/taza_cafe.png');
-    this.load.image('order_beverage_milk', 'assets/taza_leche.png');
-    this.load.image('order_beverage_coffee_milk', 'assets/taza_cafe_leche.png');
-    this.load.image('bakery_counter', 'assets/mesa_illustracion.png?v=1');
-    this.load.image('oven_off', 'assets/oven_off.png');
-    this.load.image('oven_on', 'assets/oven_on.png');
-    this.load.image('chef_cat', 'assets/chef_cat.png?v=8');
-    this.load.image('menu_bg', 'assets/Cat_chef_behind_counter_202607051008.jpeg');
-    this.load.image('cat_paw_open', 'assets/cat_paw_open.png?v=10');
-    this.load.image('cat_paw_closed', 'assets/cat_paw_closed.png?v=10');
+    // Preload background image & audio & machines
+    this.load.image('bakery_background', assetUrl('assets/backgrounds/bakery_background_top.png'));
+    this.load.audio('bg_music', assetUrl("assets/audio/Kiwi's Simple Bakehouse Loop.mp3"));
+    this.load.image('drink_machine', assetUrl('assets/cafeteteria_base.png'));
+    this.load.image('btn_coffee_asset', assetUrl('assets/boton_cafe.png'));
+    this.load.image('btn_milk_asset', assetUrl('assets/boton_leche.png'));
+    this.load.image('taza_base', assetUrl('assets/taza.png'));
+    this.load.image('beverage_empty_cup', assetUrl('assets/taza.png'));
+    this.load.image('beverage_coffee', assetUrl('assets/taza.png'));
+    this.load.image('beverage_milk', assetUrl('assets/taza.png'));
+    this.load.image('beverage_coffee_milk', assetUrl('assets/taza.png'));
+    this.load.image('order_beverage_coffee', assetUrl('assets/taza_cafe.png'));
+    this.load.image('order_beverage_milk', assetUrl('assets/taza_leche.png'));
+    this.load.image('order_beverage_coffee_milk', assetUrl('assets/taza_cafe_leche.png'));
+    this.load.image('bakery_counter', assetUrl('assets/mesa_illustracion.png'));
+    this.load.image('oven_off', assetUrl('assets/oven_off.png'));
+    this.load.image('oven_on', assetUrl('assets/oven_on.png'));
+    this.load.image('chef_cat', assetUrl('assets/chef_cat.png'));
+    this.load.image('menu_bg', assetUrl('assets/Cat_chef_behind_counter_202607051008.jpeg'));
+    this.load.image('cat_paw_open', assetUrl('assets/cat_paw_open.png'));
+    this.load.image('cat_paw_closed', assetUrl('assets/cat_paw_closed.png'));
     
     // Preload UI assets
-    this.load.image('day_sign_empty', 'assets/ui/day_sign_empty.png?v=1');
-    this.load.image('coins_sign_empty', 'assets/ui/coins_sign_empty.png?v=1');
-    this.load.image('meta_sign_empty', 'assets/ui/meta_sign_empty.png?v=7');
-    this.load.image('masa_label', 'assets/ui/masa_label.png?v=1');
-    this.load.image('forma_label', 'assets/ui/forma_label.png?v=1');
-    this.load.image('topping_label', 'assets/ui/topping_label.png?v=1');
+    this.load.image('day_sign_empty', assetUrl('assets/ui/day_sign_empty.png'));
+    this.load.image('coins_sign_empty', assetUrl('assets/ui/coins_sign_empty.png'));
+    this.load.image('meta_sign_empty', assetUrl('assets/ui/meta_sign_empty.png'));
+    this.load.image('masa_label', assetUrl('assets/ui/masa_label.png'));
+    this.load.image('forma_label', assetUrl('assets/ui/forma_label.png'));
+    this.load.image('topping_label', assetUrl('assets/ui/topping_label.png'));
 
-    // Preload customer sprites (served from public/ with cache buster v8)
-    this.load.image('customer_1', 'assets/customers/customer_1.png?v=8');
-    this.load.image('customer_2', 'assets/customers/customer_2.png?v=8');
-    this.load.image('customer_3', 'assets/customers/customer_3.png?v=8');
-    this.load.image('customer_4', 'assets/customers/customer_4.png?v=8');
-    this.load.image('customer_5', 'assets/customers/customer_5.png?v=8');
+    // Preload customer sprites (served from public/ with cache buster v11)
+    this.load.image('customer_1', assetUrl('assets/customers/customer_1.png'));
+    this.load.image('customer_2', assetUrl('assets/customers/customer_2.png'));
+    this.load.image('customer_3', assetUrl('assets/customers/customer_3.png'));
+    this.load.image('customer_4', assetUrl('assets/customers/customer_4.png'));
+    this.load.image('customer_5', assetUrl('assets/customers/customer_5.png'));
 
-    // Preload dough balls (served from public/ with cache buster v8)
-    this.load.image('dough_classic', 'assets/stations/dough_classic.png?v=8');
-    this.load.image('dough_chocolate', 'assets/stations/dough_chocolate.png?v=8');
-    this.load.image('dough_oat', 'assets/stations/dough_oat.png?v=8');
+    // Preload dough balls (served from public/ with cache buster v11)
+    this.load.image('dough_classic', assetUrl('assets/stations/dough_classic.png'));
+    this.load.image('dough_chocolate', assetUrl('assets/stations/dough_chocolate.png'));
+    this.load.image('dough_oat', assetUrl('assets/stations/dough_oat.png'));
     
-    // Preload shapes/cutters (served from public/ with cache buster v8)
-    this.load.image('shape_star', 'assets/stations/shape_star.png?v=8');
-    this.load.image('shape_heart', 'assets/stations/shape_heart.png?v=8');
-    this.load.image('shape_cat', 'assets/stations/shape_cat.png?v=8');
-    this.load.image('shape_fish', 'assets/stations/shape_fish.png?v=8');
+    // Preload shapes/cutters (served from public/ with cache buster v11)
+    this.load.image('shape_star', assetUrl('assets/stations/shape_star.png'));
+    this.load.image('shape_heart', assetUrl('assets/stations/shape_heart.png'));
+    this.load.image('shape_cat', assetUrl('assets/stations/shape_cat.png'));
+    this.load.image('shape_fish', assetUrl('assets/stations/shape_fish.png'));
 
-    // Preload toppings (served from public/ with cache buster v8)
-    this.load.image('topping_sprinkles', 'assets/stations/topping_sprinkles.png?v=8');
-    this.load.image('topping_choco', 'assets/stations/topping_choco.png?v=8');
-    this.load.image('topping_glazing', 'assets/stations/topping_glazing.png?v=8');
+    // Preload toppings (served from public/ with cache buster v11)
+    this.load.image('topping_sprinkles', assetUrl('assets/stations/topping_sprinkles.png'));
+    this.load.image('topping_choco', assetUrl('assets/stations/topping_choco.png'));
+    this.load.image('topping_glazing', assetUrl('assets/stations/topping_glazing.png'));
 
     // Preload all combinations of cookies (raw, baked, burnt) with and without toppings
     const shapes = ['star', 'heart', 'cat', 'fish'];
@@ -84,32 +87,32 @@ export default class BootScene extends Phaser.Scene {
       bases.forEach(base => {
         // Raw cookie (no topping)
         const keyRaw = `cookie_${shape}_${base}_raw`;
-        this.load.image(keyRaw, `assets/cookies/${keyRaw}.png?v=8`);
+        this.load.image(keyRaw, assetUrl(`assets/cookies/${keyRaw}.png`));
         
         // Raw cookies (with toppings)
         toppingsList.forEach(topping => {
           const keyRawTopped = `cookie_${shape}_${base}_raw_${topping}`;
-          this.load.image(keyRawTopped, `assets/cookies/${keyRawTopped}.png?v=8`);
+          this.load.image(keyRawTopped, assetUrl(`assets/cookies/${keyRawTopped}.png`));
         });
 
         // Burnt cookie (no topping)
         const keyBurnt = `cookie_${shape}_${base}_burnt`;
-        this.load.image(keyBurnt, `assets/cookies/${keyBurnt}.png?v=8`);
+        this.load.image(keyBurnt, assetUrl(`assets/cookies/${keyBurnt}.png`));
         
         // Burnt cookies (with toppings)
         toppingsList.forEach(topping => {
           const keyBurntTopped = `cookie_${shape}_${base}_burnt_${topping}`;
-          this.load.image(keyBurntTopped, `assets/cookies/${keyBurntTopped}.png?v=8`);
+          this.load.image(keyBurntTopped, assetUrl(`assets/cookies/${keyBurntTopped}.png`));
         });
 
         // Untopped baked cookie
         const keyNoTopping = `cookie_${shape}_${base}_baked`;
-        this.load.image(keyNoTopping, `assets/cookies/${keyNoTopping}.png?v=8`);
+        this.load.image(keyNoTopping, assetUrl(`assets/cookies/${keyNoTopping}.png`));
         
         // Topped baked cookies
         toppingsList.forEach(topping => {
           const keyTopped = `cookie_${shape}_${base}_baked_${topping}`;
-          this.load.image(keyTopped, `assets/cookies/${keyTopped}.png?v=8`);
+          this.load.image(keyTopped, assetUrl(`assets/cookies/${keyTopped}.png`));
         });
       });
     });
