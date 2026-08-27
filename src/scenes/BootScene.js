@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-const ASSET_VERSION = '11';
+const ASSET_VERSION = '12';
 const assetUrl = (path) => `${path}?v=${ASSET_VERSION}`;
 
 export default class BootScene extends Phaser.Scene {

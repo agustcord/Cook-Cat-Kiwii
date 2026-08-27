@@ -31,5 +31,5 @@ const config = {
 
 // Create the game instance when the window loads
 window.addEventListener('load', () => {
-  new Phaser.Game(config);
+  window.__PHASER_GAME__ = window.game = new Phaser.Game(config);
 });
