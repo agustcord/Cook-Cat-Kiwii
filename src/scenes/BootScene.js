@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-const ASSET_VERSION = '12';
+const ASSET_VERSION = '13';
 const assetUrl = (path) => `${path}?v=${ASSET_VERSION}`;
 
 export default class BootScene extends Phaser.Scene {
@@ -42,6 +42,18 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('bakery_counter', assetUrl('assets/mesa_illustracion.png'));
     this.load.image('oven_off', assetUrl('assets/oven_off.png'));
     this.load.image('oven_on', assetUrl('assets/oven_on.png'));
+
+    // Horno ilustrado artesanal multicapa (400x449)
+    this.load.image('oven_base', assetUrl('assets/horno/horno_base.png'));
+    this.load.image('oven_glass_off', assetUrl('assets/horno/cristal_horno_apagado.png'));
+    this.load.image('oven_glass_on', assetUrl('assets/horno/cristal_horno_encendido.png'));
+    this.load.image('oven_timer_base', assetUrl('assets/horno/indicador_de_coccion.png'));
+    this.load.image('oven_timer_knob', assetUrl('assets/horno/perilla_indicador_de_coccion.png'));
+    this.load.image('oven_btn_power_off', assetUrl('assets/horno/boton_encendido_apagado.png'));
+    this.load.image('oven_btn_power_on', assetUrl('assets/horno/boton_encendido_encendido.png'));
+    this.load.image('oven_btn_bake_off', assetUrl('assets/horno/boton_cocinando_apagado.png'));
+    this.load.image('oven_btn_bake_on', assetUrl('assets/horno/boton_cocinando_encendido.png'));
+
     this.load.image('chef_cat', assetUrl('assets/chef_cat.png'));
     this.load.image('menu_bg', assetUrl('assets/Cat_chef_behind_counter_202607051008.jpeg'));
     this.load.image('cat_paw_open', assetUrl('assets/cat_paw_open.png'));

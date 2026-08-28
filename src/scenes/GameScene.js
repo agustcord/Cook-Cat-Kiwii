@@ -91,13 +91,19 @@ export default class GameScene extends Phaser.Scene {
     }
     this.customerSequence = sequence.slice(0, this.config.maxCustomers);
     
-    // Time-based oven state
+    // Time-based oven state (Illustrated Multilayer Oven)
+    this.isOvenPreheated = false;
     this.isBaking = false;
     this.cookiesInOven = []; // Holds Cookie instances currently in the oven
     this.deliveryTrayCookies = []; // Holds Cookie instances currently on the delivery tray
     this.deliveryTrayDrinks = []; // Holds drinks (strings like 'coffee', 'milk', 'coffee_milk') currently on the delivery tray
     this.prepTrayCookies = []; // Holds Cookie instances currently on the preparation tray
     this.ovenTimeElapsed = 0;
+    this.ovenOvercookTimer = 0;
+    this.alarmPlayed = false;
+    this.hasOvercookedAlarm = false;
+    this.knobBaseX = 177;
+    this.knobMaxDeltaX = 128;
 
     // Drink machine state
     this.machineState = 'no_cup'; // 'no_cup', 'empty' (cup placed), 'brewing_coffee', 'brewing_milk', 'ready_coffee', 'ready_milk', 'ready_coffee_milk'
@@ -660,59 +666,121 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createOvenStation(startX, startY) {
-    this.ovenX = startX + 103;
-    this.ovenY = startY - 75;
-    this.ovenStartX = startX;
-    this.ovenStartY = startY;
+    this.ovenX = startX + 103; // 1462
+    this.ovenY = startY - 75;  // 506
+    this.ovenStartX = startX;  // 1359
+    this.ovenStartY = startY;  // 581
 
-    // Oven Image placed higher (startY - 75). Starts with oven OFF
-    this.ovenImage = this.add.image(this.ovenX, this.ovenY, 'oven_off')
-      .setDisplaySize(300, 300)
+    // Capa 1: Base física del horno (400x449 px nativo)
+    this.ovenBaseSprite = this.add.image(this.ovenX, this.ovenY, 'oven_base')
       .setDepth(2);
-    
-    // Set a custom bounded hit area to prevent clicking outside the visible oven
-    const hitW = 169;
-    const hitH = 178;
-    const hitX = (this.ovenImage.width - hitW) / 2;
-    const hitY = (this.ovenImage.height - hitH) / 2;
-    this.ovenImage.setInteractive(new Phaser.Geom.Rectangle(hitX, hitY, hitW, hitH), Phaser.Geom.Rectangle.Contains);
-    
-    this.ovenImage.on('pointerdown', () => {
+    this.ovenImage = this.ovenBaseSprite; // Referencia de retrocompatibilidad
+
+    // Capa 2: Cristal del horno (inicia apagado, se ilumina SOLO durante cocción activa)
+    this.ovenGlassSprite = this.add.image(this.ovenX, this.ovenY, 'oven_glass_off')
+      .setDepth(3);
+
+    // Capa 3: Base analógica del indicador de tiempo (fija)
+    this.ovenTimerBaseSprite = this.add.image(this.ovenX, this.ovenY, 'oven_timer_base')
+      .setDepth(4);
+
+    // Capa 4: Perilla deslizante del timer (recorre de X=177 a X=305, delta = 128 px)
+    this.ovenKnobSprite = this.add.image(this.ovenX, this.ovenY, 'oven_timer_knob')
+      .setDepth(5);
+
+    // Capa 5: Botones ilustrados interactivos con anclaje centrado para hover táctil
+    // Botón Encendido / Precalentamiento (bbox: 54..108, 30..84 -> centro en 81, 57)
+    const btnPowerCenterX = this.ovenX - 200 + 81;   // 1343
+    const btnPowerCenterY = this.ovenY - 224.5 + 57; // 338.5
+    this.ovenBtnPowerSprite = this.add.image(btnPowerCenterX, btnPowerCenterY, 'oven_btn_power_off')
+      .setOrigin(81 / 400, 57 / 449)
+      .setDepth(6);
+
+    // Botón Cocinar (bbox: 124..156, 41..73 -> centro en 140, 57)
+    const btnBakeCenterX = this.ovenX - 200 + 140;   // 1402
+    const btnBakeCenterY = this.ovenY - 224.5 + 57;  // 338.5
+    this.ovenBtnBakeSprite = this.add.image(btnBakeCenterX, btnBakeCenterY, 'oven_btn_bake_off')
+      .setOrigin(140 / 400, 57 / 449)
+      .setDepth(6);
+
+    // Zonas Interactivas de los botones con efecto hover táctil
+    const btnPowerZone = this.add.rectangle(btnPowerCenterX, btnPowerCenterY, 54, 54, 0x000000, 0)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(12);
+
+    btnPowerZone.on('pointerover', () => {
+      this.tweens.killTweensOf(this.ovenBtnPowerSprite);
+      this.tweens.add({
+        targets: this.ovenBtnPowerSprite,
+        scale: 1.08,
+        duration: 120,
+        ease: 'Back.out'
+      });
+    });
+
+    btnPowerZone.on('pointerout', () => {
+      this.tweens.killTweensOf(this.ovenBtnPowerSprite);
+      this.tweens.add({
+        targets: this.ovenBtnPowerSprite,
+        scale: 1.0,
+        duration: 120,
+        ease: 'Quad.out'
+      });
+    });
+
+    btnPowerZone.on('pointerdown', () => {
+      this.handleOvenPowerClick();
+    });
+
+    const btnBakeZone = this.add.rectangle(btnBakeCenterX, btnBakeCenterY, 36, 36, 0x000000, 0)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(12);
+
+    btnBakeZone.on('pointerover', () => {
+      this.tweens.killTweensOf(this.ovenBtnBakeSprite);
+      this.tweens.add({
+        targets: this.ovenBtnBakeSprite,
+        scale: 1.08,
+        duration: 120,
+        ease: 'Back.out'
+      });
+    });
+
+    btnBakeZone.on('pointerout', () => {
+      this.tweens.killTweensOf(this.ovenBtnBakeSprite);
+      this.tweens.add({
+        targets: this.ovenBtnBakeSprite,
+        scale: 1.0,
+        duration: 120,
+        ease: 'Quad.out'
+      });
+    });
+
+    btnBakeZone.on('pointerdown', () => {
+      this.handleOvenBakeClick();
+    });
+
+    // Zona interactiva de la puerta del horno (bbox: 52..358, 146..395)
+    const doorCenterX = this.ovenX - 200 + 205;     // 1467
+    const doorCenterY = this.ovenY - 224.5 + 270.5; // 552
+    const ovenDoorZone = this.add.rectangle(doorCenterX, doorCenterY, 306, 249, 0x000000, 0)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(12);
+
+    ovenDoorZone.on('pointerdown', () => {
       this.handleOvenImageClick();
     });
- 
-    // ENCENDER Button (placed below the oven at startY + 84)
-    const btnBg = this.add.graphics().setDepth(10);
-    btnBg.fillStyle(0x7f5539, 1);
-    btnBg.fillRoundedRect(startX, startY + 84, 206, 66, 15);
-    this.ovenBtnText = this.add.text(startX + 103, startY + 116, 'ENCENDER', {
-      font: '24px "Outfit", sans-serif',
-      fill: '#fff1e6',
-      fontWeight: '800'
-    }).setOrigin(0.5).setDepth(11);
- 
-    this.ovenZone = this.add.rectangle(startX + 103, startY + 116, 178, 66, 0x000000, 0).setInteractive({ useHandCursor: true }).setDepth(12);
-    this.ovenZone.on('pointerdown', () => {
-      this.handleOvenClick();
-    });
- 
-    // Timing Bar (placed below the button at startY + 178)
-    this.ovenBarX = startX - 38;
-    this.ovenBarY = startY + 178;
- 
-    this.ovenBarBg = this.add.graphics().setDepth(2);
-    this.ovenBarFill = this.add.graphics().setDepth(2);
-    this.drawOvenBarBackground();
 
-    // SACAR Button (placed below the Timing Bar at startY + 234)
+    // Botón SACAR GALLETAS (reubicado armónicamente bajo la base del horno en startY + 185)
+    const extractBtnY = startY + 185;
     this.ovenExtractBtnBg = this.add.graphics().setDepth(10);
-    this.ovenExtractBtnText = this.add.text(startX + 103, startY + 263, 'SACAR GALLETAS', {
+    this.ovenExtractBtnText = this.add.text(startX + 103, extractBtnY + 28, 'SACAR GALLETAS', {
       font: '21px "Outfit", sans-serif',
       fill: '#fff1e6',
       fontWeight: '800'
     }).setOrigin(0.5).setDepth(11);
 
-    this.ovenExtractZone = this.add.rectangle(startX + 103, startY + 263, 178, 56, 0x000000, 0)
+    this.ovenExtractZone = this.add.rectangle(startX + 103, extractBtnY + 28, 206, 56, 0x000000, 0)
       .setInteractive({ useHandCursor: true })
       .setDepth(12);
 
@@ -1217,116 +1285,148 @@ export default class GameScene extends Phaser.Scene {
   }
 
   handleOvenClick() {
-    if (!this.isBaking) {
-      if (this.cookiesInOven.length === 0) {
-        SoundEffects.playAngry();
-        this.showFeedbackText('¡El horno está vacío!', this.trayX, 375, '#d90429');
-        return;
+    this.handleOvenPowerClick();
+  }
+
+  handleOvenPowerClick() {
+    SoundEffects.playClick();
+    if (!this.isOvenPreheated) {
+      this.isOvenPreheated = true;
+      if (this.ovenBtnPowerSprite) {
+        this.ovenBtnPowerSprite.setTexture('oven_btn_power_on');
       }
-      // Start baking
+      this.showFeedbackText('¡Horno encendido (precalentando)! 🔥', this.ovenX, 375, '#38b000');
+    } else {
+      // Apagar horno: si estaba cocinando, se detiene
+      if (this.isBaking) {
+        this.isBaking = false;
+        if (this.ovenBtnBakeSprite) {
+          this.ovenBtnBakeSprite.setTexture('oven_btn_bake_off');
+        }
+        if (this.ovenGlassSprite) {
+          this.ovenGlassSprite.setTexture('oven_glass_off');
+        }
+        this.evaluateCookiesInOven();
+      }
+      this.isOvenPreheated = false;
+      if (this.ovenBtnPowerSprite) {
+        this.ovenBtnPowerSprite.setTexture('oven_btn_power_off');
+      }
+      if (this.ovenKnobSprite) {
+        this.ovenKnobSprite.setX(this.ovenX);
+      }
+      this.ovenTimeElapsed = 0;
+      this.alarmPlayed = false;
+      this.ovenOvercookTimer = 0;
+      this.hasOvercookedAlarm = false;
+      this.showFeedbackText('Horno apagado.', this.ovenX, 375, '#582f0e');
+    }
+    this.updateExtractButtonState();
+  }
+
+  handleOvenBakeClick() {
+    if (!this.isOvenPreheated) {
+      SoundEffects.playAngry();
+      this.showFeedbackText('¡Primero enciende el horno!', this.ovenX, 375, '#d90429');
+      return;
+    }
+
+    if (!this.cookiesInOven || this.cookiesInOven.length === 0) {
+      SoundEffects.playAngry();
+      this.showFeedbackText('¡El horno está vacío!', this.ovenX, 375, '#d90429');
+      return;
+    }
+
+    if (!this.isBaking) {
+      // Iniciar cocción
       SoundEffects.playBakingStart();
       this.isBaking = true;
       this.ovenTimeElapsed = 0;
-      this.alarmPlayed = false; // Reset alarm trigger flag
-      this.ovenBtnText.setText('APAGAR');
-      this.ovenBarFill.clear();
-      this.ovenImage.setTexture('oven_on'); // Switch to lit oven
-      this.updateCookieVisuals();
+      this.alarmPlayed = false;
+      this.ovenOvercookTimer = 0;
+      this.hasOvercookedAlarm = false;
+      if (this.ovenBtnBakeSprite) {
+        this.ovenBtnBakeSprite.setTexture('oven_btn_bake_on');
+      }
+      if (this.ovenGlassSprite) {
+        this.ovenGlassSprite.setTexture('oven_glass_on');
+      }
+      this.showFeedbackText('¡Cocinando galletas! ⏳', this.ovenX, 375, '#38b000');
       this.updateExtractButtonState();
     } else {
-      // Stop baking and evaluate time
+      // Detener cocción manualmente
       SoundEffects.playClick();
       this.isBaking = false;
-      this.ovenBtnText.setText('ENCENDER');
-      this.ovenImage.setTexture('oven_off'); // Switch back to unlit oven
-      
-      const bakeMin = this.config.bakeMin || 4.0;
-      const bakeMax = this.config.bakeMax || 8.0;
- 
-      // Evaluate each cookie individually based on its own accumulated bakeTime
-      this.cookiesInOven.forEach(cookie => {
-        const time = cookie.bakeTime || 0;
-        if (time >= bakeMin && time <= bakeMax) {
-          cookie.bakedState = 'baked';
-        } else if (time > bakeMax) {
-          cookie.bakedState = 'burnt';
-        } else {
-          cookie.bakedState = 'raw';
-        }
-      });
-
-      // Determine appropriate feedback based on the state of cookies in the oven
-      let hasBurnt = false;
-      let hasBaked = false;
-      let hasRaw = false;
-
-      this.cookiesInOven.forEach(cookie => {
-        if (cookie.bakedState === 'burnt') hasBurnt = true;
-        else if (cookie.bakedState === 'baked') hasBaked = true;
-        else if (cookie.bakedState === 'raw') hasRaw = true;
-      });
-
-      let feedback = '¡Sigue cruda! 🥣';
-      let color = '#ffb703';
-
-      if (hasBurnt) {
-        feedback = '¡Se ha quemado! 😭🔥';
-        color = '#d90429';
-      } else if (hasBaked && !hasRaw) {
-        feedback = '¡Horneado Perfecto! 🍪✨';
-        color = '#38b000';
-      } else if (hasBaked && hasRaw) {
-        feedback = '¡Algunas están listas! 🍪';
-        color = '#38b000';
+      if (this.ovenBtnBakeSprite) {
+        this.ovenBtnBakeSprite.setTexture('oven_btn_bake_off');
       }
- 
-      this.showFeedbackText(feedback, this.trayX, 375, color);
-      this.ovenBarFill.clear();
-      this.updateCookieVisuals();
+      if (this.ovenGlassSprite) {
+        this.ovenGlassSprite.setTexture('oven_glass_off');
+      }
+      if (this.ovenKnobSprite) {
+        this.ovenKnobSprite.setX(this.ovenX);
+      }
+      this.ovenTimeElapsed = 0;
+      this.alarmPlayed = false;
+      this.ovenOvercookTimer = 0;
+      this.hasOvercookedAlarm = false;
+      this.evaluateCookiesInOven();
       this.updateExtractButtonState();
     }
+  }
+
+  evaluateCookiesInOven() {
+    const bakeMin = this.config.bakeMin || 5.0;
+
+    this.cookiesInOven.forEach(cookie => {
+      const time = cookie.bakeTime || 0;
+      if (cookie.bakedState === 'burnt') {
+        // Conserva quemada
+      } else if (time >= bakeMin) {
+        cookie.bakedState = 'baked';
+      } else {
+        cookie.bakedState = 'raw';
+      }
+    });
+
+    let hasBurnt = false;
+    let hasBaked = false;
+    let hasRaw = false;
+
+    this.cookiesInOven.forEach(cookie => {
+      if (cookie.bakedState === 'burnt') hasBurnt = true;
+      else if (cookie.bakedState === 'baked') hasBaked = true;
+      else if (cookie.bakedState === 'raw') hasRaw = true;
+    });
+
+    let feedback = '¡Sigue cruda! 🥣';
+    let color = '#ffb703';
+
+    if (hasBurnt) {
+      feedback = '¡Se ha quemado! 😭🔥';
+      color = '#d90429';
+    } else if (hasBaked && !hasRaw) {
+      feedback = '¡Horneado Perfecto! 🍪✨';
+      color = '#38b000';
+    } else if (hasBaked && hasRaw) {
+      feedback = '¡Algunas están listas! 🍪';
+      color = '#38b000';
+    }
+
+    this.showFeedbackText(feedback, this.ovenX, 375, color);
+    this.updateCookieVisuals();
   }
 
   drawOvenBarBackground() {
-    this.ovenBarBg.clear();
-
-    const bakeMin = this.config.bakeMin || 4.0;
-    const bakeMax = this.config.bakeMax || 8.0;
-    const pxPerSec = 28; // 281px / 10s
-
-    // 1. Raw zone (Gray background rounded)
-    this.ovenBarBg.fillStyle(0xe0e0e0, 1);
-    this.ovenBarBg.fillRoundedRect(this.ovenBarX, this.ovenBarY, 281, 28, 9);
-
-    // 2. Baked zone (Green perfect area)
-    const greenStartX = this.ovenBarX + (bakeMin * pxPerSec);
-    const greenWidth = (bakeMax - bakeMin) * pxPerSec;
-    this.ovenBarBg.fillStyle(0x38b000, 1);
-    this.ovenBarBg.fillRect(greenStartX, this.ovenBarY, greenWidth, 28);
-
-    // 3. Burnt zone (Red danger area)
-    const redStartX = this.ovenBarX + (bakeMax * pxPerSec);
-    const redWidth = (10 - bakeMax) * pxPerSec;
-    if (redWidth > 0) {
-      this.ovenBarBg.fillStyle(0xd90429, 1);
-      this.ovenBarBg.fillRect(redStartX, this.ovenBarY, redWidth, 28);
-    }
+    // Reemplazado por el nuevo indicador analógico artesanal
   }
 
   updateOvenBar() {
-    this.ovenBarFill.clear();
-    if (this.isBaking) {
-      const pxPerSec = 28;
-      const progressX = Math.min(10, this.ovenTimeElapsed) * pxPerSec;
-      
-      // Draw a vertical black indicator needle
-      this.ovenBarFill.fillStyle(0x2b2b2b, 1); // Dark charcoal needle
-      this.ovenBarFill.fillRect(this.ovenBarX + progressX - 4, this.ovenBarY - 6, 8, 39);
-    }
+    // Reemplazado por el desplazamiento de this.ovenKnobSprite
   }
 
   updateOvenVisualEffects() {
-    // No color effects on the oven while baking
+    // Reemplazado por el cristal encendido multicapa
   }
 
   createToppingButtons(startX, startY) {
@@ -1679,11 +1779,11 @@ export default class GameScene extends Phaser.Scene {
               this.updateExtractButtonState();
               this.showFeedbackText(`Galleta introducida (${this.cookiesInOven.length}/3) 🍪`, this.trayX, 375, '#38b000');
 
-              // Play shrink and fade animation
+              // Play shrink and fade animation into the oven door window
               this.tweens.add({
                 targets: sprite,
                 x: this.ovenX,
-                y: this.ovenY,
+                y: this.ovenY + 46,
                 scale: 0.1,
                 alpha: 0,
                 duration: 300,
@@ -2301,22 +2401,49 @@ export default class GameScene extends Phaser.Scene {
       const elapsed = (delta / 1000) * 1.15;
       this.ovenTimeElapsed += elapsed;
       
-      // Trigger alarm beep when perfect bake threshold is reached for the first time
-      const bakeMin = this.config.bakeMin || 4.0;
-      if (this.ovenTimeElapsed >= bakeMin && !this.alarmPlayed) {
-        this.alarmPlayed = true;
-        SoundEffects.playAlarm();
-      }
+      const bakeDuration = this.config.bakeMin || 5.0;
 
       // Increment bakeTime individually for all cookies currently in the oven
       if (this.cookiesInOven) {
         this.cookiesInOven.forEach(cookie => {
           cookie.bakeTime = (cookie.bakeTime || 0) + elapsed;
+          if (cookie.bakeTime >= bakeDuration && cookie.bakedState !== 'burnt') {
+            cookie.bakedState = 'baked';
+          }
         });
       }
 
-      this.updateOvenVisualEffects();
-      this.updateOvenBar();
+      // Desplazamiento de la perilla analógica de X=177 a X=305 (delta = 128px)
+      const progress = Math.min(1.0, this.ovenTimeElapsed / bakeDuration);
+      if (this.ovenKnobSprite) {
+        this.ovenKnobSprite.setX(this.ovenX + (this.knobMaxDeltaX || 128) * progress);
+      }
+
+      // Alarma sonora al completar el recorrido la perilla
+      if (progress >= 1.0 && !this.alarmPlayed) {
+        this.alarmPlayed = true;
+        this.ovenOvercookTimer = 0;
+        SoundEffects.playAlarm();
+        this.showFeedbackText('¡Galletas listas! 🍪', this.ovenX, 375, '#38b000');
+        this.updateExtractButtonState();
+      }
+
+      // Ventana de gracia de 5 segundos antes de quemarse (inicia tras sonar la alarma)
+      else if (this.alarmPlayed) {
+        this.ovenOvercookTimer += (delta / 1000);
+        if (this.ovenOvercookTimer >= 5.0 && !this.hasOvercookedAlarm) {
+          this.hasOvercookedAlarm = true;
+          if (this.cookiesInOven) {
+            this.cookiesInOven.forEach(cookie => {
+              cookie.bakedState = 'burnt';
+            });
+          }
+          SoundEffects.playAngry();
+          this.showFeedbackText('¡Se ha quemado! 😭🔥', this.ovenX, 375, '#d90429');
+          this.cameras.main.shake(200, 0.005);
+          this.updateExtractButtonState();
+        }
+      }
     }
 
     // Call update on active customer to decrease patience
@@ -2333,8 +2460,8 @@ export default class GameScene extends Phaser.Scene {
     }
 
     if (pointer && this.catPawSprite && this.catArmOutlineGraphics && this.catArmFillGraphics) {
-      // Lerp paw position to pointer position with a Y clamp limit at Y=180 (top of oven)
-      const clampedTargetY = Math.max(338, pointer.y);
+      // Lerp paw position to pointer position with a Y clamp limit allowing access to oven buttons
+      const clampedTargetY = Math.max(300, pointer.y);
       const lerpSpeed = 0.22;
       this.pawX += (pointer.x - this.pawX) * lerpSpeed;
       this.pawY += (clampedTargetY - this.pawY) * lerpSpeed;
@@ -2874,30 +3001,44 @@ export default class GameScene extends Phaser.Scene {
 
 
   handleOvenImageClick() {
-    if (this.isBaking) {
-      SoundEffects.playAngry();
-      this.showFeedbackText('¡El horno está encendido!', this.ovenX, 375, '#d90429');
-      return;
-    }
-    if (this.cookiesInOven.length === 0) {
+    if (!this.cookiesInOven || this.cookiesInOven.length === 0) {
       SoundEffects.playAngry();
       this.showFeedbackText('¡El horno está vacío!', this.ovenX, 375, '#d90429');
       return;
     }
 
-    // Move all cookies from oven to prep tray together
+    // Si estaba horneando, se detiene la cocción inmediatamente
+    if (this.isBaking) {
+      this.isBaking = false;
+      if (this.ovenBtnBakeSprite) {
+        this.ovenBtnBakeSprite.setTexture('oven_btn_bake_off');
+      }
+      if (this.ovenGlassSprite) {
+        this.ovenGlassSprite.setTexture('oven_glass_off');
+      }
+    }
+
+    // Reset de perilla a posición de reposo y temporizadores
+    if (this.ovenKnobSprite) {
+      this.ovenKnobSprite.setX(this.ovenX);
+    }
+    this.ovenTimeElapsed = 0;
+    this.alarmPlayed = false;
+    this.ovenOvercookTimer = 0;
+    this.hasOvercookedAlarm = false;
+
+    // Mover todas las galletas del horno a la bandeja de preparación
     this.cookiesInOven.forEach((cookie, index) => {
       let key = `cookie_${cookie.shape}_${cookie.base}_${cookie.bakedState}`;
       if (cookie.toppings && cookie.toppings[0]) {
         key += `_${cookie.toppings[0]}`;
       }
 
-      // Spawn a temporary cookie image for the flight animation
-      const flightSprite = this.add.image(this.ovenX, this.ovenY, key)
+      // Animación de vuelo desde el cristal del horno hacia la bandeja
+      const flightSprite = this.add.image(this.ovenX, this.ovenY + 46, key)
         .setDisplaySize(50, 50)
         .setDepth(100);
 
-      // Tween to the preparation tray position
       this.tweens.add({
         targets: flightSprite,
         x: this.trayX,
@@ -2920,17 +3061,18 @@ export default class GameScene extends Phaser.Scene {
   }
 
   drawOvenExtractBtn(enabled) {
+    if (!this.ovenExtractBtnBg) return;
     this.ovenExtractBtnBg.clear();
     if (enabled) {
       this.ovenExtractBtnBg.fillStyle(0xd48c47, 1); // Nice warm orange-brown
     } else {
       this.ovenExtractBtnBg.fillStyle(0x7f5539, 0.4); // Semi-transparent disabled state
     }
-    this.ovenExtractBtnBg.fillRoundedRect(this.ovenStartX, this.ovenStartY + 234, 206, 56, 15);
+    this.ovenExtractBtnBg.fillRoundedRect(this.ovenStartX, this.ovenStartY + 185, 206, 56, 15);
   }
 
   updateExtractButtonState() {
-    const enabled = !this.isBaking && this.cookiesInOven && this.cookiesInOven.length > 0;
+    const enabled = Boolean(this.cookiesInOven && this.cookiesInOven.length > 0);
     this.drawOvenExtractBtn(enabled);
     if (this.ovenExtractBtnText) {
       this.ovenExtractBtnText.setAlpha(enabled ? 1.0 : 0.5);
