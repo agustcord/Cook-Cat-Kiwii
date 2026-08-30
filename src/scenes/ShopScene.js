@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import SoundEffects from '../game/SoundEffects.js';
+import { hasSufficientDough } from '../game/EconomyManager.js';
 
 export default class ShopScene extends Phaser.Scene {
   constructor() {
@@ -290,16 +291,29 @@ export default class ShopScene extends Phaser.Scene {
     // ZONA 3: FOOTER FIJO (y: 910 - 1080)
     // =========================================================================
     const startBtnW = 488;
-    const startBtnH = 90;
+    const startBtnH = 82;
     const startBtnX = width / 2 - startBtnW / 2;
-    const startBtnY = 945;
+    const startBtnY = 955;
+
+    // Warning container for insufficient dough
+    this.doughWarningContainer = this.add.container(width / 2, 924).setDepth(60).setVisible(false);
+    const warnBg = this.add.graphics();
+    warnBg.fillStyle(0xd90429, 0.95);
+    warnBg.fillRoundedRect(-520, -18, 1040, 36, 10);
+    this.doughWarningContainer.add(warnBg);
+
+    const warnText = this.add.text(0, 0, '⚠️ ¡Atención! No tienes masa para abrir la panadería. Compra al menos 1 pack de Masa Clásica.', {
+      font: 'bold 20px "Outfit", sans-serif',
+      fill: '#ffffff'
+    }).setOrigin(0.5);
+    this.doughWarningContainer.add(warnText);
 
     const startBtnBg = this.add.graphics();
     startBtnBg.fillStyle(0x38b000, 1); // Lush green
     startBtnBg.fillRoundedRect(startBtnX, startBtnY, startBtnW, startBtnH, 14);
 
     const startBtnText = this.add.text(width / 2, startBtnY + startBtnH / 2, 'EMPEZAR SIGUIENTE DÍA ☕', {
-      font: '30px "Outfit", sans-serif',
+      font: '28px "Outfit", sans-serif',
       fill: '#ffffff',
       fontWeight: '800'
     }).setOrigin(0.5);
@@ -308,6 +322,12 @@ export default class ShopScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
 
     startZone.on('pointerdown', () => {
+      if (!hasSufficientDough(this.stock)) {
+        SoundEffects.playAngry();
+        this.showDoughWarning();
+        return;
+      }
+
       SoundEffects.playClick();
       this.scene.start('GameScene', {
         day: this.day + 1,
@@ -349,6 +369,7 @@ export default class ShopScene extends Phaser.Scene {
       subtitleText,
       this.coinBalanceText,
       ...columnHeaders,
+      this.doughWarningContainer,
       startBtnBg,
       startBtnText,
       startZone,
@@ -467,6 +488,9 @@ export default class ShopScene extends Phaser.Scene {
     } else {
       this.stock[item.type][item.id] += 5;
       this.showFeedback(`+5 ${item.name} 🛒`, x, y - 45, '#2b9348');
+      if (item.type === 'dough' && hasSufficientDough(this.stock) && this.doughWarningContainer) {
+        this.doughWarningContainer.setVisible(false);
+      }
     }
 
     if (itemIcon) {
@@ -496,6 +520,23 @@ export default class ShopScene extends Phaser.Scene {
     }
 
     this.buyButtons.forEach(btnUpdate => btnUpdate());
+  }
+
+  showDoughWarning() {
+    if (!this.doughWarningContainer) return;
+    this.doughWarningContainer.setVisible(true);
+    this.doughWarningContainer.setAlpha(1);
+    this.tweens.killTweensOf(this.doughWarningContainer);
+    this.doughWarningContainer.setScale(1);
+    this.tweens.add({
+      targets: this.doughWarningContainer,
+      scaleX: 1.04,
+      scaleY: 1.04,
+      duration: 100,
+      yoyo: true,
+      repeat: 1,
+      ease: 'Quad.easeInOut'
+    });
   }
 
   getStatusString(item) {

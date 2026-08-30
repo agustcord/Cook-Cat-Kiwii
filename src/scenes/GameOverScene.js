@@ -6,6 +6,11 @@ export default class GameOverScene extends Phaser.Scene {
     super('GameOverScene');
   }
 
+  init(data) {
+    const safeData = data || {};
+    this.reason = safeData.reason || 'debt';
+  }
+
   create() {
     // Play a low, disappointed/sad synthesized tone
     SoundEffects.playAngry();
@@ -19,7 +24,7 @@ export default class GameOverScene extends Phaser.Scene {
     bg.fillRect(0, 0, width, height);
 
     // Title
-    this.add.text(width / 2, height / 4, 'BANCARROTA', {
+    this.add.text(width / 2, height / 4 - 40, 'BANCARROTA', {
       font: '86px "Outfit", sans-serif',
       fill: '#d90429',
       fontWeight: '800',
@@ -27,32 +32,53 @@ export default class GameOverScene extends Phaser.Scene {
       strokeThickness: 8
     }).setOrigin(0.5);
 
-    // Michi Triste emoji or text
-    this.add.text(width / 2, height / 2 - 150, '😿', {
+    // Michi Triste emoji
+    this.add.text(width / 2, height / 2 - 160, '😿', {
       font: '120px "Outfit", sans-serif'
     }).setOrigin(0.5);
 
-    // Narrative Text
-    const narrative = 
-      "La presión de las deudas y el costo de mantenimiento diario\n" +
-      "fueron demasiado para Kiwipaw Bakehouse.\n\n" +
-      "Sin monedas suficientes para cubrir el alquiler, servicios y\n" +
-      "la cuota del banco, el michi se declaró en quiebra y tuvo\n" +
-      "que cerrar sus puertas definitivamente.";
+    // Dynamic reason subtitle and narrative
+    let subtitle = 'INSOLVENCIA FINANCIERA';
+    let narrative = '';
 
-    this.add.text(width / 2, height / 2 + 56, narrative, {
-      font: '28px "Outfit", sans-serif',
+    if (this.reason === 'supplies') {
+      subtitle = 'DESABASTECIMIENTO OPERATIVO';
+      narrative =
+        'Pudiste cubrir los gastos fijos de la jornada, pero la panadería\n' +
+        'se quedó sin masa en la despensa y sin fondos suficientes\n' +
+        'para comprar un pack de masa básica en la tienda (mínimo 10 🪙).\n\n' +
+        'Sin harina ni masa para hornear, Kiwipaw Bakehouse no puede abrir\n' +
+        'al día siguiente y tuvo que cerrar sus puertas definitivamente.';
+    } else {
+      subtitle = 'INSOLVENCIA FINANCIERA';
+      narrative =
+        'La presión de las deudas y el costo de mantenimiento diario\n' +
+        'fueron demasiado para Kiwipaw Bakehouse.\n\n' +
+        'Sin monedas suficientes para cubrir el alquiler, servicios y\n' +
+        'la cuota del banco, el michi se declaró en quiebra y tuvo\n' +
+        'que cerrar sus puertas definitivamente.';
+    }
+
+    this.add.text(width / 2, height / 2 - 40, subtitle, {
+      font: '30px "Outfit", sans-serif',
+      fill: '#ffb703',
+      fontWeight: '800',
+      letterSpacing: 2
+    }).setOrigin(0.5);
+
+    this.add.text(width / 2, height / 2 + 75, narrative, {
+      font: '26px "Outfit", sans-serif',
       fill: '#f5f3f4',
       fontWeight: '600',
       align: 'center',
-      lineSpacing: 15
+      lineSpacing: 14
     }).setOrigin(0.5);
 
-    // Button: VOLVER A INTENTAR
+    // Button: REINTENTAR CAMPAÑA
     const btnW = 450;
     const btnH = 94;
     const btnX = width / 2 - btnW / 2;
-    const btnY = height - 225;
+    const btnY = height - 210;
 
     const btnBg = this.add.graphics();
     btnBg.fillStyle(0xd90429, 1);
@@ -77,7 +103,8 @@ export default class GameOverScene extends Phaser.Scene {
         unlockedShapes: ['star'],
         stock: {
           dough: { classic: 10, chocolate: 0, oat: 0 },
-          topping: { sprinkles: 0, choco: 0, glazing: 0 }
+          topping: { sprinkles: 0, choco: 0, glazing: 0 },
+          drink: { coffee_beans: 2, milk: 2 }
         }
       });
     });

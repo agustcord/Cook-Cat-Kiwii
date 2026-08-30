@@ -1,6 +1,11 @@
 import Phaser from 'phaser';
 import SoundEffects from '../game/SoundEffects.js';
 import { evaluateSolvency } from '../game/EconomyManager.js';
+import {
+  computeSubtitleLayout,
+  computeDebtLayout,
+  computeSaldoBadgeLayout
+} from '../game/SummaryLayout.js';
 
 export default class SummaryScene extends Phaser.Scene {
   constructor() {
@@ -113,11 +118,11 @@ export default class SummaryScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // ============================================================
-    // PASO 8: Estrellas de rating vectoriales (3 siempre visibles)
+    // PASO 3: Desempeño Comercial y Estrellas Vectoriales
+    // Centrado armónico del bloque completo de rating
     // ============================================================
     const starsEarned = this.performance.stars;
 
-    // Performance header text (without emoji stars)
     const performanceHeader = this.isBankrupt
       ? (this.bankruptcyReason === 'debt'
           ? 'Insolvencia Financiera: Fondos insuficientes para cubrir los gastos del día'
@@ -130,17 +135,24 @@ export default class SummaryScene extends Phaser.Scene {
       font: '26px "Outfit", sans-serif',
       fill: performanceColor,
       fontWeight: '700'
-    }).setOrigin(0.5);
+    });
 
-    // Draw 3 vectorial stars — filled gold (earned) / outline (empty)
     const starObjs = [];
     if (!this.isBankrupt) {
+      // Centrar el bloque unificado (Texto + Estrellas)
+      const textW = perfHeaderObj.width;
+      const starsW = 3 * 36;
+      const gap = 16;
+      const totalPerfW = textW + gap + starsW;
+      const perfStartX = Math.round((width - totalPerfW) / 2);
+
+      perfHeaderObj.setOrigin(0, 0.5).setPosition(perfStartX, 118);
+
       const starCenterY = 118;
-      const perfBounds = perfHeaderObj.getBounds();
-      const starStartX = perfBounds.right + 16;
+      const starStartX = perfStartX + textW + gap;
 
       for (let i = 0; i < 3; i++) {
-        const sx = starStartX + i * 36;
+        const sx = starStartX + i * 36 + 14;
         const starGfx = this.add.graphics();
         const isEarned = i < starsEarned;
 
@@ -149,27 +161,52 @@ export default class SummaryScene extends Phaser.Scene {
         }
         starGfx.lineStyle(2, isEarned ? 0xe09f00 : 0xddb892, 1);
 
-        // Draw a 5-pointed star path
         this._drawStar(starGfx, sx, starCenterY, 5, 14, 7, isEarned);
-        starGfx.setAlpha(0);
         starObjs.push({ gfx: starGfx, earned: isEarned });
       }
+    } else {
+      perfHeaderObj.setOrigin(0.5).setPosition(width / 2, 118);
     }
 
-    // Performance subtitle (replace coin emoji with text only)
-    const performanceSub = `Meta: ${this.meta}  •  Ventas Hoy: ${this.dayEarnings}  •  ${this.performance.message}`;
-    const perfSubObj = this.add.text(width / 2, 154, performanceSub, {
+    // ============================================================
+    // PASO 4: Subtítulo con métricas reales y monedas vectoriales
+    // Cero aproximación mágica: layout desacoplado usando .width real
+    // ============================================================
+    const subStyle = {
       font: '20px "Outfit", sans-serif',
-      fill: '#8c5847',
+      fill: '#7f5539',
       fontWeight: '600'
-    }).setOrigin(0.5);
+    };
 
-    // Draw coin icons next to "Meta" and "Ventas" values
-    this._drawCoinIcon(this.add.graphics(), width / 2 - perfSubObj.width / 2 + this._measureTextOffset(performanceSub, `Meta: ${this.meta}`) + 8, 154);
-    this._drawCoinIcon(this.add.graphics(), width / 2 - perfSubObj.width / 2 + this._measureTextOffset(performanceSub, `Meta: ${this.meta}  •  Ventas Hoy: ${this.dayEarnings}`) + 8, 154);
+    const tMeta = this.add.text(0, 0, `Meta: ${this.meta}`, subStyle).setOrigin(0, 0.5);
+    const tEarnings = this.add.text(0, 0, `•   Ventas Hoy: ${this.dayEarnings}`, subStyle).setOrigin(0, 0.5);
+    const tMessage = this.add.text(0, 0, `•   ${this.performance.message}`, subStyle).setOrigin(0, 0.5);
+
+    const subLayout = computeSubtitleLayout({
+      metaTextWidth: tMeta.width,
+      earningsTextWidth: tEarnings.width,
+      messageTextWidth: tMessage.width,
+      screenWidth: width,
+      y: 154,
+      textHeight: Math.max(tMeta.height, tEarnings.height, tMessage.height)
+    });
+
+    tMeta.setPosition(subLayout.items[0].x, subLayout.items[0].y);
+
+    const subCoin1 = this.add.graphics();
+    this._drawCoinIcon(subCoin1, subLayout.items[1].x, subLayout.items[1].y);
+
+    tEarnings.setPosition(subLayout.items[2].x, subLayout.items[2].y);
+
+    const subCoin2 = this.add.graphics();
+    this._drawCoinIcon(subCoin2, subLayout.items[3].x, subLayout.items[3].y);
+
+    tMessage.setPosition(subLayout.items[4].x, subLayout.items[4].y);
+
+    const subtitleGroup = [tMeta, subCoin1, tEarnings, subCoin2, tMessage];
 
     // ============================================================
-    // PASO 3: Card con secciones coloreadas por bloque
+    // PASO 5: Card de Facturación / Recibo (Paper Card)
     // ============================================================
     const cardW = 820;
     const cardH = 560;
@@ -179,13 +216,12 @@ export default class SummaryScene extends Phaser.Scene {
 
     const receipt = this.add.graphics();
 
-    // Main card background (paper)
+    // Fondo papel marfil
     receipt.fillStyle(0xfff1e6, 0.96);
     receipt.fillRoundedRect(cardX, cardY, cardW, cardH, cardRadius);
 
-    // Section backgrounds with canonical palette colors
-    // Header band: Madera #ddb892
-    receipt.fillStyle(0xddb892, 1);
+    // Banda cabecera: Café Tostado #7f5539 para óptimo contraste (5.5:1 con texto blanco)
+    receipt.fillStyle(0x7f5539, 1);
     receipt.fillRoundedRect(cardX, cardY, cardW, 54, { tl: cardRadius, tr: cardRadius, bl: 0, br: 0 });
 
     // Bloque 1 - Ingresos: Verde Menta #d8f3dc (30% opacity)
@@ -204,131 +240,118 @@ export default class SummaryScene extends Phaser.Scene {
     receipt.fillStyle(0xd6c7ff, 0.2);
     receipt.fillRoundedRect(cardX, cardY + 444, cardW, cardH - 444, { tl: 0, tr: 0, bl: cardRadius, br: cardRadius });
 
-    // Board outline — 3px, Madera
+    // Borde exterior del recibo
     receipt.lineStyle(3, 0xddb892, 1);
     receipt.strokeRoundedRect(cardX, cardY, cardW, cardH, cardRadius);
 
-    // Subtle section divider lines
+    // Líneas divisorias sutiles
     receipt.lineStyle(1, 0xddb892, 0.35);
     receipt.lineBetween(cardX + 20, cardY + 182, cardX + cardW - 20, cardY + 182);
     receipt.lineBetween(cardX + 20, cardY + 348, cardX + cardW - 20, cardY + 348);
     receipt.lineBetween(cardX + 20, cardY + 444, cardX + cardW - 20, cardY + 444);
 
-    // Receipt header text (white on madera band)
-    const headerTextObj = this.add.text(width / 2, cardY + 28, 'DETALLE DE FACTURACIÓN Y BALANCE', {
-      font: '24px "Outfit", sans-serif',
+    // Título de la cabecera del recibo
+    const headerTextObj = this.add.text(width / 2, cardY + 27, 'DETALLE DE FACTURACIÓN Y BALANCE', {
+      font: '23px "Outfit", sans-serif',
       fill: '#ffffff',
       fontWeight: '800',
       letterSpacing: 2
     }).setOrigin(0.5);
 
-    // Invoice items styles
+    // Estilos de líneas de facturación
     const textStyleLeft = { font: '23px "Outfit", sans-serif', fill: '#582f0e', fontWeight: '600' };
     const textStyleRight = { font: '23px "Outfit", sans-serif', fill: '#582f0e', fontWeight: '800' };
 
-    // Collect all data line objects for stagger animation
-    const dataLines = [];
+    // Configuración de filas del balance
+    const tableRowsConfig = [
+      // Bloque 1: Ingresos y Caja
+      { id: 'ventas', label: 'Ventas de la Jornada (Hoy):', val: `+${this.dayEarnings}`, yOffset: 86, styleLeft: textStyleLeft, styleRight: textStyleRight },
+      { id: 'saldoPrevio', label: 'Saldo Previo en Caja:', val: `+${this.coinsAtStart}`, yOffset: 122, styleLeft: textStyleLeft, styleRight: textStyleRight },
+      {
+        id: 'totalFondos',
+        label: 'Total Fondos en Caja al Cierre:',
+        val: `${this.coins}`,
+        yOffset: 158,
+        styleLeft: { font: '24px "Outfit", sans-serif', fill: '#582f0e', fontWeight: '800' },
+        styleRight: { font: '24px "Outfit", sans-serif', fill: '#d48c47', fontWeight: '800' }
+      },
+      // Bloque 2: Gastos Fijos
+      { id: 'alquiler', label: 'Alquiler del Local (Fijo):', val: `-${this.rent}`, yOffset: 210, styleLeft: textStyleLeft, styleRight: textStyleRight },
+      { id: 'servicios', label: 'Servicios de Luz / Agua / Gas:', val: `-${this.maintenance}`, yOffset: 244, styleLeft: textStyleLeft, styleRight: textStyleRight },
+      { id: 'cuota', label: 'Cuota del Préstamo Bancario:', val: `-${this.loanPayment}`, yOffset: 278, styleLeft: textStyleLeft, styleRight: textStyleRight },
+      {
+        id: 'totalGastos',
+        label: 'Total Gastos Deducidos:',
+        val: `-${this.totalExpenses}`,
+        yOffset: 316,
+        styleLeft: { font: '24px "Outfit", sans-serif', fill: '#8c2f39', fontWeight: '800' },
+        styleRight: { font: '24px "Outfit", sans-serif', fill: '#8c2f39', fontWeight: '800' }
+      }
+    ];
 
-    // Bloque 1: Ingresos y Caja
-    dataLines.push(this.add.text(cardX + 32, cardY + 74, 'Ventas de la Jornada (Hoy):', textStyleLeft));
-    const earningsVal = this.add.text(cardX + cardW - 48, cardY + 74, `+${this.dayEarnings}`, textStyleRight).setOrigin(1, 0);
-    dataLines.push(earningsVal);
-    this._drawCoinIcon(this.add.graphics(), cardX + cardW - 38, cardY + 78);
-
-    dataLines.push(this.add.text(cardX + 32, cardY + 110, 'Saldo Previo en Caja:', textStyleLeft));
-    const prevVal = this.add.text(cardX + cardW - 48, cardY + 110, `+${this.coinsAtStart}`, textStyleRight).setOrigin(1, 0);
-    dataLines.push(prevVal);
-    this._drawCoinIcon(this.add.graphics(), cardX + cardW - 38, cardY + 114);
-
-    dataLines.push(this.add.text(cardX + 32, cardY + 146, 'Total Fondos en Caja al Cierre:', {
-      font: '24px "Outfit", sans-serif',
-      fill: '#582f0e',
-      fontWeight: '800'
-    }));
-    const totalVal = this.add.text(cardX + cardW - 48, cardY + 146, `${this.coins}`, {
-      font: '24px "Outfit", sans-serif',
-      fill: '#d48c47',
-      fontWeight: '800'
-    }).setOrigin(1, 0);
-    dataLines.push(totalVal);
-    this._drawCoinIcon(this.add.graphics(), cardX + cardW - 38, cardY + 150);
-
-    // Bloque 2: Gastos Fijos
-    dataLines.push(this.add.text(cardX + 32, cardY + 198, 'Alquiler del Local (Fijo):', textStyleLeft));
-    const rentVal = this.add.text(cardX + cardW - 48, cardY + 198, `-${this.rent}`, textStyleRight).setOrigin(1, 0);
-    dataLines.push(rentVal);
-    this._drawCoinIcon(this.add.graphics(), cardX + cardW - 38, cardY + 202);
-
-    dataLines.push(this.add.text(cardX + 32, cardY + 232, 'Servicios de Luz / Agua / Gas:', textStyleLeft));
-    const maintVal = this.add.text(cardX + cardW - 48, cardY + 232, `-${this.maintenance}`, textStyleRight).setOrigin(1, 0);
-    dataLines.push(maintVal);
-    this._drawCoinIcon(this.add.graphics(), cardX + cardW - 38, cardY + 236);
-
-    dataLines.push(this.add.text(cardX + 32, cardY + 266, 'Cuota del Préstamo Bancario:', textStyleLeft));
-    const loanVal = this.add.text(cardX + cardW - 48, cardY + 266, `-${this.loanPayment}`, textStyleRight).setOrigin(1, 0);
-    dataLines.push(loanVal);
-    this._drawCoinIcon(this.add.graphics(), cardX + cardW - 38, cardY + 270);
-
-    dataLines.push(this.add.text(cardX + 32, cardY + 304, 'Total Gastos Deducidos:', {
-      font: '24px "Outfit", sans-serif',
-      fill: '#8c2f39',
-      fontWeight: '800'
-    }));
-    const totalExpVal = this.add.text(cardX + cardW - 48, cardY + 304, `-${this.totalExpenses}`, {
-      font: '24px "Outfit", sans-serif',
-      fill: '#8c2f39',
-      fontWeight: '800'
-    }).setOrigin(1, 0);
-    dataLines.push(totalExpVal);
-    this._drawCoinIcon(this.add.graphics(), cardX + cardW - 38, cardY + 308);
+    const cardDataElements = [];
+    tableRowsConfig.forEach(row => {
+      const labelObj = this.add.text(cardX + 32, cardY + row.yOffset, row.label, row.styleLeft).setOrigin(0, 0.5);
+      // Valor numérico alineado a la derecha con margen limpio antes de la moneda
+      const valObj = this.add.text(cardX + cardW - 44, cardY + row.yOffset, row.val, row.styleRight).setOrigin(1, 0.5);
+      const coinGfx = this.add.graphics();
+      this._drawCoinIcon(coinGfx, cardX + cardW - 24, cardY + row.yOffset);
+      cardDataElements.push(labelObj, valObj, coinGfx);
+    });
 
     // ============================================================
-    // PASO 4: Badge visual para Saldo Neto
+    // PASO 6: Badge visual para Saldo Neto
+    // Totalmente simétrico, contrastado y sin solapamiento
     // ============================================================
     const balanceIsPositive = this.netCoins >= 0;
     const badgeBgColor = balanceIsPositive ? 0xd8f3dc : 0xffccd5;
     const badgeBorderColor = balanceIsPositive ? 0x2b9348 : 0xd90429;
-    const balanceColor = balanceIsPositive ? '#38b000' : '#d90429';
+    const balanceColor = balanceIsPositive ? '#2b9348' : '#d90429';
 
-    const saldoLabelObj = this.add.text(cardX + 32, cardY + 372, 'SALDO NETO RESTANTE:', {
+    const saldoLabelObj = this.add.text(cardX + 32, cardY + 384, 'SALDO NETO RESTANTE:', {
       font: '29px "Outfit", sans-serif',
-      fill: '#7f5539',
+      fill: '#582f0e',
       fontWeight: '800'
-    });
+    }).setOrigin(0, 0.5);
 
-    const saldoValObj = this.add.text(cardX + cardW - 48, cardY + 368, `${this.netCoins}`, {
+    const saldoValObj = this.add.text(0, 0, `${this.netCoins}`, {
       font: '34px "Outfit", sans-serif',
       fill: balanceColor,
       fontWeight: '800'
-    }).setOrigin(1, 0);
+    }).setOrigin(1, 0.5);
 
-    // Draw coin icon next to saldo
+    const badgeLayout = computeSaldoBadgeLayout({
+      cardX,
+      cardY,
+      cardW,
+      labelWidth: saldoLabelObj.width,
+      valueWidth: saldoValObj.width,
+      valueHeight: saldoValObj.height,
+      yOffset: 384
+    });
+
+    saldoValObj.setPosition(badgeLayout.items[2].x, badgeLayout.y);
+
     const saldoCoinGfx = this.add.graphics();
-    this._drawCoinIcon(saldoCoinGfx, cardX + cardW - 38, cardY + 376);
+    this._drawCoinIcon(saldoCoinGfx, badgeLayout.items[3].x, badgeLayout.y);
 
-    // Badge rectangle behind saldo value
+    // Contenedor visual del badge
     const badgeGfx = this.add.graphics();
-    const saldoBounds = saldoValObj.getBounds();
-    const badgePadX = 16;
-    const badgePadY = 6;
-    const badgeW = saldoBounds.width + 24 + badgePadX * 2; // +24 for coin icon space
-    const badgeH = saldoBounds.height + badgePadY * 2;
-    const badgeX = saldoBounds.x - badgePadX;
-    const badgeY = saldoBounds.y - badgePadY;
+    badgeGfx.fillStyle(badgeBgColor, 0.65);
+    badgeGfx.fillRoundedRect(badgeLayout.badgeX, badgeLayout.badgeY, badgeLayout.badgeW, badgeLayout.badgeH, 12);
+    badgeGfx.lineStyle(2, badgeBorderColor, 0.85);
+    badgeGfx.strokeRoundedRect(badgeLayout.badgeX, badgeLayout.badgeY, badgeLayout.badgeW, badgeLayout.badgeH, 12);
 
-    badgeGfx.fillStyle(badgeBgColor, 0.6);
-    badgeGfx.fillRoundedRect(badgeX, badgeY, badgeW, badgeH, 10);
-    badgeGfx.lineStyle(2, badgeBorderColor, 0.8);
-    badgeGfx.strokeRoundedRect(badgeX, badgeY, badgeW, badgeH, 10);
-
-    // Move badge behind the text
     badgeGfx.setDepth(0);
     saldoValObj.setDepth(1);
     saldoCoinGfx.setDepth(1);
 
-    // Bloque 4: Despensa / Diagnóstico Operativo
+    // ============================================================
+    // PASO 7: Bloque 4 — Despensa y Estado de Deuda
+    // Sin sprites invasivos: espacio limpio conforme a feedback del Capitán
+    // ============================================================
     let pantryStatus = '';
-    let pantryColor = '#38b000';
+    let pantryColor = '#2b9348';
 
     if (this.totalDoughStock >= 1) {
       pantryStatus = `${this.totalDoughStock} u. disponibles para abrir mañana`;
@@ -341,40 +364,41 @@ export default class SummaryScene extends Phaser.Scene {
       pantryColor = '#d90429';
     }
 
-    const pantryTitleObj = this.add.text(cardX + 32, cardY + 462, 'Despensa de Masa:', textStyleLeft);
+    const pantryTitleObj = this.add.text(cardX + 32, cardY + 462, 'Despensa de Masa:', textStyleLeft).setOrigin(0, 0.5);
     const pantryValObj = this.add.text(cardX + cardW - 32, cardY + 462, pantryStatus, {
       font: '21px "Outfit", sans-serif',
       fill: pantryColor,
       fontWeight: '700'
-    }).setOrigin(1, 0);
+    }).setOrigin(1, 0.5);
 
-    // Deuda status under card inside bottom edge
-    const debtObj = this.add.text(width / 2, cardY + 518, `Préstamo restante con el banco: ${this.updatedLoanRemaining} (Inicial: 200)`, {
+    // Línea de Deuda Bancaria: posicionamiento milimétrico sin tapar números
+    const debtStyle = {
       font: '20px "Outfit", sans-serif',
-      fill: '#b5838d',
+      fill: '#7f5539',
       fontWeight: '700'
-    }).setOrigin(0.5);
+    };
 
-    // Draw coin icon in debt line
-    const debtBounds = debtObj.getBounds();
-    this._drawCoinIcon(this.add.graphics(), debtBounds.x + this._measureTextOffset(`Préstamo restante con el banco: `, `Préstamo restante con el banco: `) - 4, cardY + 522);
+    const tDebt1 = this.add.text(0, 0, `Préstamo restante con el banco: ${this.updatedLoanRemaining}`, debtStyle).setOrigin(0, 0.5);
+    const tDebt2 = this.add.text(0, 0, `(Inicial: 200)`, debtStyle).setOrigin(0, 0.5);
+
+    const debtLayout = computeDebtLayout({
+      debtTextWidth: tDebt1.width,
+      initialTextWidth: tDebt2.width,
+      screenWidth: width,
+      y: cardY + 518,
+      textHeight: Math.max(tDebt1.height, tDebt2.height)
+    });
+
+    tDebt1.setPosition(debtLayout.items[0].x, debtLayout.items[0].y);
+
+    const debtCoin = this.add.graphics();
+    this._drawCoinIcon(debtCoin, debtLayout.items[1].x, debtLayout.items[1].y);
+
+    tDebt2.setPosition(debtLayout.items[2].x, debtLayout.items[2].y);
 
     // ============================================================
-    // PASO 5: Kiwi cat decoration (sprite at reduced scale)
+    // PASO 8: Botones de Acción (CTA principal + Reintentar)
     // ============================================================
-    let kiwiDecor = null;
-    if (this.textures.exists('chef_cat')) {
-      kiwiDecor = this.add.image(cardX + cardW - 48, cardY + cardH - 48, 'chef_cat');
-      kiwiDecor.setDisplaySize(80, 80);
-      kiwiDecor.setOrigin(0.5);
-      kiwiDecor.setAlpha(0);
-    }
-
-    // ============================================================
-    // PASO 7: Botones con sombra y profundidad
-    // ============================================================
-
-    // --- DECISION FLOW & ACTIONS ---
     let btnTextString = '';
     let btnColor = 0x7f5539;
     let btnHoverColor = 0x9c6644;
@@ -401,7 +425,7 @@ export default class SummaryScene extends Phaser.Scene {
       nextSceneCallback = () => {
         this.scene.start('ShopScene', {
           day: this.day,
-          coins: this.netCoins, // Fondos tras deducir gastos
+          coins: this.netCoins,
           unlockedShapes: this.unlockedShapes,
           stock: this.stock,
           loanRemaining: this.updatedLoanRemaining
@@ -409,13 +433,11 @@ export default class SummaryScene extends Phaser.Scene {
       };
     }
 
-    // Botón de Acción Principal
     const btnW = 500;
     const btnH = 86;
     const btnX = width / 2 - btnW / 2;
     const btnY = 808;
 
-    // Aviso si el rendimiento no superó la meta pero sigue en pie
     let warningObj = null;
     if (!this.isBankrupt && this.dayEarnings < this.meta) {
       warningObj = this.add.text(width / 2, btnY - 26, 'Rendimiento comercial por debajo de la meta. Puedes continuar a la tienda o reintentar.', {
@@ -426,7 +448,7 @@ export default class SummaryScene extends Phaser.Scene {
       warningObj.setAlpha(0);
     }
 
-    // Shadow for CTA button
+    // Botón principal
     const btnShadowGfx = this.add.graphics();
     btnShadowGfx.fillStyle(0x4e3629, 0.3);
     btnShadowGfx.fillRoundedRect(btnX + 3, btnY + 3, btnW, btnH, 18);
@@ -469,10 +491,9 @@ export default class SummaryScene extends Phaser.Scene {
       btnText.setScale(1);
     });
 
-    // Wrap button group for animation
     const btnGroup = [btnShadowGfx, actionBtnBg, btnText, actionZone];
 
-    // Optional retry button — now as outline button (PASO 7)
+    // Botón secundario: Reintentar
     let retryGroup = [];
     if (!this.isBankrupt) {
       const retryBtnW = 340;
@@ -524,74 +545,59 @@ export default class SummaryScene extends Phaser.Scene {
     }
 
     // ============================================================
-    // PASO 6: Animaciones de entrada secuenciales
+    // PASO 9: Animación de entrada suave, unificada y profesional
+    // Sin saltos bruscos ni elementos flotando a medio armar.
+    // Todos los elementos inician en alpha: 0.
     // ============================================================
+    const cardContentGroup = [
+      headerTextObj,
+      ...cardDataElements,
+      saldoLabelObj,
+      badgeGfx,
+      saldoValObj,
+      saldoCoinGfx,
+      pantryTitleObj,
+      pantryValObj,
+      tDebt1,
+      debtCoin,
+      tDebt2
+    ];
 
-    // Prepare initial hidden states
-    titleObj.setAlpha(0).setY(titleObj.y - 30);
+    // 1. Estado inicial oculto — Cero elementos sueltos visibles
+    titleObj.setAlpha(0);
     perfHeaderObj.setAlpha(0);
-    perfSubObj.setAlpha(0);
-    receipt.setAlpha(0).setScale(0.9);
-    headerTextObj.setAlpha(0);
-    saldoLabelObj.setAlpha(0);
-    saldoValObj.setAlpha(0);
-    badgeGfx.setAlpha(0);
-    saldoCoinGfx.setAlpha(0);
-    pantryTitleObj.setAlpha(0);
-    pantryValObj.setAlpha(0);
-    debtObj.setAlpha(0);
+    starObjs.forEach(s => s.gfx.setAlpha(0));
+    subtitleGroup.forEach(obj => { if (obj.setAlpha) obj.setAlpha(0); });
 
-    dataLines.forEach(line => line.setAlpha(0));
+    receipt.setAlpha(0).setScale(0.99);
+    cardContentGroup.forEach(obj => { if (obj.setAlpha) obj.setAlpha(0); });
 
-    btnGroup.forEach(item => {
-      if (item.setAlpha) item.setAlpha(0);
-    });
-    retryGroup.forEach(item => {
-      if (item.setAlpha) item.setAlpha(0);
-    });
-
+    btnGroup.forEach(item => { if (item.setAlpha) item.setAlpha(0); });
+    retryGroup.forEach(item => { if (item.setAlpha) item.setAlpha(0); });
     if (warningObj) warningObj.setAlpha(0);
 
-    // Title: slide-down + fade (400ms, Back.easeOut)
+    // 2. Cabecera y subtítulo: Fade-in suave (250ms)
     this.tweens.add({
-      targets: titleObj,
+      targets: [titleObj, perfHeaderObj, ...subtitleGroup],
       alpha: 1,
-      y: 58,
-      duration: 400,
-      ease: 'Back.easeOut'
-    });
-
-    // Performance header + sub: fade in (300ms, delay 200ms)
-    this.tweens.add({
-      targets: perfHeaderObj,
-      alpha: 1,
-      duration: 300,
-      delay: 200,
+      duration: 250,
       ease: 'Sine.easeOut'
     });
 
-    this.tweens.add({
-      targets: perfSubObj,
-      alpha: 1,
-      duration: 300,
-      delay: 350,
-      ease: 'Sine.easeOut'
-    });
-
-    // Stars: fade + micro-rotation for earned (delay 400ms)
+    // 3. Estrellas de rating: Fade-in gentil con giro suave para las ganadas
     starObjs.forEach((s, i) => {
       this.tweens.add({
         targets: s.gfx,
         alpha: 1,
-        duration: 300,
-        delay: 400 + i * 120,
+        duration: 250,
+        delay: 100 + i * 70,
         ease: 'Sine.easeOut',
         onComplete: () => {
           if (s.earned) {
             this.tweens.add({
               targets: s.gfx,
               angle: 360,
-              duration: 600,
+              duration: 500,
               ease: 'Sine.easeInOut'
             });
           }
@@ -599,80 +605,33 @@ export default class SummaryScene extends Phaser.Scene {
       });
     });
 
-    // Card: scale-up 0.9 → 1.0 + fade (500ms, delay 200ms)
+    // 4. Recibo completo y todo su contenido: Fade-in simultáneo y micro-scale (300ms, delay 80ms)
     this.tweens.add({
       targets: receipt,
       alpha: 1,
       scaleX: 1,
       scaleY: 1,
-      duration: 500,
-      delay: 200,
-      ease: 'Back.easeOut'
-    });
-
-    // Header text: fade with card
-    this.tweens.add({
-      targets: headerTextObj,
-      alpha: 1,
-      duration: 400,
-      delay: 400,
+      duration: 300,
+      delay: 80,
       ease: 'Sine.easeOut'
     });
 
-    // Data lines: stagger 80ms each (fade-in)
-    dataLines.forEach((line, i) => {
-      this.tweens.add({
-        targets: line,
-        alpha: 1,
-        duration: 250,
-        delay: 500 + i * 80,
-        ease: 'Sine.easeOut'
-      });
+    this.tweens.add({
+      targets: cardContentGroup,
+      alpha: 1,
+      duration: 300,
+      delay: 80,
+      ease: 'Sine.easeOut'
     });
 
-    // Saldo neto: bounce-in (delay after data lines)
-    const saldoDelay = 500 + dataLines.length * 80 + 100;
-    [saldoLabelObj, saldoValObj, badgeGfx, saldoCoinGfx].forEach(obj => {
-      this.tweens.add({
-        targets: obj,
-        alpha: 1,
-        duration: 600,
-        delay: saldoDelay,
-        ease: 'Bounce.easeOut'
-      });
-    });
-
-    // Pantry + debt: fade after saldo
-    const pantryDelay = saldoDelay + 300;
-    [pantryTitleObj, pantryValObj, debtObj].forEach(obj => {
-      this.tweens.add({
-        targets: obj,
-        alpha: 1,
-        duration: 300,
-        delay: pantryDelay,
-        ease: 'Sine.easeOut'
-      });
-    });
-
-    // Kiwi cat decoration: fade-in with card
-    if (kiwiDecor) {
-      this.tweens.add({
-        targets: kiwiDecor,
-        alpha: 0.7,
-        duration: 600,
-        delay: 700,
-        ease: 'Sine.easeOut'
-      });
-    }
-
-    // Buttons: fade-up (800ms delay)
-    const btnDelay = 800;
+    // 5. Botones de acción: Fade-in justo al asentarse el recibo (250ms, delay 260ms)
+    const btnDelay = 260;
     btnGroup.forEach(item => {
       if (item.setAlpha) {
         this.tweens.add({
           targets: item,
           alpha: 1,
-          duration: 400,
+          duration: 250,
           delay: btnDelay,
           ease: 'Sine.easeOut'
         });
@@ -683,20 +642,19 @@ export default class SummaryScene extends Phaser.Scene {
       this.tweens.add({
         targets: warningObj,
         alpha: 1,
-        duration: 300,
-        delay: btnDelay - 100,
+        duration: 250,
+        delay: btnDelay,
         ease: 'Sine.easeOut'
       });
     }
 
-    // Retry group: fade-up after main button
     retryGroup.forEach(item => {
       if (item.setAlpha) {
         this.tweens.add({
           targets: item,
           alpha: 1,
-          duration: 400,
-          delay: btnDelay + 200,
+          duration: 250,
+          delay: btnDelay + 80,
           ease: 'Sine.easeOut'
         });
       }
@@ -704,7 +662,7 @@ export default class SummaryScene extends Phaser.Scene {
   }
 
   // ============================================================
-  // Helper: Draw a 5-pointed star using Graphics
+  // Helper: Dibuja estrella de 5 puntas vectorial
   // ============================================================
   _drawStar(graphics, cx, cy, points, outerR, innerR, fill) {
     const step = Math.PI / points;
@@ -740,28 +698,14 @@ export default class SummaryScene extends Phaser.Scene {
   }
 
   // ============================================================
-  // Helper: Draw a small vectorial coin icon (golden circle)
-  // PASO 5: Replace emoji 🪙 with vectorial gold coin
+  // Helper: Dibuja moneda dorada vectorial sin emoji
   // ============================================================
   _drawCoinIcon(graphics, x, y) {
-    // Outer gold circle
     graphics.fillStyle(0xffb703, 1);
     graphics.fillCircle(x, y, 9);
-    // Inner shine
     graphics.fillStyle(0xffd166, 1);
     graphics.fillCircle(x - 1, y - 1, 5);
-    // Subtle border
     graphics.lineStyle(1.5, 0xe09f00, 1);
     graphics.strokeCircle(x, y, 9);
-  }
-
-  // ============================================================
-  // Helper: Rough text offset measurement (character-based approx)
-  // Used to position coin icons relative to text content
-  // ============================================================
-  _measureTextOffset(fullText, upToText) {
-    // Approximate: 10px per character at ~20px font size
-    const ratio = upToText.length / Math.max(fullText.length, 1);
-    return ratio * fullText.length * 9.5;
   }
 }
