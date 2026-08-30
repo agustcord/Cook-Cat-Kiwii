@@ -409,11 +409,11 @@ export default class GameScene extends Phaser.Scene {
     const { formaLabel } = UI_CONFIG;
     this.createShapeButtons(formaLabel.x - 165, formaLabel.y + 24);
 
-    // Column 3: Horno (Oven minigame)
-    this.createOvenStation(1359, 581);
+    // Column 3: Horno (Oven minigame) - Posición exacta Krita: X centro 1494, Y centro 429
+    this.createOvenStation(1391, 504);
 
-    // Column 3.5: Bebidas (Drinks Station) - Moved to left side where 2. Forma was
-    this.createDrinkStation(504, 506);
+    // Column 3.5: Bebidas (Drinks Station) - Posición exacta Krita: X centro 351, Y centro 507
+    this.createDrinkStation(351, 507);
 
     // Column 4: Decoración (Toppings)
     this.createToppingButtons(1669, 581);
@@ -794,9 +794,9 @@ export default class GameScene extends Phaser.Scene {
   createDrinkStation(startX, startY) {
 
 
-    // 2. Espresso Machine (New asset: cafeteteria_base.png)
+    // 2. Espresso Machine (New asset: cafeteteria_base.png) - 320x320 nativo 1:1 con Krita
     this.drinkMachine = this.add.image(startX, startY, 'drink_machine')
-      .setDisplaySize(300, 300)
+      .setDisplaySize(320, 320)
       .setDepth(2);
     
     // Set machine interactive to provide helpful hints on tap
