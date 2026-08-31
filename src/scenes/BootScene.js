@@ -40,6 +40,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('order_beverage_milk', assetUrl('assets/taza_leche.png'));
     this.load.image('order_beverage_coffee_milk', assetUrl('assets/taza_cafe_leche.png'));
     this.load.image('bakery_counter', assetUrl('assets/mesa_illustracion.png'));
+    this.load.image('basurero', assetUrl('assets/basurero.png'));
     this.load.image('oven_off', assetUrl('assets/oven_off.png'));
     this.load.image('oven_on', assetUrl('assets/oven_on.png'));
 

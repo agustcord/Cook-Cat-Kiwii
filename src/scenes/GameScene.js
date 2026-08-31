@@ -1696,7 +1696,7 @@ export default class GameScene extends Phaser.Scene {
                 scale: 1.15,
                 duration: 100
               });
-              if (this.trashIconText) this.trashIconText.setTint(0xff6b6b);
+              if (this.trashBinSprite) this.trashBinSprite.setTint(0xff8888);
             }
           } else {
             if (this.trashHighlighted) {
@@ -1706,7 +1706,7 @@ export default class GameScene extends Phaser.Scene {
                 scale: 1.0,
                 duration: 100
               });
-              if (this.trashIconText) this.trashIconText.clearTint();
+              if (this.trashBinSprite) this.trashBinSprite.clearTint();
             }
           }
         });
@@ -1717,7 +1717,7 @@ export default class GameScene extends Phaser.Scene {
           if (this.trashHighlighted) {
             this.trashHighlighted = false;
             if (this.trashContainer) this.trashContainer.setScale(1.0);
-            if (this.trashIconText) this.trashIconText.clearTint();
+            if (this.trashBinSprite) this.trashBinSprite.clearTint();
           }
 
           const distOven = Phaser.Math.Distance.Between(sprite.x, sprite.y, this.ovenX, this.ovenY);
@@ -2779,7 +2779,7 @@ export default class GameScene extends Phaser.Scene {
             scale: 1.15,
             duration: 100
           });
-          if (this.trashIconText) this.trashIconText.setTint(0xff6b6b);
+          if (this.trashBinSprite) this.trashBinSprite.setTint(0xff8888);
         }
 
         // Clean customer highlight if active
@@ -2809,7 +2809,7 @@ export default class GameScene extends Phaser.Scene {
             scale: 1.0,
             duration: 100
           });
-          if (this.trashIconText) this.trashIconText.clearTint();
+          if (this.trashBinSprite) this.trashBinSprite.clearTint();
         }
 
         // Check distance to the customer (centered at 960, 431)
@@ -2880,7 +2880,7 @@ export default class GameScene extends Phaser.Scene {
       if (this.trashHighlighted) {
         this.trashHighlighted = false;
         if (this.trashContainer) this.trashContainer.setScale(1.0);
-        if (this.trashIconText) this.trashIconText.clearTint();
+        if (this.trashBinSprite) this.trashBinSprite.clearTint();
 
         const count = this.deliveryTrayCookies.length;
         const drinksCount = this.deliveryTrayDrinks ? this.deliveryTrayDrinks.length : 0;
@@ -3081,43 +3081,16 @@ export default class GameScene extends Phaser.Scene {
 
   createTrashBin() {
     this.trashBinX = 619;
-    this.trashBinY = 881;
+    this.trashBinY = 911;
 
-    // Create a container for the trash bin so we can scale the whole thing easily!
+    // Create a container for the trash bin so we can scale/hover the whole thing easily
     this.trashContainer = this.add.container(this.trashBinX, this.trashBinY).setDepth(2);
 
-    this.trashBinGraphics = this.add.graphics();
-    // Draw body (around 0,0)
-    this.trashBinGraphics.fillStyle(0x6c757d, 1); // Steel grey
-    this.trashBinGraphics.lineStyle(6, 0x495057, 1);
-    this.trashBinGraphics.fillRoundedRect(-41, -34, 83, 90, 11);
-    this.trashBinGraphics.strokeRoundedRect(-41, -34, 83, 90, 11);
-    
-    // Draw silver lid
-    this.trashBinGraphics.fillStyle(0xced4da, 1);
-    this.trashBinGraphics.fillRoundedRect(-47, -47, 94, 17, 6);
-    this.trashBinGraphics.strokeRoundedRect(-47, -47, 94, 17, 6);
-    
-    // Handle
-    this.trashBinGraphics.fillStyle(0x495057, 1);
-    this.trashBinGraphics.fillRect(-11, -56, 23, 9);
+    // New trash bin image asset (234x164) in native 1:1 scale, with "BASURA" integrated in texture
+    this.trashBinSprite = this.add.image(0, 0, 'basurero')
+      .setOrigin(0.5, 0.5);
 
-    this.trashContainer.add(this.trashBinGraphics);
-
-    // Trash can text icon
-    this.trashIconText = this.add.text(0, 15, '🗑️', {
-      font: '34px "Outfit", sans-serif',
-      fill: '#ffffff'
-    }).setOrigin(0.5);
-    this.trashContainer.add(this.trashIconText);
-
-    // Label under the trash bin
-    this.trashLabel = this.add.text(0, 73, 'BASURA', {
-      font: '17px "Outfit", sans-serif',
-      fill: '#495057',
-      fontWeight: '800'
-    }).setOrigin(0.5);
-    this.trashContainer.add(this.trashLabel);
+    this.trashContainer.add(this.trashBinSprite);
   }
 
   openAudioPanel() {
