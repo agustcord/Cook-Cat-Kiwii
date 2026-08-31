@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import Cookie from '../game/Cookie.js';
 import Customer from '../game/Customer.js';
 import UI_CONFIG from '../../ui-config.json';
-import SoundEffects from '../game/SoundEffects.js';
+import SoundManager from '../game/SoundManager.js';
 
 const DAY_CONFIGS = {
   1: {
@@ -115,15 +115,16 @@ export default class GameScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    // Music settings from localStorage
-    const savedVolume = localStorage.getItem('bg_music_volume');
-    this.musicVolume = savedVolume !== null ? parseFloat(savedVolume) : 0.15;
-    this.musicMuted = localStorage.getItem('bg_music_muted') === 'true';
+    // Music settings from SoundManager
+    const soundMgr = SoundManager.getInstance();
+    this.musicVolume = soundMgr.getVolume('bgm');
+    this.musicMuted = soundMgr.isMuted('bgm') || soundMgr.isMuted('master');
 
+    const effectiveBgm = soundMgr.getEffectiveGain('bgm');
     if (!this.sound.get('bg_music')) {
       this.bgMusic = this.sound.add('bg_music', { 
         loop: true, 
-        volume: this.musicMuted ? 0 : this.musicVolume 
+        volume: effectiveBgm
       });
       this.bgMusic.play();
     } else {
@@ -131,7 +132,7 @@ export default class GameScene extends Phaser.Scene {
       if (!this.bgMusic.isPlaying) {
         this.bgMusic.play();
       }
-      this.bgMusic.setVolume(this.musicMuted ? 0 : this.musicVolume);
+      this.bgMusic.setVolume(effectiveBgm);
     }
 
     // Draw primary background (cream wall)
@@ -396,14 +397,14 @@ export default class GameScene extends Phaser.Scene {
     });
     this.musicBtnZone.on('pointerdown', () => {
       if (this.isEditorMode) return; // Ignore audio panel trigger if editing positions
-      SoundEffects.playClick();
+      SoundManager.getInstance().playUiTap();
       this.openAudioPanel();
     });
   }
 
   createStations(width, height) {
-    // Column 1: Estación de Masa (Masa)
-    this.createDoughButtons(84, 581);
+    // Column 1: Estación de Masa (Masa) - Posición exacta Krita 1920x1080
+    this.createDoughButtons();
 
     // Column 2: Estación de Forma (Cortadores)
     const { formaLabel } = UI_CONFIG;
@@ -419,36 +420,52 @@ export default class GameScene extends Phaser.Scene {
     this.createToppingButtons(1669, 581);
   }
 
-  createDoughButtons(startX, startY) {
-    // Masa label sign removed
-
+  createDoughButtons() {
+    // Masa inicial sin forma en coordenadas exactas de la ilustración de Krita (1920x1080)
     const bases = [
-      { id: 'classic', label: 'Clásica', color: 0xf5ebe0 },
-      { id: 'chocolate', label: 'Choco', color: 0x4f1200 },
-      { id: 'oat', label: 'Avena', color: 0xd5bdaf }
+      {
+        id: 'classic',
+        label: 'Clásica',
+        key: 'masa_vainilla',
+        x: 148,
+        y: 684,
+        width: 168,
+        height: 116
+      },
+      {
+        id: 'chocolate',
+        label: 'Choco',
+        key: 'masa_chocolate',
+        x: 142,
+        y: 829.5,
+        width: 168,
+        height: 109
+      },
+      {
+        id: 'oat',
+        label: 'Avena',
+        key: 'masa_avena',
+        x: 135.5,
+        y: 958.5,
+        width: 177,
+        height: 115
+      }
     ];
-
-    const doughSize = 197;
-    const doughHoverSize = 216;
-    const portionSize = 103;
 
     this.doughButtons = {};
     this.doughStockTexts = {};
 
-    bases.forEach((b, index) => {
-      const x = startX + 66;
-      const y = startY + 84 + index * 150;
-
-      // Dough source image
-      const doughImg = this.add.image(x, y, 'dough_' + b.id)
-        .setDisplaySize(doughSize, doughSize)
+    bases.forEach((b) => {
+      // Dough source image at native 1:1 scale (exact Krita illustration layer composition)
+      const doughImg = this.add.image(b.x, b.y, b.key)
+        .setOrigin(0.5, 0.5)
         .setDepth(2);
       
       this.doughButtons[b.id] = doughImg;
 
-      // Add stock indicator text
-      const stockText = this.add.text(x, y + 79, '', {
-        font: '21px "Outfit", sans-serif',
+      // Add stock indicator text below the dough
+      const stockText = this.add.text(b.x, b.y + b.height / 2 + 8, '', {
+        font: '20px "Outfit", sans-serif',
         fill: '#ffffff',
         stroke: '#582f0e',
         strokeThickness: 5,
@@ -457,8 +474,8 @@ export default class GameScene extends Phaser.Scene {
       
       this.doughStockTexts[b.id] = stockText;
 
-      // Create an invisible drag zone on top
-      const dragZone = this.add.rectangle(x, y, doughSize, doughSize, 0x000000, 0);
+      // Create an invisible drag zone covering the dough
+      const dragZone = this.add.rectangle(b.x, b.y, b.width, b.height, 0x000000, 0);
       dragZone.setInteractive({ useHandCursor: true });
       this.input.setDraggable(dragZone);
 
@@ -467,29 +484,29 @@ export default class GameScene extends Phaser.Scene {
       dragZone.on('pointerover', () => {
         const currentStock = this.stock.dough[b.id] || 0;
         if (currentStock > 0) {
-          doughImg.setDisplaySize(doughHoverSize, doughHoverSize);
+          doughImg.setScale(1.08);
         }
       });
       
       dragZone.on('pointerout', () => {
-        doughImg.setDisplaySize(doughSize, doughSize);
+        doughImg.setScale(1.0);
       });
 
       dragZone.on('dragstart', () => {
         const currentStock = this.stock.dough[b.id] || 0;
         if (currentStock <= 0) {
-          SoundEffects.playAngry();
+          SoundManager.getInstance().playUiDenied();
           this.showFeedbackText('¡Sin stock! Cómpralo en la tienda 🛒', this.trayX, 375, '#d90429');
           return;
         }
 
         this.isHoldingItem = true;
-        SoundEffects.playClick();
-        portionSprite = this.add.image(dragZone.x, dragZone.y, 'dough_' + b.id);
-        portionSprite.setDisplaySize(portionSize, portionSize);
+        SoundManager.getInstance().playDoughSelect();
+        portionSprite = this.add.image(dragZone.x, dragZone.y, `dough_${b.id}`);
+        portionSprite.setDisplaySize(84, 84);
         portionSprite.setDepth(1000);
         portionSprite.setAlpha(0.9);
-        doughImg.setDisplaySize(doughSize - 10, doughSize - 10);
+        doughImg.setScale(0.95);
       });
 
       dragZone.on('drag', (pointer, dragX, dragY) => {
@@ -502,9 +519,9 @@ export default class GameScene extends Phaser.Scene {
       dragZone.on('dragend', () => {
         this.isHoldingItem = false;
         if (!portionSprite) {
-          doughImg.setDisplaySize(doughSize, doughSize);
-          dragZone.x = x;
-          dragZone.y = y;
+          doughImg.setScale(1.0);
+          dragZone.x = b.x;
+          dragZone.y = b.y;
           return;
         }
 
@@ -523,14 +540,14 @@ export default class GameScene extends Phaser.Scene {
             newCookie.base = b.id;
             this.prepTrayCookies.push(newCookie);
             this.updateCookieVisuals();
-            SoundEffects.playClick();
+            SoundManager.getInstance().playDoughPlace();
             this.showFeedbackText(`¡Masa de ${b.label}!`, this.trayX, 375, '#38b000');
           } else {
-            SoundEffects.playAngry();
+            SoundManager.getInstance().playUiDenied();
             this.showFeedbackText('¡Mesa llena! (Máx 3)', this.trayX, 375, '#d90429');
           }
         } else {
-          SoundEffects.playClick();
+          SoundManager.getInstance().playUiTap();
         }
 
         if (portionSprite) {
@@ -538,9 +555,9 @@ export default class GameScene extends Phaser.Scene {
           portionSprite = null;
         }
 
-        doughImg.setDisplaySize(doughSize, doughSize);
-        dragZone.x = x;
-        dragZone.y = y;
+        doughImg.setScale(1.0);
+        dragZone.x = b.x;
+        dragZone.y = b.y;
       });
     });
   }
@@ -595,7 +612,7 @@ export default class GameScene extends Phaser.Scene {
         // Drag handlers
         dragZone.on('dragstart', () => {
           this.isHoldingItem = true;
-          SoundEffects.playClick();
+          SoundManager.getInstance().playUiTap();
           container.setDepth(1000);
           dragZone.setDepth(1000);
         });
@@ -630,15 +647,15 @@ export default class GameScene extends Phaser.Scene {
           if (closestCookie) {
             closestCookie.shape = s.id;
             this.updateCookieVisuals();
-            SoundEffects.playClick();
+            SoundManager.getInstance().playDoughCut();
             this.showFeedbackText(`¡Forma de ${s.label}!`, this.trayX, 375, '#38b000');
           } else {
             const distToTrayCenter = Phaser.Math.Distance.Between(dragZone.x, dragZone.y, this.trayX, this.trayY);
             if (distToTrayCenter < 225) {
-              SoundEffects.playAngry();
+              SoundManager.getInstance().playUiDenied();
               this.showFeedbackText('¡Primero selecciona la masa!', this.trayX, 375, '#d90429');
             } else {
-              SoundEffects.playClick();
+              SoundManager.getInstance().playUiTap();
             }
           }
 
@@ -704,7 +721,7 @@ export default class GameScene extends Phaser.Scene {
       .setDepth(6);
 
     // Zonas Interactivas de los botones con efecto hover táctil
-    const btnPowerZone = this.add.rectangle(btnPowerCenterX, btnPowerCenterY, 54, 54, 0x000000, 0)
+    const btnPowerZone = this.add.rectangle(btnPowerCenterX, btnPowerCenterY, 50, 50, 0x000000, 0)
       .setInteractive({ useHandCursor: true })
       .setDepth(12);
 
@@ -732,7 +749,7 @@ export default class GameScene extends Phaser.Scene {
       this.handleOvenPowerClick();
     });
 
-    const btnBakeZone = this.add.rectangle(btnBakeCenterX, btnBakeCenterY, 36, 36, 0x000000, 0)
+    const btnBakeZone = this.add.rectangle(btnBakeCenterX, btnBakeCenterY, 50, 50, 0x000000, 0)
       .setInteractive({ useHandCursor: true })
       .setDepth(12);
 
@@ -950,14 +967,14 @@ export default class GameScene extends Phaser.Scene {
 
     this.cupStackZone.on('dragstart', () => {
       if (this.machineState !== 'no_cup') {
-        SoundEffects.playAngry();
+        SoundManager.getInstance().playUiDenied();
         this.showFeedbackText('¡Ya hay una taza en la cafetera! ☕', startX, 375, '#d90429');
         dragBlocked = true;
         return;
       }
       this.isHoldingItem = true;
       dragBlocked = false;
-      SoundEffects.playClick();
+      SoundManager.getInstance().playUiTap();
       tempDragCup = this.add.image(this.cupStackImage.x, this.cupStackImage.y, 'beverage_empty_cup')
         .setDisplaySize(cupStackW, cupStackH)
         .setDepth(100)
@@ -992,7 +1009,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.machineState = 'empty';
         this.showFeedbackText('¡Taza colocada! ☕', startX, 375, '#38b000');
-        SoundEffects.playClick();
+        SoundManager.getInstance().playDrinkButton();
       } else {
         const activeCup = tempDragCup;
         tempDragCup = null;
@@ -1027,7 +1044,7 @@ export default class GameScene extends Phaser.Scene {
 
   handleDrinkIngredientDrop(type, startX, startY) {
     if (this.machineState === 'no_cup') {
-      SoundEffects.playAngry();
+      SoundManager.getInstance().playUiDenied();
       this.showFeedbackText('¡Primero coloca una taza! ☕🥛', startX, 375, '#d90429');
       return;
     }
@@ -1038,8 +1055,9 @@ export default class GameScene extends Phaser.Scene {
       this.stock.drink[type]--;
       this.updateDrinkStockTexts();
 
-      // Start brewing (sound trigger)
-      SoundEffects.playCoffeePour();
+      // Start brewing (sound trigger: steam & pour)
+      SoundManager.getInstance().playDrinkSteam();
+      SoundManager.getInstance().playDrinkPour();
       this.machineState = type === 'coffee_beans' ? 'brewing_coffee' : 'brewing_milk';
       
       // Draw progress bar above the machine (Y = startY - 78)
@@ -1085,7 +1103,7 @@ export default class GameScene extends Phaser.Scene {
             this.machineState = type === 'coffee_beans' ? 'ready_coffee' : 'ready_milk';
             
             // Play ready sound
-            SoundEffects.playDing();
+            SoundManager.getInstance().playDrinkReady();
 
             if (this.machineCupSprite) {
               this.machineCupSprite.setAlpha(1.0);
@@ -1125,7 +1143,8 @@ export default class GameScene extends Phaser.Scene {
       this.updateDrinkStockTexts();
 
       // Play pouring sound & set state to brewing combined drink
-      SoundEffects.playCoffeePour();
+      SoundManager.getInstance().playDrinkSteam();
+      SoundManager.getInstance().playDrinkPour();
       this.machineState = 'brewing_coffee_milk';
 
       // Disable drag interaction while brewing second ingredient
@@ -1163,7 +1182,7 @@ export default class GameScene extends Phaser.Scene {
             this.machineState = 'ready_coffee_milk';
 
             // Play ready sound
-            SoundEffects.playDing();
+            SoundManager.getInstance().playDrinkReady();
 
             if (this.machineCupSprite) {
               this.machineCupSprite.setAlpha(1.0);
@@ -1191,7 +1210,7 @@ export default class GameScene extends Phaser.Scene {
         }
       });
     } else {
-      SoundEffects.playAngry();
+      SoundManager.getInstance().playUiDenied();
       this.showFeedbackText('¡La máquina está ocupada! ☕', startX, 375, '#d90429');
     }
   }
@@ -1209,7 +1228,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.machineCupSprite.on('dragstart', () => {
       this.isHoldingItem = true;
-      SoundEffects.playClick();
+      SoundManager.getInstance().playUiTap();
       this.machineCupSprite.setDepth(1000);
       this.machineCupSprite.setScale(baseScaleX * 1.15, baseScaleY * 1.15);
     });
@@ -1256,7 +1275,7 @@ export default class GameScene extends Phaser.Scene {
 
   pickupDrink() {
     if (!this.machineCupSprite || !this.machineState.startsWith('ready_')) return;
-    SoundEffects.playClick();
+    SoundManager.getInstance().playUiTap();
 
     // Convert ready state to beverage string
     let drinkKey = 'coffee';
@@ -1289,7 +1308,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   handleOvenPowerClick() {
-    SoundEffects.playClick();
+    SoundManager.getInstance().playOvenClick();
     if (!this.isOvenPreheated) {
       this.isOvenPreheated = true;
       if (this.ovenBtnPowerSprite) {
@@ -1300,6 +1319,7 @@ export default class GameScene extends Phaser.Scene {
       // Apagar horno: si estaba cocinando, se detiene
       if (this.isBaking) {
         this.isBaking = false;
+        SoundManager.getInstance().stopOvenHum();
         if (this.ovenBtnBakeSprite) {
           this.ovenBtnBakeSprite.setTexture('oven_btn_bake_off');
         }
@@ -1326,20 +1346,20 @@ export default class GameScene extends Phaser.Scene {
 
   handleOvenBakeClick() {
     if (!this.isOvenPreheated) {
-      SoundEffects.playAngry();
+      SoundManager.getInstance().playUiDenied();
       this.showFeedbackText('¡Primero enciende el horno!', this.ovenX, 375, '#d90429');
       return;
     }
 
     if (!this.cookiesInOven || this.cookiesInOven.length === 0) {
-      SoundEffects.playAngry();
+      SoundManager.getInstance().playUiDenied();
       this.showFeedbackText('¡El horno está vacío!', this.ovenX, 375, '#d90429');
       return;
     }
 
     if (!this.isBaking) {
-      // Iniciar cocción
-      SoundEffects.playBakingStart();
+      // Iniciar cocción con horno precalentado y galletas dentro
+      SoundManager.getInstance().playBakingStart();
       this.isBaking = true;
       this.ovenTimeElapsed = 0;
       this.alarmPlayed = false;
@@ -1355,7 +1375,8 @@ export default class GameScene extends Phaser.Scene {
       this.updateExtractButtonState();
     } else {
       // Detener cocción manualmente
-      SoundEffects.playClick();
+      SoundManager.getInstance().stopOvenHum();
+      SoundManager.getInstance().playOvenClick();
       this.isBaking = false;
       if (this.ovenBtnBakeSprite) {
         this.ovenBtnBakeSprite.setTexture('oven_btn_bake_off');
@@ -1484,12 +1505,12 @@ export default class GameScene extends Phaser.Scene {
       dragZone.on('dragstart', () => {
         const currentStock = this.stock.topping[t.id] || 0;
         if (currentStock <= 0) {
-          SoundEffects.playAngry();
+          SoundManager.getInstance().playUiDenied();
           this.showFeedbackText('¡Sin stock! Cómpralo en la tienda 🛒', this.trayX, 375, '#d90429');
           return;
         }
 
-        SoundEffects.playClick();
+        SoundManager.getInstance().playUiTap();
         jarClone = this.add.image(x, y, 'topping_' + t.id);
         jarClone.setDisplaySize(jarSize, jarSize);
         jarClone.setDepth(1000);
@@ -1544,19 +1565,30 @@ export default class GameScene extends Phaser.Scene {
 
             closestCookie.toppings = [t.id];
             this.updateCookieVisuals();
-            SoundEffects.playClick();
+
+            // Specialized ASMR topping sound
+            if (t.id === 'sprinkles') {
+              SoundManager.getInstance().playToppingSprinkles();
+            } else if (t.id === 'choco') {
+              SoundManager.getInstance().playToppingChoco();
+            } else if (t.id === 'glazing') {
+              SoundManager.getInstance().playToppingGlazing();
+            } else {
+              SoundManager.getInstance().playUiTap();
+            }
+
             this.showFeedbackText(`¡Añadido ${t.label}! ✨`, this.trayX, 375, '#38b000');
           } else {
             const distToTrayCenter = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, this.trayX, this.trayY);
             if (distToTrayCenter < 225) {
-              SoundEffects.playAngry();
+              SoundManager.getInstance().playUiDenied();
               this.showFeedbackText('¡Primero selecciona la masa!', this.trayX, 375, '#d90429');
             } else {
-              SoundEffects.playClick();
+              SoundManager.getInstance().playUiTap();
             }
           }
         } else {
-          SoundEffects.playClick();
+          SoundManager.getInstance().playUiTap();
         }
 
         jarClone.destroy();
@@ -1678,7 +1710,7 @@ export default class GameScene extends Phaser.Scene {
 
         sprite.on('dragstart', () => {
           this.isHoldingItem = true;
-          SoundEffects.playClick();
+          SoundManager.getInstance().playUiTap();
           sprite.setDepth(1000);
         });
 
@@ -1729,7 +1761,7 @@ export default class GameScene extends Phaser.Scene {
 
           // 1. Drop on Trash Bin
           if (distTrash < 131) {
-            SoundEffects.playTrash();
+            SoundManager.getInstance().playTrash();
             this.prepTrayCookies.splice(cookieIdx, 1);
             this.updateCookieVisuals();
             this.showFeedbackText('¡Desechada! 🗑️', this.trashBinX, this.trashBinY - 50, '#d90429');
@@ -1753,12 +1785,14 @@ export default class GameScene extends Phaser.Scene {
           // 2. Drop on Delivery Tray
           if (distDelivery < 188) {
             if (!cookieInstance.shape) {
+              SoundManager.getInstance().playUiDenied();
               this.showFeedbackText('¡Primero corta la forma!', this.trayX, 375, '#d90429');
             } else {
               this.deliveryTrayCookies.push(cookieInstance);
               this.prepTrayCookies.splice(cookieIdx, 1);
               this.drawDeliveryTray();
               this.updateCookieVisuals();
+              SoundManager.getInstance().playUiTap();
               this.showFeedbackText('¡Galleta lista para entrega! 📦', this.deliveryTrayX, 375, '#38b000');
               return;
             }
@@ -1767,16 +1801,20 @@ export default class GameScene extends Phaser.Scene {
           // 3. Drop on Oven (only if shaped, oven has space, and not baking)
           if (distOven < 225) {
             if (this.isBaking) {
+              SoundManager.getInstance().playUiDenied();
               this.showFeedbackText('¡El horno está encendido!', this.trayX, 375, '#d90429');
             } else if (this.cookiesInOven.length >= 3) {
+              SoundManager.getInstance().playUiDenied();
               this.showFeedbackText('¡El horno está lleno! (Máx 3)', this.trayX, 375, '#d90429');
             } else if (!cookieInstance.shape) {
+              SoundManager.getInstance().playUiDenied();
               this.showFeedbackText('¡Primero corta la forma!', this.trayX, 375, '#d90429');
             } else {
               // Valid drop in oven!
               this.cookiesInOven.push(cookieInstance);
               this.prepTrayCookies.splice(cookieIdx, 1);
               this.updateExtractButtonState();
+              SoundManager.getInstance().playOvenDoor();
               this.showFeedbackText(`Galleta introducida (${this.cookiesInOven.length}/3) 🍪`, this.trayX, 375, '#38b000');
 
               // Play shrink and fade animation into the oven door window
@@ -2098,7 +2136,7 @@ export default class GameScene extends Phaser.Scene {
       this.showFeedbackText(rejectReason, this.trayX, 375, '#d90429');
 
       // Angry customer feedback shake (no patience penalty)
-      SoundEffects.playAngry();
+      SoundManager.getInstance().playCustomerAngry();
 
       this.tweens.add({
         targets: this.currentCustomer.container,
@@ -2163,10 +2201,11 @@ export default class GameScene extends Phaser.Scene {
         this.showFeedbackText(`¡Aceptado parcialmente! 👍 +${totalReward} Monedas`, this.trayX, 375, '#38b000');
 
         if (anyPerfect) {
-          SoundEffects.playPerfect();
+          SoundManager.getInstance().playCatPurr();
+          SoundManager.getInstance().playCoinCollect();
           this.triggerConfetti();
         } else {
-          SoundEffects.playCoin();
+          SoundManager.getInstance().playCoinCollect();
         }
 
         // Clean up
@@ -2181,7 +2220,7 @@ export default class GameScene extends Phaser.Scene {
         });
       } else {
         // Customer rejects the partial delivery and stays
-        SoundEffects.playAngry();
+        SoundManager.getInstance().playCustomerAngry();
         this.currentCustomer.acceptedCookies = accumulated.concat(newDelivered);
         this.currentCustomer.updateProgress(this.currentCustomer.acceptedCookies.length);
         this.deliveryTrayCookies = [];
@@ -2229,7 +2268,7 @@ export default class GameScene extends Phaser.Scene {
       this.coinsText.setText(`Monedas: ${this.coins}`);
 
       if (excessCount > 0) {
-        SoundEffects.playCoin();
+        SoundManager.getInstance().playCoinCollect();
         this.showFeedbackText(`¡Pedido completo! +${totalReward} (Exceso: -${wastePenalty}) 🗑️`, this.trayX, 375, '#ffb703');
       } else {
         const avgSim = (totalReward - drinkReward) / (requested * maxVal);
@@ -2237,10 +2276,12 @@ export default class GameScene extends Phaser.Scene {
         let color = '#38b000';
         if (anyPerfect && avgSim >= 0.95) {
           feedback = '¡ENTREGA PERFECTA! 🍪✨';
-          SoundEffects.playPerfect();
+          SoundManager.getInstance().playCatPurr();
+          SoundManager.getInstance().playPerfect();
+          SoundManager.getInstance().playCoinCollect();
           this.triggerConfetti();
         } else {
-          SoundEffects.playCoin();
+          SoundManager.getInstance().playCoinCollect();
           if (avgSim < 0.6) {
             feedback = '¡Aceptable! 😐';
             color = '#ffb703';
@@ -2263,7 +2304,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   handleCustomerTimeout() {
-    SoundEffects.playAngry();
+    SoundManager.getInstance().playCatSad();
     this.showFeedbackText('¡Me cansé de esperar! 😡', this.trayX, 375, '#d90429');
     
     // Do NOT reset the cookie or oven state — the player may still want to
@@ -2284,7 +2325,8 @@ export default class GameScene extends Phaser.Scene {
 
     this.currentCustomer.isActive = false;
 
-    SoundEffects.playAngry();
+    SoundManager.getInstance().playScratch();
+    SoundManager.getInstance().playCustomerAngry();
 
     const dialogues = [
       '¡AUCH! ¡Qué servicio tan salvaje! 😡🐾',
@@ -2423,7 +2465,14 @@ export default class GameScene extends Phaser.Scene {
       if (progress >= 1.0 && !this.alarmPlayed) {
         this.alarmPlayed = true;
         this.ovenOvercookTimer = 0;
-        SoundEffects.playAlarm();
+        SoundManager.getInstance().stopOvenHum();
+        SoundManager.getInstance().playOvenBellReady();
+        if (this.ovenBtnBakeSprite) {
+          this.ovenBtnBakeSprite.setTexture('oven_btn_bake_off');
+        }
+        if (this.ovenGlassSprite) {
+          this.ovenGlassSprite.setTexture('oven_glass_off');
+        }
         this.showFeedbackText('¡Galletas listas! 🍪', this.ovenX, 375, '#38b000');
         this.updateExtractButtonState();
       }
@@ -2433,12 +2482,21 @@ export default class GameScene extends Phaser.Scene {
         this.ovenOvercookTimer += (delta / 1000);
         if (this.ovenOvercookTimer >= 5.0 && !this.hasOvercookedAlarm) {
           this.hasOvercookedAlarm = true;
+          this.isBaking = false;
+          SoundManager.getInstance().stopOvenHum();
+          if (this.ovenBtnBakeSprite) {
+            this.ovenBtnBakeSprite.setTexture('oven_btn_bake_off');
+          }
+          if (this.ovenGlassSprite) {
+            this.ovenGlassSprite.setTexture('oven_glass_off');
+          }
           if (this.cookiesInOven) {
             this.cookiesInOven.forEach(cookie => {
               cookie.bakedState = 'burnt';
             });
           }
-          SoundEffects.playAngry();
+          SoundManager.getInstance().playOvenBurnAlert();
+          SoundManager.getInstance().playCookieBurnt();
           this.showFeedbackText('¡Se ha quemado! 😭🔥', this.ovenX, 375, '#d90429');
           this.cameras.main.shake(200, 0.005);
           this.updateExtractButtonState();
@@ -2461,7 +2519,7 @@ export default class GameScene extends Phaser.Scene {
 
     if (pointer && this.catPawSprite && this.catArmOutlineGraphics && this.catArmFillGraphics) {
       // Lerp paw position to pointer position with a Y clamp limit allowing access to oven buttons
-      const clampedTargetY = Math.max(300, pointer.y);
+      const clampedTargetY = Math.max(220, pointer.y);
       const lerpSpeed = 0.22;
       this.pawX += (pointer.x - this.pawX) * lerpSpeed;
       this.pawY += (clampedTargetY - this.pawY) * lerpSpeed;
@@ -2721,7 +2779,7 @@ export default class GameScene extends Phaser.Scene {
     this.deliveryDragZone.on('dragstart', () => {
       if (this.isEditorMode) return;
       this.isHoldingItem = true;
-      SoundEffects.playClick();
+      SoundManager.getInstance().playUiTap();
       this.deliveryDragZone.setDepth(1000);
       this.deliveryTrayLabel.setDepth(1001);
       this.deliveryTraySprites.forEach(s => s.setDepth(1002));
@@ -2885,7 +2943,7 @@ export default class GameScene extends Phaser.Scene {
         const count = this.deliveryTrayCookies.length;
         const drinksCount = this.deliveryTrayDrinks ? this.deliveryTrayDrinks.length : 0;
         if (count > 0 || drinksCount > 0) {
-          SoundEffects.playTrash();
+          SoundManager.getInstance().playTrash();
           this.deliveryTrayCookies = [];
           this.deliveryTrayDrinks = [];
           this.drawDeliveryTray();
@@ -3002,7 +3060,7 @@ export default class GameScene extends Phaser.Scene {
 
   handleOvenImageClick() {
     if (!this.cookiesInOven || this.cookiesInOven.length === 0) {
-      SoundEffects.playAngry();
+      SoundManager.getInstance().playUiDenied();
       this.showFeedbackText('¡El horno está vacío!', this.ovenX, 375, '#d90429');
       return;
     }
@@ -3010,6 +3068,7 @@ export default class GameScene extends Phaser.Scene {
     // Si estaba horneando, se detiene la cocción inmediatamente
     if (this.isBaking) {
       this.isBaking = false;
+      SoundManager.getInstance().stopOvenHum();
       if (this.ovenBtnBakeSprite) {
         this.ovenBtnBakeSprite.setTexture('oven_btn_bake_off');
       }
@@ -3055,7 +3114,8 @@ export default class GameScene extends Phaser.Scene {
     });
 
     this.cookiesInOven = [];
-    SoundEffects.playClick();
+    SoundManager.getInstance().playOvenDoor();
+    SoundManager.getInstance().playUiTap();
     this.showFeedbackText('¡Retirando al mostrador! 🍪', this.ovenX, 375, '#38b000');
     this.updateExtractButtonState();
   }
@@ -3248,43 +3308,44 @@ export default class GameScene extends Phaser.Scene {
     this.audioPanelContainer.add(closeZone);
 
     // --- Interactive Logic ---
+    const soundMgr = SoundManager.getInstance();
 
     // Minus Button Interaction
     minusZone.on('pointerdown', () => {
-      SoundEffects.playClick();
+      soundMgr.playUiTap();
       this.musicVolume = Math.max(0.0, parseFloat((this.musicVolume - 0.05).toFixed(2)));
-      
+      soundMgr.setVolume('bgm', this.musicVolume);
+
       // If we decrease and it's muted, let's unmute so the change is felt
       if (this.musicMuted && this.musicVolume > 0) {
         this.musicMuted = false;
-        localStorage.setItem('bg_music_muted', 'false');
+        soundMgr.setMuted('bgm', false);
         muteText.setText(getMuteLabel());
       }
-      
-      localStorage.setItem('bg_music_volume', this.musicVolume);
+
       if (this.bgMusic) {
-        this.bgMusic.setVolume(this.musicMuted ? 0 : this.musicVolume);
+        this.bgMusic.setVolume(soundMgr.getEffectiveGain('bgm'));
       }
-      
+
       volumePercentText.setText(`Volumen: ${Math.round(this.musicVolume * 100)}%`);
       drawVolumeBar();
     });
 
     // Plus Button Interaction
     plusZone.on('pointerdown', () => {
-      SoundEffects.playClick();
+      soundMgr.playUiTap();
       this.musicVolume = Math.min(1.0, parseFloat((this.musicVolume + 0.05).toFixed(2)));
-      
+      soundMgr.setVolume('bgm', this.musicVolume);
+
       // Auto unmute when increasing volume
       if (this.musicMuted) {
         this.musicMuted = false;
-        localStorage.setItem('bg_music_muted', 'false');
+        soundMgr.setMuted('bgm', false);
         muteText.setText(getMuteLabel());
       }
 
-      localStorage.setItem('bg_music_volume', this.musicVolume);
       if (this.bgMusic) {
-        this.bgMusic.setVolume(this.musicMuted ? 0 : this.musicVolume);
+        this.bgMusic.setVolume(soundMgr.getEffectiveGain('bgm'));
       }
 
       volumePercentText.setText(`Volumen: ${Math.round(this.musicVolume * 100)}%`);
@@ -3293,12 +3354,12 @@ export default class GameScene extends Phaser.Scene {
 
     // Mute/Unmute Interaction
     muteZone.on('pointerdown', () => {
-      SoundEffects.playClick();
+      soundMgr.playUiTap();
       this.musicMuted = !this.musicMuted;
-      localStorage.setItem('bg_music_muted', this.musicMuted);
-      
+      soundMgr.setMuted('bgm', this.musicMuted);
+
       if (this.bgMusic) {
-        this.bgMusic.setVolume(this.musicMuted ? 0 : this.musicVolume);
+        this.bgMusic.setVolume(soundMgr.getEffectiveGain('bgm'));
       }
 
       muteText.setText(getMuteLabel());
@@ -3307,7 +3368,7 @@ export default class GameScene extends Phaser.Scene {
 
     // Close Button Interaction
     closeZone.on('pointerdown', () => {
-      SoundEffects.playClick();
+      soundMgr.playUiTap();
       this.isAudioPanelOpen = false;
       this.scratchBlockedUntilPointerUp = true; // Block scratching until user releases the mouse button
       this.input.setDefaultCursor('none');

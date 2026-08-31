@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import SoundEffects from '../game/SoundEffects.js';
+import SoundManager from '../game/SoundManager.js';
 import { hasSufficientDough } from '../game/EconomyManager.js';
 
 export default class ShopScene extends Phaser.Scene {
@@ -262,6 +262,7 @@ export default class ShopScene extends Phaser.Scene {
 
       hitZone.on('pointerover', (pointer) => {
         if (pointer.y < this.viewportTop || pointer.y > this.viewportBottom) return;
+        SoundManager.getInstance().playUiHover();
         const isBoughtMold = item.type === 'mold' && this.unlockedShapes.includes(item.id);
         if (!isBoughtMold && this.coins >= item.cost) {
           btnBg.clear();
@@ -323,12 +324,12 @@ export default class ShopScene extends Phaser.Scene {
 
     startZone.on('pointerdown', () => {
       if (!hasSufficientDough(this.stock)) {
-        SoundEffects.playAngry();
+        SoundManager.getInstance().playUiDenied();
         this.showDoughWarning();
         return;
       }
 
-      SoundEffects.playClick();
+      SoundManager.getInstance().playUiTap();
       this.scene.start('GameScene', {
         day: this.day + 1,
         coins: this.coins,
@@ -339,6 +340,7 @@ export default class ShopScene extends Phaser.Scene {
     });
 
     startZone.on('pointerover', () => {
+      SoundManager.getInstance().playUiHover();
       startBtnBg.clear();
       startBtnBg.fillStyle(0x4ad611, 1);
       startBtnBg.fillRoundedRect(startBtnX - 3, startBtnY - 2, startBtnW + 6, startBtnH + 4, 16);
@@ -472,7 +474,10 @@ export default class ShopScene extends Phaser.Scene {
   }
 
   handleBuyItem(item, x, y, nameTxt, statusTxt, itemIcon) {
-    if (this.coins < item.cost) return;
+    if (this.coins < item.cost) {
+      SoundManager.getInstance().playUiDenied();
+      return;
+    }
 
     const isBoughtMold = item.type === 'mold' && this.unlockedShapes.includes(item.id);
     if (isBoughtMold) return;
@@ -480,7 +485,7 @@ export default class ShopScene extends Phaser.Scene {
     this.coins -= item.cost;
     this.coinBalanceText.setText(`🪙 Monedas Disponibles: ${this.coins}`);
 
-    SoundEffects.playCoin();
+    SoundManager.getInstance().playShopBuy();
 
     if (item.type === 'mold') {
       this.unlockedShapes.push(item.id);

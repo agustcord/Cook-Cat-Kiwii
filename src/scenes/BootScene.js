@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
+import SoundManager from '../game/SoundManager.js';
 
-const ASSET_VERSION = '13';
+const ASSET_VERSION = '15';
 const assetUrl = (path) => `${path}?v=${ASSET_VERSION}`;
 
 export default class BootScene extends Phaser.Scene {
@@ -75,7 +76,10 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('customer_4', assetUrl('assets/customers/customer_4.png'));
     this.load.image('customer_5', assetUrl('assets/customers/customer_5.png'));
 
-    // Preload dough balls (served from public/ with cache buster v11)
+    // Preload dough assets (ilustraciones artesanales de masas grandes y bolitas de masa)
+    this.load.image('masa_vainilla', assetUrl('assets/masa_vainilla.png'));
+    this.load.image('masa_chocolate', assetUrl('assets/masa_chocolate.png'));
+    this.load.image('masa_avena', assetUrl('assets/masa_avena.png'));
     this.load.image('dough_classic', assetUrl('assets/stations/dough_classic.png'));
     this.load.image('dough_chocolate', assetUrl('assets/stations/dough_chocolate.png'));
     this.load.image('dough_oat', assetUrl('assets/stations/dough_oat.png'));
@@ -132,6 +136,9 @@ export default class BootScene extends Phaser.Scene {
   }
 
   create() {
+    // Initialize SoundManager audio context & settings
+    SoundManager.getInstance().initAudioContext();
+
     // Generate Procedural Textures for Drinks Station & Beverages
     this.generateDrinkTextures();
 

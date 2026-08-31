@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import SoundEffects from '../game/SoundEffects.js';
+import SoundManager from '../game/SoundManager.js';
 
 export default class VictoryScene extends Phaser.Scene {
   constructor() {
@@ -11,8 +11,8 @@ export default class VictoryScene extends Phaser.Scene {
   }
 
   create() {
-    // Play a delightful synthesized victory arpeggio sound
-    SoundEffects.playPerfect();
+    // Play a delightful synthesized victory fanfare sound
+    SoundManager.getInstance().playVictoryFanfare();
 
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
@@ -75,11 +75,12 @@ export default class VictoryScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
 
     actionZone.on('pointerdown', () => {
-      SoundEffects.playClick();
+      SoundManager.getInstance().playUiTap();
       this.scene.start('MainMenuScene');
     });
 
     actionZone.on('pointerover', () => {
+      SoundManager.getInstance().playUiHover();
       btnBg.clear();
       btnBg.fillStyle(0x9c6644, 1);
       btnBg.fillRoundedRect(btnX - 4, btnY - 2, btnW + 8, btnH + 4, 14);

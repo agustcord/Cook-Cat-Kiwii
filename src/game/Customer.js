@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundManager from './SoundManager.js';
 
 export default class Customer {
   constructor(scene, x, y, dayConfig, onTimeoutCallback, customerId, assignedRecipe, forcedQuantity, requestedDrink) {
@@ -64,6 +65,11 @@ export default class Customer {
     this.patience = this.maxPatience;
     this.onTimeoutCallback = onTimeoutCallback;
     this.isActive = true;
+    this.anxiousPlayed = false;
+
+    // Play entrance chime and curious meow
+    SoundManager.getInstance().playDoorChime();
+    SoundManager.getInstance().playCatMeow('curious');
 
     // Tolerance thresholds based on customerId (Personalities)
     const TOLERANCE_THRESHOLDS = {
@@ -287,6 +293,13 @@ export default class Customer {
     // Patience decreases
     this.patience -= delta / 1000;
     this.updatePatienceBar();
+
+    // Check for low patience audio trigger (< 25%)
+    const ratio = this.patience / this.maxPatience;
+    if (ratio <= 0.25 && !this.anxiousPlayed) {
+      this.anxiousPlayed = true;
+      SoundManager.getInstance().playCatMeow('anxious');
+    }
 
     if (this.patience <= 0) {
       this.patience = 0;

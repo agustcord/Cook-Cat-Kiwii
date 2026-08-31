@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import SoundEffects from '../game/SoundEffects.js';
+import SoundManager from '../game/SoundManager.js';
 import { evaluateSolvency } from '../game/EconomyManager.js';
 import {
   computeSubtitleLayout,
@@ -63,9 +63,9 @@ export default class SummaryScene extends Phaser.Scene {
   create() {
     // Play appropriate sound when entering summary
     if (this.isBankrupt) {
-      SoundEffects.playAngry();
+      SoundManager.getInstance().playGameOverMelody();
     } else {
-      SoundEffects.playCoin();
+      SoundManager.getInstance().playCoinCascade();
     }
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
@@ -467,11 +467,12 @@ export default class SummaryScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
 
     actionZone.on('pointerdown', () => {
-      SoundEffects.playClick();
+      SoundManager.getInstance().playUiTap();
       nextSceneCallback();
     });
 
     actionZone.on('pointerover', () => {
+      SoundManager.getInstance().playUiHover();
       actionBtnBg.clear();
       actionBtnBg.fillStyle(btnHoverColor, 1);
       actionBtnBg.fillRoundedRect(btnX - 4, btnY - 2, btnW + 8, btnH + 4, 20);
@@ -515,7 +516,7 @@ export default class SummaryScene extends Phaser.Scene {
         .setInteractive({ useHandCursor: true });
 
       retryZone.on('pointerdown', () => {
-        SoundEffects.playClick();
+        SoundManager.getInstance().playUiTap();
         this.scene.start('GameScene', {
           day: this.day,
           coins: this.coinsAtStart,
@@ -526,6 +527,7 @@ export default class SummaryScene extends Phaser.Scene {
       });
 
       retryZone.on('pointerover', () => {
+        SoundManager.getInstance().playUiHover();
         retryBg.clear();
         retryBg.fillStyle(0x7f5539, 0.1);
         retryBg.fillRoundedRect(retryBtnX, retryBtnY, retryBtnW, retryBtnH, 14);
@@ -584,7 +586,7 @@ export default class SummaryScene extends Phaser.Scene {
       ease: 'Sine.easeOut'
     });
 
-    // 3. Estrellas de rating: Fade-in gentil con giro suave para las ganadas
+    // 3. Estrellas de rating: Fade-in gentil con giro suave y pop sonoro para las ganadas
     starObjs.forEach((s, i) => {
       this.tweens.add({
         targets: s.gfx,
@@ -594,6 +596,7 @@ export default class SummaryScene extends Phaser.Scene {
         ease: 'Sine.easeOut',
         onComplete: () => {
           if (s.earned) {
+            SoundManager.getInstance().playStarPop(i);
             this.tweens.add({
               targets: s.gfx,
               angle: 360,
