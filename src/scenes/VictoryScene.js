@@ -1,5 +1,9 @@
 import Phaser from 'phaser';
 import SoundManager from '../game/SoundManager.js';
+import CrazyGamesSDK from '../game/services/CrazyGamesSDK.js';
+import I18nManager from '../game/services/I18nManager.js';
+import SaveManager from '../game/services/SaveManager.js';
+import PillSwitcher from '../game/PillSwitcher.js';
 
 export default class VictoryScene extends Phaser.Scene {
   constructor() {
@@ -11,8 +15,14 @@ export default class VictoryScene extends Phaser.Scene {
   }
 
   create() {
-    // Play a delightful synthesized victory fanfare sound
+    const i18n = I18nManager.getInstance();
+
+    // Clear saved run state on victory
+    SaveManager.getInstance().clearSave();
+
+    // Play a delightful synthesized victory fanfare sound and trigger happytime
     SoundManager.getInstance().playVictoryFanfare();
+    CrazyGamesSDK.getInstance().happytime();
 
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
@@ -25,8 +35,20 @@ export default class VictoryScene extends Phaser.Scene {
     // Confetti or sparkles graphics
     this.createConfetti(width, height);
 
+    // Pill Switcher Dual [ EN | ES ] (Top-Right: x: width - 190, y: 85, depth: 100)
+    this.pillSwitcher = new PillSwitcher(this, {
+      x: width - 190,
+      y: 85,
+      width: 320,
+      height: 82,
+      depth: 100,
+      onLanguageChange: () => {
+        this.scene.restart({ coins: this.coins });
+      }
+    });
+
     // Title
-    this.add.text(width / 2, height / 4 - 56, 'VICTORIA COMERCIAL', {
+    this.add.text(width / 2, height / 4 - 56, i18n.t('victory.title'), {
       font: '83px "Outfit", sans-serif',
       fill: '#38b000',
       fontWeight: '800',
@@ -40,12 +62,7 @@ export default class VictoryScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Narrative Text
-    const narrative = 
-      "¡LO LOGRASTE! Has saldado el préstamo por completo.\n\n" +
-      "Kiwipaw Bakehouse es 100% tuya. Ahora eres un michi repostero\n" +
-      "exitoso, libre del estrés de la oficina y dueño de tu propio\n" +
-      "destino y deliciosas galletas.\n\n" +
-      `Te has quedado con un capital neto final de: 🪙 ${this.coins}`;
+    const narrative = i18n.t('victory.narrative', { coins: this.coins });
 
     this.add.text(width / 2, height / 2 + 94, narrative, {
       font: '28px "Outfit", sans-serif',
@@ -65,7 +82,7 @@ export default class VictoryScene extends Phaser.Scene {
     btnBg.fillStyle(0x7f5539, 1);
     btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 12);
 
-    const btnText = this.add.text(width / 2, btnY + btnH / 2, 'VOLVER AL MENÚ 🏠', {
+    const btnText = this.add.text(width / 2, btnY + btnH / 2, i18n.t('victory.returnMenu'), {
       font: '28px "Outfit", sans-serif',
       fill: '#fff1e6',
       fontWeight: '800'

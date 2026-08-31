@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import SoundManager from './SoundManager.js';
+import I18nManager from './services/I18nManager.js';
 
 export default class Customer {
   constructor(scene, x, y, dayConfig, onTimeoutCallback, customerId, assignedRecipe, forcedQuantity, requestedDrink) {
@@ -14,8 +15,9 @@ export default class Customer {
     
     // Roll for mood (bad day / rush) based on current day
     const day = this.scene.day || 1;
-    const badDayProbabilities = { 1: 0.10, 2: 0.30, 3: 0.45, 4: 0.65 };
-    const badDayChance = badDayProbabilities[day] || 0.50;
+    const badDayChance = day <= 4
+      ? ({ 1: 0.10, 2: 0.30, 3: 0.45, 4: 0.65 }[day] || 0.10)
+      : Math.min(0.85, 0.65 + (day - 4) * 0.05);
     this.isBadDay = Math.random() < badDayChance;
 
     // Set requested quantity
@@ -148,21 +150,25 @@ export default class Customer {
     this.drawOrderImage();
 
     // 6. Delivery progress text
+    const i18n = I18nManager.getInstance();
     let prepText = '';
+    const drinkName = this.requestedDrink ? i18n.t(`recipes.drinks.${this.requestedDrink}`) : '';
+
     if (this.requestedQuantity === 0) {
-      let drinkName = 'Café';
-      if (this.requestedDrink === 'milk') drinkName = 'Leche';
-      else if (this.requestedDrink === 'coffee_milk') drinkName = 'Café c/Leche';
-      prepText = `Pedido: ${drinkName}`;
+      prepText = i18n.t('customer.orderDrinkOnly', { drink: drinkName });
+    } else if (this.requestedDrink) {
+      prepText = i18n.t('customer.orderWithDrink', {
+        count: 0,
+        total: this.requestedQuantity,
+        drink: drinkName
+      });
     } else {
-      prepText = `Pedido: 0 / ${this.requestedQuantity}`;
-      if (this.requestedDrink) {
-        let drinkName = 'Café';
-        if (this.requestedDrink === 'milk') drinkName = 'Leche';
-        else if (this.requestedDrink === 'coffee_milk') drinkName = 'Café c/Leche';
-        prepText += ` + ${drinkName}`;
-      }
+      prepText = i18n.t('customer.order', {
+        count: 0,
+        total: this.requestedQuantity
+      });
     }
+
     this.progressText = this.scene.add.text(0, 263, prepText, {
       font: '23px "Outfit", sans-serif',
       fill: '#582f0e',
@@ -250,20 +256,23 @@ export default class Customer {
   updateProgress(newCount) {
     this.receivedCookiesCount = newCount;
     if (this.progressText) {
+      const i18n = I18nManager.getInstance();
       let prepText = '';
+      const drinkName = this.requestedDrink ? i18n.t(`recipes.drinks.${this.requestedDrink}`) : '';
+
       if (this.requestedQuantity === 0) {
-        let drinkName = 'Café';
-        if (this.requestedDrink === 'milk') drinkName = 'Leche';
-        else if (this.requestedDrink === 'coffee_milk') drinkName = 'Café c/Leche';
-        prepText = `Pedido: ${drinkName}`;
+        prepText = i18n.t('customer.orderDrinkOnly', { drink: drinkName });
+      } else if (this.requestedDrink) {
+        prepText = i18n.t('customer.orderWithDrink', {
+          count: this.receivedCookiesCount,
+          total: this.requestedQuantity,
+          drink: drinkName
+        });
       } else {
-        prepText = `Pedido: ${this.receivedCookiesCount} / ${this.requestedQuantity}`;
-        if (this.requestedDrink) {
-          let drinkName = 'Café';
-          if (this.requestedDrink === 'milk') drinkName = 'Leche';
-          else if (this.requestedDrink === 'coffee_milk') drinkName = 'Café c/Leche';
-          prepText += ` + ${drinkName}`;
-        }
+        prepText = i18n.t('customer.order', {
+          count: this.receivedCookiesCount,
+          total: this.requestedQuantity
+        });
       }
       this.progressText.setText(prepText);
     }

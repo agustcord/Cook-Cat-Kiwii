@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
 import SoundManager from '../game/SoundManager.js';
+import I18nManager from '../game/services/I18nManager.js';
+import SaveManager from '../game/services/SaveManager.js';
+import PillSwitcher from '../game/PillSwitcher.js';
 
 export default class GameOverScene extends Phaser.Scene {
   constructor() {
@@ -12,8 +15,15 @@ export default class GameOverScene extends Phaser.Scene {
   }
 
   create() {
+    const sound = SoundManager.getInstance();
+    const i18n = I18nManager.getInstance();
+    const saveManager = SaveManager.getInstance();
+
+    // Clear saved run state on game over
+    saveManager.clearSave();
+
     // Play a gentle melancholic game over melody
-    SoundManager.getInstance().playGameOverMelody();
+    sound.playGameOverMelody();
 
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
@@ -23,8 +33,20 @@ export default class GameOverScene extends Phaser.Scene {
     bg.fillGradientStyle(0x1a0f12, 0x1a0f12, 0x2d1115, 0x2d1115, 1);
     bg.fillRect(0, 0, width, height);
 
+    // Pill Switcher Dual [ EN | ES ] (Top-Right: x: width - 190, y: 85, depth: 100)
+    this.pillSwitcher = new PillSwitcher(this, {
+      x: width - 190,
+      y: 85,
+      width: 320,
+      height: 82,
+      depth: 100,
+      onLanguageChange: () => {
+        this.scene.restart({ reason: this.reason });
+      }
+    });
+
     // Title
-    this.add.text(width / 2, height / 4 - 40, 'BANCARROTA', {
+    this.add.text(width / 2, height / 4 - 40, i18n.t('gameOver.title'), {
       font: '86px "Outfit", sans-serif',
       fill: '#d90429',
       fontWeight: '800',
@@ -37,27 +59,10 @@ export default class GameOverScene extends Phaser.Scene {
       font: '120px "Outfit", sans-serif'
     }).setOrigin(0.5);
 
-    // Dynamic reason subtitle and narrative
-    let subtitle = 'INSOLVENCIA FINANCIERA';
-    let narrative = '';
-
-    if (this.reason === 'supplies') {
-      subtitle = 'DESABASTECIMIENTO OPERATIVO';
-      narrative =
-        'Pudiste cubrir los gastos fijos de la jornada, pero la panadería\n' +
-        'se quedó sin masa en la despensa y sin fondos suficientes\n' +
-        'para comprar un pack de masa básica en la tienda (mínimo 10 🪙).\n\n' +
-        'Sin harina ni masa para hornear, Kiwipaw Bakehouse no puede abrir\n' +
-        'al día siguiente y tuvo que cerrar sus puertas definitivamente.';
-    } else {
-      subtitle = 'INSOLVENCIA FINANCIERA';
-      narrative =
-        'La presión de las deudas y el costo de mantenimiento diario\n' +
-        'fueron demasiado para Kiwipaw Bakehouse.\n\n' +
-        'Sin monedas suficientes para cubrir el alquiler, servicios y\n' +
-        'la cuota del banco, el michi se declaró en quiebra y tuvo\n' +
-        'que cerrar sus puertas definitivamente.';
-    }
+    // Dynamic reason subtitle and narrative from i18n
+    const isSupplies = this.reason === 'supplies';
+    const subtitle = isSupplies ? i18n.t('gameOver.subtitleSupplies') : i18n.t('gameOver.subtitleDebt');
+    const narrative = isSupplies ? i18n.t('gameOver.narrativeSupplies') : i18n.t('gameOver.narrativeDebt');
 
     this.add.text(width / 2, height / 2 - 40, subtitle, {
       font: '30px "Outfit", sans-serif',
@@ -84,7 +89,7 @@ export default class GameOverScene extends Phaser.Scene {
     btnBg.fillStyle(0xd90429, 1);
     btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 12);
 
-    const btnText = this.add.text(width / 2, btnY + btnH / 2, 'REINTENTAR CAMPAÑA 🔄', {
+    const btnText = this.add.text(width / 2, btnY + btnH / 2, i18n.t('gameOver.retryCampaign'), {
       font: '30px "Outfit", sans-serif',
       fill: '#ffffff',
       fontWeight: '800'
@@ -94,23 +99,13 @@ export default class GameOverScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
 
     actionZone.on('pointerdown', () => {
-      SoundManager.getInstance().playUiTap();
-      // Restart complete game
-      this.scene.start('GameScene', {
-        day: 1,
-        coins: 0,
-        loanRemaining: 200,
-        unlockedShapes: ['star'],
-        stock: {
-          dough: { classic: 10, chocolate: 0, oat: 0 },
-          topping: { sprinkles: 0, choco: 0, glazing: 0 },
-          drink: { coffee_beans: 2, milk: 2 }
-        }
-      });
+      sound.playUiTap();
+      // Restart complete game with default fresh state
+      this.scene.start('GameScene', saveManager.getDefaultState());
     });
 
     actionZone.on('pointerover', () => {
-      SoundManager.getInstance().playUiHover();
+      sound.playUiHover();
       btnBg.clear();
       btnBg.fillStyle(0xef233c, 1);
       btnBg.fillRoundedRect(btnX - 4, btnY - 2, btnW + 8, btnH + 4, 14);

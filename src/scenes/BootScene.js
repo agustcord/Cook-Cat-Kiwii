@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import SoundManager from '../game/SoundManager.js';
+import CrazyGamesSDK from '../game/services/CrazyGamesSDK.js';
+import I18nManager from '../game/services/I18nManager.js';
 
 const ASSET_VERSION = '15';
 const assetUrl = (path) => `${path}?v=${ASSET_VERSION}`;
@@ -10,14 +12,19 @@ export default class BootScene extends Phaser.Scene {
   }
 
   preload() {
+    // Notify CrazyGames SDK of loading start
+    CrazyGamesSDK.getInstance().init().catch(() => {});
+    CrazyGamesSDK.getInstance().loadingStart();
+
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
+    const i18n = I18nManager.getInstance();
 
     // Loading screen text (using premium Outfit font loaded in HTML)
     const loadingText = this.make.text({
       x: width / 2,
       y: height / 2,
-      text: 'Cargando Kiwipaw Bakehouse...',
+      text: i18n.t('boot.loading'),
       style: {
         font: '24px "Outfit", sans-serif',
         fill: '#582f0e',
@@ -141,6 +148,9 @@ export default class BootScene extends Phaser.Scene {
 
     // Generate Procedural Textures for Drinks Station & Beverages
     this.generateDrinkTextures();
+
+    // Notify CrazyGames SDK of loading stop
+    CrazyGamesSDK.getInstance().loadingStop();
 
     // Go directly to the main menu
     this.scene.start('MainMenuScene');

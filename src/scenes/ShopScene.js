@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import SoundManager from '../game/SoundManager.js';
+import I18nManager from '../game/services/I18nManager.js';
+import SaveManager from '../game/services/SaveManager.js';
 import { hasSufficientDough } from '../game/EconomyManager.js';
+import PillSwitcher from '../game/PillSwitcher.js';
 
 export default class ShopScene extends Phaser.Scene {
   constructor() {
@@ -34,6 +37,7 @@ export default class ShopScene extends Phaser.Scene {
   create() {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
+    const i18n = I18nManager.getInstance();
 
     // Background
     const bgGraphics = this.add.graphics();
@@ -43,33 +47,45 @@ export default class ShopScene extends Phaser.Scene {
     // =========================================================================
     // ZONA 1: HEADER FIJO (y: 0 - 330)
     // =========================================================================
-    const titleText = this.add.text(width / 2, 84, 'TIENDA KIWI BAKERY', {
+    this.titleText = this.add.text(width / 2, 84, i18n.t('shop.title'), {
       font: '68px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800'
     }).setOrigin(0.5);
 
-    const subtitleText = this.add.text(width / 2, 155, `¡Abastece tus ingredientes antes del Día ${this.day + 1}!`, {
+    this.subtitleText = this.add.text(width / 2, 155, i18n.t('shop.subtitle', { day: this.day + 1 }), {
       font: '30px "Outfit", sans-serif',
       fill: '#7f5539',
       fontWeight: '600'
     }).setOrigin(0.5);
 
-    this.coinBalanceText = this.add.text(width / 2, 225, `🪙 Monedas Disponibles: ${this.coins}`, {
+    this.coinBalanceText = this.add.text(width / 2, 225, i18n.t('shop.availableCoins', { coins: this.coins }), {
       font: '45px "Outfit", sans-serif',
       fill: '#d48c47',
       fontWeight: '800'
     }).setOrigin(0.5);
 
+    // Pill Switcher Dual [ EN | ES ] (Top-Right: x: width - 190, y: 85, depth: 100)
+    this.pillSwitcher = new PillSwitcher(this, {
+      x: width - 190,
+      y: 85,
+      width: 320,
+      height: 82,
+      depth: 100,
+      onLanguageChange: () => {
+        this.refreshLocalizedTexts();
+      }
+    });
+
     // Column Headers (Fixed at y = 295)
     const columns = {
-      mold: { title: 'MOLDES', x: 272 },
-      dough: { title: 'MASAS', x: 731 },
-      topping: { title: 'TOPPINGS', x: 1191 },
-      drink: { title: 'BEBIDAS', x: 1650 }
+      mold: { title: i18n.t('shop.columns.molds'), x: 272 },
+      dough: { title: i18n.t('shop.columns.dough'), x: 731 },
+      topping: { title: i18n.t('shop.columns.toppings'), x: 1191 },
+      drink: { title: i18n.t('shop.columns.drinks'), x: 1650 }
     };
 
-    const columnHeaders = [];
+    this.columnHeaderTexts = [];
     Object.keys(columns).forEach(key => {
       const col = columns[key];
       const hText = this.add.text(col.x, 295, col.title, {
@@ -77,7 +93,7 @@ export default class ShopScene extends Phaser.Scene {
         fill: '#7f5539',
         fontWeight: '800'
       }).setOrigin(0.5);
-      columnHeaders.push(hText);
+      this.columnHeaderTexts.push(hText);
     });
 
     // =========================================================================
@@ -100,26 +116,27 @@ export default class ShopScene extends Phaser.Scene {
     // Buyable Items Configuration
     const items = [
       // MOLDES (Unlock)
-      { type: 'mold', id: 'heart', name: 'Molde Corazón', cost: 60, desc: 'Permanente' },
-      { type: 'mold', id: 'cat', name: 'Molde Gato', cost: 90, desc: 'Permanente' },
-      { type: 'mold', id: 'fish', name: 'Molde Pez', cost: 120, desc: 'Permanente' },
+      { type: 'mold', id: 'heart', key: 'moldHeart', cost: 60 },
+      { type: 'mold', id: 'cat', key: 'moldCat', cost: 90 },
+      { type: 'mold', id: 'fish', key: 'moldFish', cost: 120 },
 
       // MASAS (Consumables x5)
-      { type: 'dough', id: 'classic', name: 'Masa Clásica', cost: 10, desc: 'Pack x5' },
-      { type: 'dough', id: 'chocolate', name: 'Masa Chocolate', cost: 15, desc: 'Pack x5' },
-      { type: 'dough', id: 'oat', name: 'Masa Avena', cost: 20, desc: 'Pack x5' },
+      { type: 'dough', id: 'classic', key: 'doughClassic', cost: 10 },
+      { type: 'dough', id: 'chocolate', key: 'doughChocolate', cost: 15 },
+      { type: 'dough', id: 'oat', key: 'doughOat', cost: 20 },
 
       // TOPPINGS (Consumables x5)
-      { type: 'topping', id: 'sprinkles', name: 'Chispas Azúcar', cost: 10, desc: 'Pack x5' },
-      { type: 'topping', id: 'choco', name: 'Chispas Choco', cost: 15, desc: 'Pack x5' },
-      { type: 'topping', id: 'glazing', name: 'Glaseado Dulce', cost: 20, desc: 'Pack x5' },
+      { type: 'topping', id: 'sprinkles', key: 'toppingSprinkles', cost: 10 },
+      { type: 'topping', id: 'choco', key: 'toppingChoco', cost: 15 },
+      { type: 'topping', id: 'glazing', key: 'toppingGlazing', cost: 20 },
 
       // BEBIDAS (Consumables x5)
-      { type: 'drink', id: 'coffee_beans', name: 'Granos Café', cost: 8, desc: 'Pack x5' },
-      { type: 'drink', id: 'milk', name: 'Cartón Leche', cost: 5, desc: 'Pack x5' }
+      { type: 'drink', id: 'coffee_beans', key: 'drinkCoffee', cost: 8 },
+      { type: 'drink', id: 'milk', key: 'drinkMilk', cost: 5 }
     ];
 
     this.buyButtons = [];
+    this.cardTextUpdaters = [];
     const colCounters = { mold: 0, dough: 0, topping: 0, drink: 0 };
     const cardW = 435;
     const cardH = 156;
@@ -140,6 +157,9 @@ export default class ShopScene extends Phaser.Scene {
       if (y + cardH / 2 > maxCardBottom) {
         maxCardBottom = y + cardH / 2;
       }
+
+      const itemName = i18n.t(`shop.items.${item.key}`);
+      const itemDesc = i18n.t(`shop.units.${item.type === 'mold' ? 'permanent' : 'pack5'}`);
 
       // Card Background
       const card = this.add.graphics();
@@ -178,17 +198,17 @@ export default class ShopScene extends Phaser.Scene {
       this.shopScrollContainer.add(itemIcon);
 
       // Carril 2: Información (Centro: origen x - 104, ancho 185px)
-      const nameTxt = this.add.text(x - 104, y - 46, item.name, {
+      const nameTxt = this.add.text(x - 104, y - 46, itemName, {
         font: 'bold 25px "Outfit"',
         fill: '#582f0e',
         wordWrap: { width: 185 }
       });
-      if (item.name === 'Masa Chocolate') {
+      if (item.key === 'doughChocolate') {
         nameTxt.setLetterSpacing(-0.25);
       }
       this.shopScrollContainer.add(nameTxt);
 
-      const descTxt = this.add.text(x - 104, y - 14, item.desc, {
+      const descTxt = this.add.text(x - 104, y - 14, itemDesc, {
         font: '600 19px "Outfit"',
         fill: '#8c5847',
         wordWrap: { width: 185 }
@@ -201,6 +221,14 @@ export default class ShopScene extends Phaser.Scene {
         wordWrap: { width: 185 }
       });
       this.shopScrollContainer.add(statusTxt);
+
+      // Updater for hot language switching
+      const updateCardTexts = () => {
+        nameTxt.setText(i18n.t(`shop.items.${item.key}`));
+        descTxt.setText(i18n.t(`shop.units.${item.type === 'mold' ? 'permanent' : 'pack5'}`));
+        statusTxt.setText(this.getStatusString(item));
+      };
+      this.cardTextUpdaters.push(updateCardTexts);
 
       // Carril 3: Botón de Compra (Derecha: x + 88, ancho 118, alto 54)
       const btnW = 118;
@@ -228,7 +256,7 @@ export default class ShopScene extends Phaser.Scene {
           btnBg.fillStyle(0x3a86c8, 1);
           btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 10);
           btnText.setFont('800 24px "Outfit"');
-          btnText.setText('LISTO');
+          btnText.setText(i18n.t('shop.units.ready'));
           btnText.setColor('#ffffff');
           hitZone.disableInteractive();
         } else if (this.coins < item.cost) {
@@ -257,7 +285,7 @@ export default class ShopScene extends Phaser.Scene {
         if (pointer.y < this.viewportTop || pointer.y > this.viewportBottom) {
           return;
         }
-        this.handleBuyItem(item, x, y, nameTxt, statusTxt, itemIcon);
+        this.handleBuyItem(item, x, y, nameTxt, statusTxt, itemIcon, itemName);
       });
 
       hitZone.on('pointerover', (pointer) => {
@@ -303,17 +331,17 @@ export default class ShopScene extends Phaser.Scene {
     warnBg.fillRoundedRect(-520, -18, 1040, 36, 10);
     this.doughWarningContainer.add(warnBg);
 
-    const warnText = this.add.text(0, 0, '⚠️ ¡Atención! No tienes masa para abrir la panadería. Compra al menos 1 pack de Masa Clásica.', {
+    this.warnText = this.add.text(0, 0, i18n.t('shop.warningDough'), {
       font: 'bold 20px "Outfit", sans-serif',
       fill: '#ffffff'
     }).setOrigin(0.5);
-    this.doughWarningContainer.add(warnText);
+    this.doughWarningContainer.add(this.warnText);
 
     const startBtnBg = this.add.graphics();
     startBtnBg.fillStyle(0x38b000, 1); // Lush green
     startBtnBg.fillRoundedRect(startBtnX, startBtnY, startBtnW, startBtnH, 14);
 
-    const startBtnText = this.add.text(width / 2, startBtnY + startBtnH / 2, 'EMPEZAR SIGUIENTE DÍA ☕', {
+    this.startBtnText = this.add.text(width / 2, startBtnY + startBtnH / 2, i18n.t('shop.startNextDay'), {
       font: '28px "Outfit", sans-serif',
       fill: '#ffffff',
       fontWeight: '800'
@@ -330,8 +358,19 @@ export default class ShopScene extends Phaser.Scene {
       }
 
       SoundManager.getInstance().playUiTap();
+
+      // Autosave updated inventory and state before starting next day
+      const nextDay = this.day + 1;
+      SaveManager.getInstance().saveGame({
+        day: nextDay,
+        coins: this.coins,
+        unlockedShapes: this.unlockedShapes,
+        stock: this.stock,
+        loanRemaining: this.loanRemaining
+      });
+
       this.scene.start('GameScene', {
-        day: this.day + 1,
+        day: nextDay,
         coins: this.coins,
         unlockedShapes: this.unlockedShapes,
         stock: this.stock,
@@ -344,14 +383,14 @@ export default class ShopScene extends Phaser.Scene {
       startBtnBg.clear();
       startBtnBg.fillStyle(0x4ad611, 1);
       startBtnBg.fillRoundedRect(startBtnX - 3, startBtnY - 2, startBtnW + 6, startBtnH + 4, 16);
-      startBtnText.setScale(1.04);
+      this.startBtnText.setScale(1.04);
     });
 
     startZone.on('pointerout', () => {
       startBtnBg.clear();
       startBtnBg.fillStyle(0x38b000, 1);
       startBtnBg.fillRoundedRect(startBtnX, startBtnY, startBtnW, startBtnH, 14);
-      startBtnText.setScale(1);
+      this.startBtnText.setScale(1);
     });
 
     // Scrollbar Track and Thumb (Fixed UI layer, depth 50)
@@ -367,13 +406,14 @@ export default class ShopScene extends Phaser.Scene {
     // =========================================================================
     this.fixedUIElements = [
       bgGraphics,
-      titleText,
-      subtitleText,
+      this.titleText,
+      this.subtitleText,
       this.coinBalanceText,
-      ...columnHeaders,
+      this.pillSwitcher.container,
+      ...this.columnHeaderTexts,
       this.doughWarningContainer,
       startBtnBg,
-      startBtnText,
+      this.startBtnText,
       startZone,
       this.scrollbarTrack,
       this.scrollbarThumb
@@ -473,7 +513,9 @@ export default class ShopScene extends Phaser.Scene {
     this.scrollbarThumb.fillRoundedRect(trackX, thumbY, trackW, thumbH, 3);
   }
 
-  handleBuyItem(item, x, y, nameTxt, statusTxt, itemIcon) {
+  handleBuyItem(item, x, y, nameTxt, statusTxt, itemIcon, itemName) {
+    const i18n = I18nManager.getInstance();
+
     if (this.coins < item.cost) {
       SoundManager.getInstance().playUiDenied();
       return;
@@ -483,16 +525,16 @@ export default class ShopScene extends Phaser.Scene {
     if (isBoughtMold) return;
 
     this.coins -= item.cost;
-    this.coinBalanceText.setText(`🪙 Monedas Disponibles: ${this.coins}`);
+    this.coinBalanceText.setText(i18n.t('shop.availableCoins', { coins: this.coins }));
 
     SoundManager.getInstance().playShopBuy();
 
     if (item.type === 'mold') {
       this.unlockedShapes.push(item.id);
-      this.showFeedback('¡Desbloqueado! ✨', x, y - 45, '#2b9348');
+      this.showFeedback(i18n.t('shop.feedback.unlocked'), x, y - 45, '#2b9348');
     } else {
       this.stock[item.type][item.id] += 5;
-      this.showFeedback(`+5 ${item.name} 🛒`, x, y - 45, '#2b9348');
+      this.showFeedback(i18n.t('shop.feedback.bought', { name: itemName }), x, y - 45, '#2b9348');
       if (item.type === 'dough' && hasSufficientDough(this.stock) && this.doughWarningContainer) {
         this.doughWarningContainer.setVisible(false);
       }
@@ -545,11 +587,14 @@ export default class ShopScene extends Phaser.Scene {
   }
 
   getStatusString(item) {
+    const i18n = I18nManager.getInstance();
     if (item.type === 'mold') {
-      return this.unlockedShapes.includes(item.id) ? 'Desbloqueado' : 'Bloqueado';
+      return this.unlockedShapes.includes(item.id)
+        ? i18n.t('shop.units.unlocked')
+        : i18n.t('shop.units.locked');
     } else {
       const qty = this.stock[item.type]?.[item.id] ?? 0;
-      return `Stock: ${qty} u.`;
+      return i18n.t('shop.units.stock', { qty });
     }
   }
 
@@ -573,5 +618,39 @@ export default class ShopScene extends Phaser.Scene {
         feedback.destroy();
       }
     });
+  }
+
+  refreshLocalizedTexts() {
+    const i18n = I18nManager.getInstance();
+    if (this.pillSwitcher) {
+      this.pillSwitcher.updateVisuals();
+    }
+    if (this.titleText) {
+      this.titleText.setText(i18n.t('shop.title'));
+    }
+    if (this.subtitleText) {
+      this.subtitleText.setText(i18n.t('shop.subtitle', { day: this.day + 1 }));
+    }
+    if (this.coinBalanceText) {
+      this.coinBalanceText.setText(i18n.t('shop.availableCoins', { coins: this.coins }));
+    }
+    if (this.columnHeaderTexts) {
+      const colKeys = ['molds', 'dough', 'toppings', 'drinks'];
+      this.columnHeaderTexts.forEach((hText, i) => {
+        hText.setText(i18n.t(`shop.columns.${colKeys[i]}`));
+      });
+    }
+    if (this.startBtnText) {
+      this.startBtnText.setText(i18n.t('shop.startNextDay'));
+    }
+    if (this.warnText) {
+      this.warnText.setText(i18n.t('shop.warningDough'));
+    }
+    if (this.cardTextUpdaters) {
+      this.cardTextUpdaters.forEach(updater => updater());
+    }
+    if (this.buyButtons) {
+      this.buyButtons.forEach(btnUpdate => btnUpdate());
+    }
   }
 }

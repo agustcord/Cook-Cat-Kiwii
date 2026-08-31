@@ -3,37 +3,9 @@ import Cookie from '../game/Cookie.js';
 import Customer from '../game/Customer.js';
 import UI_CONFIG from '../../ui-config.json';
 import SoundManager from '../game/SoundManager.js';
-
-const DAY_CONFIGS = {
-  1: {
-    meta: 100,
-    patienceTime: 40,
-    maxCustomers: 3,
-    bakeMin: 5.5,
-    bakeMax: 7.5
-  },
-  2: {
-    meta: 150,
-    patienceTime: 35,
-    maxCustomers: 4,
-    bakeMin: 6.0,
-    bakeMax: 7.5
-  },
-  3: {
-    meta: 200,
-    patienceTime: 30,
-    maxCustomers: 4,
-    bakeMin: 6.5,
-    bakeMax: 7.5
-  },
-  4: {
-    meta: 300,
-    patienceTime: 28,
-    maxCustomers: 5,
-    bakeMin: 7.0,
-    bakeMax: 7.5
-  }
-};
+import CrazyGamesSDK from '../game/services/CrazyGamesSDK.js';
+import I18nManager from '../game/services/I18nManager.js';
+import { getDayConfig } from '../game/EconomyManager.js';
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -45,7 +17,7 @@ export default class GameScene extends Phaser.Scene {
     this.day = safeData.day || 1;
     this.coins = safeData.coins || 0;
     this.loanRemaining = safeData.loanRemaining !== undefined ? safeData.loanRemaining : 200;
-    this.config = DAY_CONFIGS[this.day];
+    this.config = getDayConfig(this.day);
 
     // Load state from data, or fallback to Day 1 starting kit
     this.unlockedShapes = safeData.unlockedShapes || ['star'];
@@ -135,6 +107,9 @@ export default class GameScene extends Phaser.Scene {
       this.bgMusic.setVolume(effectiveBgm);
     }
 
+    // Notify CrazyGames SDK of gameplay start
+    CrazyGamesSDK.getInstance().gameplayStart();
+
     // Draw primary background (cream wall)
     this.drawBackground(width, height);
 
@@ -200,7 +175,8 @@ export default class GameScene extends Phaser.Scene {
     this.selectedEditorElement = null;
 
     // Create editor status text (hidden by default)
-    this.editorIndicator = this.add.text(width / 2, 20, '🛠️ MODO EDITOR DE UI ACTIVO\n[Arrastra letreros / ⬆️⬇️⬅️➡️ para Redimensionar / S para Guardar / E para Salir]', {
+    const i18n = I18nManager.getInstance();
+    this.editorIndicator = this.add.text(width / 2, 20, i18n.t('editor.indicator'), {
       font: '16px "Outfit", sans-serif',
       fill: '#ffffff',
       backgroundColor: '#d90429',
@@ -323,6 +299,8 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setupHUD(width) {
+    const i18n = I18nManager.getInstance();
+
     // Day indicator WITH DECORATIVE SIGN!
     const { daySign } = UI_CONFIG;
     this.daySignImage = this.add.image(daySign.x, daySign.y, 'day_sign_empty')
@@ -330,7 +308,7 @@ export default class GameScene extends Phaser.Scene {
       .setOrigin(0, 0.5)
       .setDepth(1);
     
-    this.daySignText = this.add.text(daySign.x + daySign.width / 2, daySign.y + daySign.textOffsetY, `DÍA ${this.day}`, {
+    this.daySignText = this.add.text(daySign.x + daySign.width / 2, daySign.y + daySign.textOffsetY, i18n.t('hud.day', { day: this.day }), {
       font: `${daySign.textFontSize}px "Outfit", sans-serif`,
       fill: '#582f0e',
       fontWeight: '800'
@@ -343,7 +321,7 @@ export default class GameScene extends Phaser.Scene {
       .setOrigin(0.5, 0.5)
       .setDepth(1);
     
-    this.coinsText = this.add.text(coinsSign.x, coinsSign.y + coinsSign.textOffsetY, `Monedas: ${this.coins}`, {
+    this.coinsText = this.add.text(coinsSign.x, coinsSign.y + coinsSign.textOffsetY, `${this.coins}`, {
       font: `${coinsSign.textFontSize}px "Outfit", sans-serif`,
       fill: '#582f0e',
       fontWeight: '800'
@@ -359,7 +337,7 @@ export default class GameScene extends Phaser.Scene {
       .setDepth(1);
     
     const textX = finalX - metaSign.width / 2;
-    this.metaText = this.add.text(textX, metaSign.y + metaSign.textOffsetY, `Meta: ${this.config.meta}`, {
+    this.metaText = this.add.text(textX, metaSign.y + metaSign.textOffsetY, `${this.config.meta}`, {
       font: `${metaSign.textFontSize}px "Outfit", sans-serif`,
       fill: '#582f0e',
       fontWeight: '800'
@@ -494,9 +472,10 @@ export default class GameScene extends Phaser.Scene {
 
       dragZone.on('dragstart', () => {
         const currentStock = this.stock.dough[b.id] || 0;
+        const i18n = I18nManager.getInstance();
         if (currentStock <= 0) {
           SoundManager.getInstance().playUiDenied();
-          this.showFeedbackText('¡Sin stock! Cómpralo en la tienda 🛒', this.trayX, 375, '#d90429');
+          this.showFeedbackText(i18n.t('game.feedback.outOfStock'), this.trayX, 375, '#d90429');
           return;
         }
 
@@ -530,6 +509,8 @@ export default class GameScene extends Phaser.Scene {
           this.trayX, this.trayY
         );
 
+        const i18n = I18nManager.getInstance();
+
         if (dist < 225) {
           if (this.prepTrayCookies.length < 3) {
             // Consume stock!
@@ -541,10 +522,11 @@ export default class GameScene extends Phaser.Scene {
             this.prepTrayCookies.push(newCookie);
             this.updateCookieVisuals();
             SoundManager.getInstance().playDoughPlace();
-            this.showFeedbackText(`¡Masa de ${b.label}!`, this.trayX, 375, '#38b000');
+            const doughName = i18n.t(`recipes.bases.${b.id}`);
+            this.showFeedbackText(i18n.t('game.feedback.doughSelected', { name: doughName }), this.trayX, 375, '#38b000');
           } else {
             SoundManager.getInstance().playUiDenied();
-            this.showFeedbackText('¡Mesa llena! (Máx 3)', this.trayX, 375, '#d90429');
+            this.showFeedbackText(i18n.t('game.feedback.tableFull'), this.trayX, 375, '#d90429');
           }
         } else {
           SoundManager.getInstance().playUiTap();
@@ -569,10 +551,10 @@ export default class GameScene extends Phaser.Scene {
     this.shapeDragZones = [];
 
     const shapes = [
-      { id: 'star', label: 'Estrella' },
-      { id: 'heart', label: 'Corazón' },
-      { id: 'cat', label: 'Gato' },
-      { id: 'fish', label: 'Pez' }
+      { id: 'star' },
+      { id: 'heart' },
+      { id: 'cat' },
+      { id: 'fish' }
     ];
 
     shapes.forEach((s, index) => {
@@ -644,16 +626,19 @@ export default class GameScene extends Phaser.Scene {
             }
           });
 
+          const i18n = I18nManager.getInstance();
+
           if (closestCookie) {
             closestCookie.shape = s.id;
             this.updateCookieVisuals();
             SoundManager.getInstance().playDoughCut();
-            this.showFeedbackText(`¡Forma de ${s.label}!`, this.trayX, 375, '#38b000');
+            const shapeName = i18n.t(`recipes.shapes.${s.id}`);
+            this.showFeedbackText(i18n.t('game.feedback.shapeSelected', { name: shapeName }), this.trayX, 375, '#38b000');
           } else {
             const distToTrayCenter = Phaser.Math.Distance.Between(dragZone.x, dragZone.y, this.trayX, this.trayY);
             if (distToTrayCenter < 225) {
               SoundManager.getInstance().playUiDenied();
-              this.showFeedbackText('¡Primero selecciona la masa!', this.trayX, 375, '#d90429');
+              this.showFeedbackText(i18n.t('game.feedback.selectDoughFirst'), this.trayX, 375, '#d90429');
             } else {
               SoundManager.getInstance().playUiTap();
             }
@@ -790,8 +775,9 @@ export default class GameScene extends Phaser.Scene {
 
     // Botón SACAR GALLETAS (reubicado armónicamente bajo la base del horno en startY + 185)
     const extractBtnY = startY + 185;
+    const i18n = I18nManager.getInstance();
     this.ovenExtractBtnBg = this.add.graphics().setDepth(10);
-    this.ovenExtractBtnText = this.add.text(startX + 103, extractBtnY + 28, 'SACAR GALLETAS', {
+    this.ovenExtractBtnText = this.add.text(startX + 103, extractBtnY + 28, i18n.t('stations.ovenExtract'), {
       font: '21px "Outfit", sans-serif',
       fill: '#fff1e6',
       fontWeight: '800'
@@ -819,12 +805,13 @@ export default class GameScene extends Phaser.Scene {
     // Set machine interactive to provide helpful hints on tap
     this.drinkMachine.setInteractive({ useHandCursor: true });
     this.drinkMachine.on('pointerdown', () => {
+      const i18n = I18nManager.getInstance();
       if (this.machineState === 'empty') {
-        this.showFeedbackText('¡Presiona Café o Leche en el panel! ☕🥛', startX, 375, '#582f0e');
+        this.showFeedbackText(i18n.t('game.feedback.pressDrinkButton'), startX, 375, '#582f0e');
       } else if (this.machineState.startsWith('ready_')) {
-        this.showFeedbackText('¡Arrastra la taza a la bandeja! ☕➡️', startX, 375, '#582f0e');
+        this.showFeedbackText(i18n.t('game.feedback.dragCupToTray'), startX, 375, '#582f0e');
       } else {
-        this.showFeedbackText('¡Preparando bebida...! ⏳', startX, 375, '#582f0e');
+        this.showFeedbackText(i18n.t('game.feedback.brewingDrink'), startX, 375, '#582f0e');
       }
     });
 
@@ -832,6 +819,7 @@ export default class GameScene extends Phaser.Scene {
     const beansX = startX - 64;
     const milkX = startX + 34;
     const btnY = startY - 83;
+    const i18nInst = I18nManager.getInstance();
 
     // Coffee Button Image & Stock Text (integrated inside the new asset display box)
     this.btnCoffeeImage = this.add.image(beansX, btnY, 'btn_coffee_asset')
@@ -841,7 +829,7 @@ export default class GameScene extends Phaser.Scene {
     const coffeeBaseScaleX = this.btnCoffeeImage.scaleX;
     const coffeeBaseScaleY = this.btnCoffeeImage.scaleY;
 
-    this.beansStockText = this.add.text(beansX, btnY + 11, '0u', {
+    this.beansStockText = this.add.text(beansX, btnY + 11, i18nInst.t('game.stockUnit', { qty: 0 }), {
       font: 'bold 21px "Outfit", sans-serif',
       fill: '#2b2b2b'
     }).setOrigin(0.5).setDepth(4);
@@ -859,7 +847,7 @@ export default class GameScene extends Phaser.Scene {
     const milkBaseScaleX = this.btnMilkImage.scaleX;
     const milkBaseScaleY = this.btnMilkImage.scaleY;
 
-    this.milkStockText = this.add.text(milkX, milkY + 11, '0u', {
+    this.milkStockText = this.add.text(milkX, milkY + 11, i18nInst.t('game.stockUnit', { qty: 0 }), {
       font: 'bold 21px "Outfit", sans-serif',
       fill: '#2b2b2b'
     }).setOrigin(0.5).setDepth(4);
@@ -881,8 +869,9 @@ export default class GameScene extends Phaser.Scene {
     });
     beansDragZone.on('pointerdown', () => {
       const stock = this.stock.drink.coffee_beans || 0;
+      const i18n = I18nManager.getInstance();
       if (stock <= 0) {
-        this.showFeedbackText('¡Sin stock de Café! Cómpralo en la tienda 🛒', startX, 375, '#d90429');
+        this.showFeedbackText(i18n.t('game.feedback.noCoffeeStock'), startX, 375, '#d90429');
         return;
       }
       
@@ -913,8 +902,9 @@ export default class GameScene extends Phaser.Scene {
     });
     milkDragZone.on('pointerdown', () => {
       const stock = this.stock.drink.milk || 0;
+      const i18n = I18nManager.getInstance();
       if (stock <= 0) {
-        this.showFeedbackText('¡Sin stock de Leche! Cómpralo en la tienda 🛒', startX, 375, '#d90429');
+        this.showFeedbackText(i18n.t('game.feedback.noMilkStock'), startX, 375, '#d90429');
         return;
       }
 
@@ -966,9 +956,10 @@ export default class GameScene extends Phaser.Scene {
     let dragBlocked = false;
 
     this.cupStackZone.on('dragstart', () => {
+      const i18n = I18nManager.getInstance();
       if (this.machineState !== 'no_cup') {
         SoundManager.getInstance().playUiDenied();
-        this.showFeedbackText('¡Ya hay una taza en la cafetera! ☕', startX, 375, '#d90429');
+        this.showFeedbackText(i18n.t('game.feedback.cupAlreadyInMachine'), startX, 375, '#d90429');
         dragBlocked = true;
         return;
       }
@@ -1008,7 +999,8 @@ export default class GameScene extends Phaser.Scene {
           .setDepth(4);
 
         this.machineState = 'empty';
-        this.showFeedbackText('¡Taza colocada! ☕', startX, 375, '#38b000');
+        const i18n = I18nManager.getInstance();
+        this.showFeedbackText(i18n.t('game.feedback.cupPlaced'), startX, 375, '#38b000');
         SoundManager.getInstance().playDrinkButton();
       } else {
         const activeCup = tempDragCup;
@@ -1027,14 +1019,13 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-
-
   updateDrinkStockTexts() {
+    const i18n = I18nManager.getInstance();
     if (this.beansStockText) {
-      this.beansStockText.setText(`${this.stock.drink.coffee_beans || 0}u`);
+      this.beansStockText.setText(i18n.t('game.stockUnit', { qty: this.stock.drink.coffee_beans || 0 }));
     }
     if (this.milkStockText) {
-      this.milkStockText.setText(`${this.stock.drink.milk || 0}u`);
+      this.milkStockText.setText(i18n.t('game.stockUnit', { qty: this.stock.drink.milk || 0 }));
     }
   }
 
@@ -1043,9 +1034,10 @@ export default class GameScene extends Phaser.Scene {
   }
 
   handleDrinkIngredientDrop(type, startX, startY) {
+    const i18n = I18nManager.getInstance();
     if (this.machineState === 'no_cup') {
       SoundManager.getInstance().playUiDenied();
-      this.showFeedbackText('¡Primero coloca una taza! ☕🥛', startX, 375, '#d90429');
+      this.showFeedbackText(i18n.t('game.feedback.placeCupFirst'), startX, 375, '#d90429');
       return;
     }
 
@@ -1129,7 +1121,8 @@ export default class GameScene extends Phaser.Scene {
             // Show serve button
             this.updateDrinkServeButtonState(startX, startY);
             
-            this.showFeedbackText('¡Bebida lista! ☕', startX, 375, '#38b000');
+            const i18n = I18nManager.getInstance();
+            this.showFeedbackText(i18n.t('game.feedback.drinkReady'), startX, 375, '#38b000');
           }
         }
       });
@@ -1205,13 +1198,15 @@ export default class GameScene extends Phaser.Scene {
               this.makeCupDraggable(startX, startY);
             }
 
-            this.showFeedbackText('¡Café con leche listo! ☕🥛', startX, 375, '#38b000');
+            const i18n = I18nManager.getInstance();
+            this.showFeedbackText(i18n.t('game.feedback.coffeeMilkReady'), startX, 375, '#38b000');
           }
         }
       });
     } else {
       SoundManager.getInstance().playUiDenied();
-      this.showFeedbackText('¡La máquina está ocupada! ☕', startX, 375, '#d90429');
+      const i18n = I18nManager.getInstance();
+      this.showFeedbackText(i18n.t('game.feedback.machineBusy'), startX, 375, '#d90429');
     }
   }
 
@@ -1297,10 +1292,9 @@ export default class GameScene extends Phaser.Scene {
     // Hide serve button
     this.updateDrinkServeButtonState(startX, startY);
 
-    let label = 'Café';
-    if (drinkKey === 'milk') label = 'Leche';
-    else if (drinkKey === 'coffee_milk') label = 'Café c/Leche';
-    this.showFeedbackText(`¡${label} servido! ☕`, startX, 375, '#38b000');
+    const i18n = I18nManager.getInstance();
+    const drinkName = i18n.t(`recipes.drinks.${drinkKey}`);
+    this.showFeedbackText(i18n.t('game.feedback.drinkServed', { name: drinkName }), startX, 375, '#38b000');
   }
 
   handleOvenClick() {
@@ -1309,12 +1303,13 @@ export default class GameScene extends Phaser.Scene {
 
   handleOvenPowerClick() {
     SoundManager.getInstance().playOvenClick();
+    const i18n = I18nManager.getInstance();
     if (!this.isOvenPreheated) {
       this.isOvenPreheated = true;
       if (this.ovenBtnPowerSprite) {
         this.ovenBtnPowerSprite.setTexture('oven_btn_power_on');
       }
-      this.showFeedbackText('¡Horno encendido (precalentando)! 🔥', this.ovenX, 375, '#38b000');
+      this.showFeedbackText(i18n.t('game.feedback.ovenPreheating'), this.ovenX, 375, '#38b000');
     } else {
       // Apagar horno: si estaba cocinando, se detiene
       if (this.isBaking) {
@@ -1339,21 +1334,22 @@ export default class GameScene extends Phaser.Scene {
       this.alarmPlayed = false;
       this.ovenOvercookTimer = 0;
       this.hasOvercookedAlarm = false;
-      this.showFeedbackText('Horno apagado.', this.ovenX, 375, '#582f0e');
+      this.showFeedbackText(i18n.t('game.feedback.ovenOff'), this.ovenX, 375, '#582f0e');
     }
     this.updateExtractButtonState();
   }
 
   handleOvenBakeClick() {
+    const i18n = I18nManager.getInstance();
     if (!this.isOvenPreheated) {
       SoundManager.getInstance().playUiDenied();
-      this.showFeedbackText('¡Primero enciende el horno!', this.ovenX, 375, '#d90429');
+      this.showFeedbackText(i18n.t('game.feedback.turnOnOvenFirst'), this.ovenX, 375, '#d90429');
       return;
     }
 
     if (!this.cookiesInOven || this.cookiesInOven.length === 0) {
       SoundManager.getInstance().playUiDenied();
-      this.showFeedbackText('¡El horno está vacío!', this.ovenX, 375, '#d90429');
+      this.showFeedbackText(i18n.t('game.feedback.ovenEmpty'), this.ovenX, 375, '#d90429');
       return;
     }
 
@@ -1371,7 +1367,7 @@ export default class GameScene extends Phaser.Scene {
       if (this.ovenGlassSprite) {
         this.ovenGlassSprite.setTexture('oven_glass_on');
       }
-      this.showFeedbackText('¡Cocinando galletas! ⏳', this.ovenX, 375, '#38b000');
+      this.showFeedbackText(i18n.t('game.feedback.cookingCookies'), this.ovenX, 375, '#38b000');
       this.updateExtractButtonState();
     } else {
       // Detener cocción manualmente
@@ -1420,17 +1416,18 @@ export default class GameScene extends Phaser.Scene {
       else if (cookie.bakedState === 'raw') hasRaw = true;
     });
 
-    let feedback = '¡Sigue cruda! 🥣';
+    const i18n = I18nManager.getInstance();
+    let feedback = i18n.t('game.feedback.cookieStillRaw');
     let color = '#ffb703';
 
     if (hasBurnt) {
-      feedback = '¡Se ha quemado! 😭🔥';
+      feedback = i18n.t('game.feedback.cookieBurnt');
       color = '#d90429';
     } else if (hasBaked && !hasRaw) {
-      feedback = '¡Horneado Perfecto! 🍪✨';
+      feedback = i18n.t('game.feedback.perfectBake');
       color = '#38b000';
     } else if (hasBaked && hasRaw) {
-      feedback = '¡Algunas están listas! 🍪';
+      feedback = i18n.t('game.feedback.someReady');
       color = '#38b000';
     }
 
@@ -1454,9 +1451,9 @@ export default class GameScene extends Phaser.Scene {
     // Topping label sign removed
 
     const toppings = [
-      { id: 'sprinkles', label: 'Chispas', color: 0xff70a6 },
-      { id: 'choco', label: 'Choco', color: 0x3d0c00 },
-      { id: 'glazing', label: 'Glaseado', color: 0xff0a54 }
+      { id: 'sprinkles', color: 0xff70a6 },
+      { id: 'choco', color: 0x3d0c00 },
+      { id: 'glazing', color: 0xff0a54 }
     ];
 
     const jarSize = 158;
@@ -1504,9 +1501,10 @@ export default class GameScene extends Phaser.Scene {
 
       dragZone.on('dragstart', () => {
         const currentStock = this.stock.topping[t.id] || 0;
+        const i18n = I18nManager.getInstance();
         if (currentStock <= 0) {
           SoundManager.getInstance().playUiDenied();
-          this.showFeedbackText('¡Sin stock! Cómpralo en la tienda 🛒', this.trayX, 375, '#d90429');
+          this.showFeedbackText(i18n.t('game.feedback.outOfStock'), this.trayX, 375, '#d90429');
           return;
         }
 
@@ -1558,6 +1556,8 @@ export default class GameScene extends Phaser.Scene {
             }
           });
 
+          const i18n = I18nManager.getInstance();
+
           if (closestCookie) {
             // Consume stock!
             this.stock.topping[t.id]--;
@@ -1577,12 +1577,13 @@ export default class GameScene extends Phaser.Scene {
               SoundManager.getInstance().playUiTap();
             }
 
-            this.showFeedbackText(`¡Añadido ${t.label}! ✨`, this.trayX, 375, '#38b000');
+            const toppingName = i18n.t(`recipes.toppings.${t.id}`);
+            this.showFeedbackText(i18n.t('game.feedback.toppingAdded', { name: toppingName }), this.trayX, 375, '#38b000');
           } else {
             const distToTrayCenter = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, this.trayX, this.trayY);
             if (distToTrayCenter < 225) {
               SoundManager.getInstance().playUiDenied();
-              this.showFeedbackText('¡Primero selecciona la masa!', this.trayX, 375, '#d90429');
+              this.showFeedbackText(i18n.t('game.feedback.selectDoughFirst'), this.trayX, 375, '#d90429');
             } else {
               SoundManager.getInstance().playUiTap();
             }
@@ -1602,6 +1603,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   updateStockTexts() {
+    const i18n = I18nManager.getInstance();
     // 1. Dough Stock
     if (this.doughStockTexts) {
       Object.keys(this.doughStockTexts).forEach(id => {
@@ -1609,7 +1611,7 @@ export default class GameScene extends Phaser.Scene {
         const textObj = this.doughStockTexts[id];
         const imgObj = this.doughButtons[id];
         if (textObj) {
-          textObj.setText(qty === Infinity ? 'Stock: ∞' : `Stock: ${qty}`);
+          textObj.setText(qty === Infinity ? i18n.t('game.stockInfinite') : i18n.t('game.stock', { qty }));
           // Update visual tint
           if (imgObj) {
             if (qty <= 0) {
@@ -1631,7 +1633,7 @@ export default class GameScene extends Phaser.Scene {
         const textObj = this.toppingStockTexts[id];
         const imgObj = this.toppingButtons[id];
         if (textObj) {
-          textObj.setText(`Stock: ${qty}`);
+          textObj.setText(i18n.t('game.stock', { qty }));
           // Update visual tint
           if (imgObj) {
             if (qty <= 0) {
@@ -1758,13 +1760,14 @@ export default class GameScene extends Phaser.Scene {
 
           const cookieIdx = sprite.getData('cookieIndex');
           const cookieInstance = this.prepTrayCookies[cookieIdx];
+          const i18n = I18nManager.getInstance();
 
           // 1. Drop on Trash Bin
           if (distTrash < 131) {
             SoundManager.getInstance().playTrash();
             this.prepTrayCookies.splice(cookieIdx, 1);
             this.updateCookieVisuals();
-            this.showFeedbackText('¡Desechada! 🗑️', this.trashBinX, this.trashBinY - 50, '#d90429');
+            this.showFeedbackText(i18n.t('game.feedback.discarded'), this.trashBinX, this.trashBinY - 50, '#d90429');
 
             // Play vacuum fade/shrink animation
             this.tweens.add({
@@ -1786,14 +1789,14 @@ export default class GameScene extends Phaser.Scene {
           if (distDelivery < 188) {
             if (!cookieInstance.shape) {
               SoundManager.getInstance().playUiDenied();
-              this.showFeedbackText('¡Primero corta la forma!', this.trayX, 375, '#d90429');
+              this.showFeedbackText(i18n.t('game.feedback.cutShapeFirst'), this.trayX, 375, '#d90429');
             } else {
               this.deliveryTrayCookies.push(cookieInstance);
               this.prepTrayCookies.splice(cookieIdx, 1);
               this.drawDeliveryTray();
               this.updateCookieVisuals();
               SoundManager.getInstance().playUiTap();
-              this.showFeedbackText('¡Galleta lista para entrega! 📦', this.deliveryTrayX, 375, '#38b000');
+              this.showFeedbackText(i18n.t('game.feedback.cookieReadyDelivery'), this.deliveryTrayX, 375, '#38b000');
               return;
             }
           }
@@ -1802,20 +1805,20 @@ export default class GameScene extends Phaser.Scene {
           if (distOven < 225) {
             if (this.isBaking) {
               SoundManager.getInstance().playUiDenied();
-              this.showFeedbackText('¡El horno está encendido!', this.trayX, 375, '#d90429');
+              this.showFeedbackText(i18n.t('game.feedback.ovenAlreadyOn'), this.trayX, 375, '#d90429');
             } else if (this.cookiesInOven.length >= 3) {
               SoundManager.getInstance().playUiDenied();
-              this.showFeedbackText('¡El horno está lleno! (Máx 3)', this.trayX, 375, '#d90429');
+              this.showFeedbackText(i18n.t('game.feedback.ovenFull'), this.trayX, 375, '#d90429');
             } else if (!cookieInstance.shape) {
               SoundManager.getInstance().playUiDenied();
-              this.showFeedbackText('¡Primero corta la forma!', this.trayX, 375, '#d90429');
+              this.showFeedbackText(i18n.t('game.feedback.cutShapeFirst'), this.trayX, 375, '#d90429');
             } else {
               // Valid drop in oven!
               this.cookiesInOven.push(cookieInstance);
               this.prepTrayCookies.splice(cookieIdx, 1);
               this.updateExtractButtonState();
               SoundManager.getInstance().playOvenDoor();
-              this.showFeedbackText(`Galleta introducida (${this.cookiesInOven.length}/3) 🍪`, this.trayX, 375, '#38b000');
+              this.showFeedbackText(i18n.t('game.feedback.cookieInserted', { count: this.cookiesInOven.length, total: 3 }), this.trayX, 375, '#38b000');
 
               // Play shrink and fade animation into the oven door window
               this.tweens.add({
@@ -1859,7 +1862,10 @@ export default class GameScene extends Phaser.Scene {
 
   spawnCustomer() {
     if (this.customersSpawned >= this.config.maxCustomers) {
-      // Day ended, check progression
+      // Day ended, notify CrazyGames SDK of gameplay stop
+      CrazyGamesSDK.getInstance().gameplayStop();
+
+      // Check progression
       this.time.delayedCall(1000, () => {
         this.scene.start('SummaryScene', {
           day: this.day,
@@ -1887,37 +1893,52 @@ export default class GameScene extends Phaser.Scene {
     let requestedDrink = null;
 
     if (this.day === 1) {
+      const i18n = I18nManager.getInstance();
       // Day 1 Fixed Tutorial Sequence
       if (customerIndex === 0) {
         // Customer 1: 1 Vanilla Cookie + Coffee
-        selectedRecipe = { name: 'Estrella de Vainilla', base: 'classic', shape: 'star', toppings: [] };
+        selectedRecipe = { name: `${i18n.t('recipes.bases.classic')} ${i18n.t('recipes.shapes.star')}`, base: 'classic', shape: 'star', toppings: [] };
         qty = 1;
         requestedDrink = 'coffee';
       } else if (customerIndex === 1) {
-        // Customer 2: 1 Vanilla Cookie with Caramel (sprinkles) + Milk
-        selectedRecipe = { name: 'Estrella de Vainilla con Caramelo', base: 'classic', shape: 'star', toppings: ['sprinkles'] };
+        // Customer 2: 1 Vanilla Cookie with Sprinkles + Milk
+        selectedRecipe = { name: `${i18n.t('recipes.bases.classic')} ${i18n.t('recipes.shapes.star')} ${i18n.t('recipes.toppings.sprinkles')}`, base: 'classic', shape: 'star', toppings: ['sprinkles'] };
         qty = 1;
         requestedDrink = 'milk';
       } else {
-        // Customer 3: 1 Vanilla Cookie with Caramel (sprinkles) + Coffee with Milk
-        selectedRecipe = { name: 'Estrella de Vainilla con Caramelo', base: 'classic', shape: 'star', toppings: ['sprinkles'] };
+        // Customer 3: 1 Vanilla Cookie with Sprinkles + Coffee with Milk
+        selectedRecipe = { name: `${i18n.t('recipes.bases.classic')} ${i18n.t('recipes.shapes.star')} ${i18n.t('recipes.toppings.sprinkles')}`, base: 'classic', shape: 'star', toppings: ['sprinkles'] };
         qty = 1;
         requestedDrink = 'coffee_milk';
       }
     } else {
+      const i18n = I18nManager.getInstance();
       // Days 2+ Procedural Order Generation
       const availableRecipes = [];
       const availableBases = Object.keys(this.stock.dough).filter(base => (Number(this.stock.dough[base]) || 0) > 0);
       const availableToppings = Object.keys(this.stock.topping).filter(t => (Number(this.stock.topping[t]) || 0) > 0);
 
-      const baseNames = { classic: 'Vainilla', chocolate: 'Chocolate', oat: 'Avena' };
-      const shapeNames = { star: 'Estrella', heart: 'Corazón', cat: 'Gato', fish: 'Pez' };
-      const toppingNames = { sprinkles: 'con Chispas', choco: 'con Chips', glazing: 'con Glaseado' };
+      const baseNames = {
+        classic: i18n.t('recipes.bases.classic'),
+        chocolate: i18n.t('recipes.bases.chocolate'),
+        oat: i18n.t('recipes.bases.oat')
+      };
+      const shapeNames = {
+        star: i18n.t('recipes.shapes.star'),
+        heart: i18n.t('recipes.shapes.heart'),
+        cat: i18n.t('recipes.shapes.cat'),
+        fish: i18n.t('recipes.shapes.fish')
+      };
+      const toppingNames = {
+        sprinkles: i18n.t('recipes.toppings.sprinkles'),
+        choco: i18n.t('recipes.toppings.choco'),
+        glazing: i18n.t('recipes.toppings.glazing')
+      };
 
       if (this.unlockedShapes) {
         this.unlockedShapes.forEach(shape => {
           availableBases.forEach(base => {
-            const plainName = `${shapeNames[shape] || shape} de ${baseNames[base] || base}`;
+            const plainName = `${baseNames[base] || base} ${shapeNames[shape] || shape}`;
             availableRecipes.push({
               name: plainName,
               base: base,
@@ -1926,7 +1947,7 @@ export default class GameScene extends Phaser.Scene {
             });
 
             availableToppings.forEach(topping => {
-              const toppedName = `${shapeNames[shape] || shape} de ${baseNames[base] || base} ${toppingNames[topping] || topping}`;
+              const toppedName = `${baseNames[base] || base} ${shapeNames[shape] || shape} ${toppingNames[topping] || topping}`;
               availableRecipes.push({
                 name: toppedName,
                 base: base,
@@ -1968,7 +1989,7 @@ export default class GameScene extends Phaser.Scene {
           selectedRecipe = null;
           qty = 0;
         } else {
-          selectedRecipe = { name: 'Estrella Clásica', base: 'classic', shape: 'star', toppings: [] };
+          selectedRecipe = { name: `${i18n.t('recipes.bases.classic')} ${i18n.t('recipes.shapes.star')}`, base: 'classic', shape: 'star', toppings: [] };
           qty = 1;
         }
       }
@@ -2034,11 +2055,10 @@ export default class GameScene extends Phaser.Scene {
     if (requestedDrink) {
       const drinkIndex = this.deliveryTrayDrinks.indexOf(requestedDrink);
       if (drinkIndex === -1) {
-        let drinkName = 'Café';
-        if (requestedDrink === 'milk') drinkName = 'Leche';
-        else if (requestedDrink === 'coffee_milk') drinkName = 'Café c/Leche';
+        const i18n = I18nManager.getInstance();
+        const drinkName = i18n.t(`recipes.drinks.${requestedDrink}`);
         
-        this.showFeedbackText(`¡Falta la bebida: ${drinkName}! ☕`, this.trayX, 375, '#d90429');
+        this.showFeedbackText(i18n.t('game.feedback.missingDrink', { drink: drinkName }), this.trayX, 375, '#d90429');
         
         // Angry customer feedback
         const patienceLoss = this.currentCustomer.maxPatience * 0.25;
@@ -2078,13 +2098,15 @@ export default class GameScene extends Phaser.Scene {
       const wastePenalty = excessCount * 15;
 
       this.coins = Math.max(0, this.coins + drinkReward - wastePenalty);
-      this.coinsText.setText(`Monedas: ${this.coins}`);
+      this.coinsText.setText(`${this.coins}`);
 
+      const i18n = I18nManager.getInstance();
       if (excessCount > 0) {
-        this.showFeedbackText(`¡Pedido completo! +${drinkReward} (Exceso: -${wastePenalty}) 🗑️`, this.trayX, 375, '#ffb703');
+        this.showFeedbackText(i18n.t('customer.feedback.orderExcess', { reward: drinkReward, penalty: wastePenalty }), this.trayX, 375, '#ffb703');
       } else {
-        this.showFeedbackText(`¡Entrega perfecta! ☕ +${drinkReward} Monedas`, this.trayX, 375, '#38b000');
+        this.showFeedbackText(i18n.t('customer.feedback.perfectDrink', { reward: drinkReward }), this.trayX, 375, '#38b000');
         this.triggerConfetti();
+        CrazyGamesSDK.getInstance().happytime();
       }
 
       // Clean up and spawn next
@@ -2100,8 +2122,9 @@ export default class GameScene extends Phaser.Scene {
       return;
     }
 
+    const i18n = I18nManager.getInstance();
     if (this.deliveryTrayCookies.length === 0) {
-      this.showFeedbackText('¡La bandeja de entrega está vacía!', this.trayX, 375, '#d90429');
+      this.showFeedbackText(i18n.t('customer.feedback.emptyTray'), this.trayX, 375, '#d90429');
       return;
     }
 
@@ -2111,22 +2134,22 @@ export default class GameScene extends Phaser.Scene {
 
     // Check if any of the delivered cookies are below the customer's tolerance threshold
     let rejected = false;
-    let rejectReason = '¡Esto no es lo que pedí! 😡';
+    let rejectReason = i18n.t('customer.feedback.wrongOrder');
 
     for (const cookie of newDelivered) {
       const sim = cookie.getSimilarityPercentage(recipe);
       if (sim < threshold) {
         rejected = true;
         if (cookie.bakedState === 'raw') {
-          rejectReason = '¡Esta galleta está cruda! 🤮';
+          rejectReason = i18n.t('customer.feedback.rawCookie');
         } else if (cookie.bakedState === 'burnt') {
-          rejectReason = '¡Esta galleta está quemada! 🥵';
+          rejectReason = i18n.t('customer.feedback.burntCookie');
         } else if (recipe.toppings && recipe.toppings.length > 0 && (!cookie.toppings || !cookie.toppings.includes(recipe.toppings[0]))) {
-          rejectReason = '¡Le faltan los toppings! 🍓';
+          rejectReason = i18n.t('customer.feedback.missingTopping');
         } else if (cookie.shape !== recipe.shape) {
-          rejectReason = '¡Esta forma no es la correcta! 📐';
+          rejectReason = i18n.t('customer.feedback.wrongShape');
         } else if (cookie.base !== recipe.base) {
-          rejectReason = '¡El sabor de la masa no es el correcto! 🍫';
+          rejectReason = i18n.t('customer.feedback.wrongBase');
         }
         break;
       }
@@ -2197,8 +2220,8 @@ export default class GameScene extends Phaser.Scene {
         });
 
         this.coins += totalReward;
-        this.coinsText.setText(`Monedas: ${this.coins}`);
-        this.showFeedbackText(`¡Aceptado parcialmente! 👍 +${totalReward} Monedas`, this.trayX, 375, '#38b000');
+        this.coinsText.setText(`${this.coins}`);
+        this.showFeedbackText(`+${totalReward} 🪙`, this.trayX, 375, '#38b000');
 
         if (anyPerfect) {
           SoundManager.getInstance().playCatPurr();
@@ -2228,7 +2251,7 @@ export default class GameScene extends Phaser.Scene {
 
         // Keep patience as-is (no patience penalty for partial rejection)
 
-        this.showFeedbackText(`¡Incompleto! Faltan ${requested - totalCount} galletas 😡`, this.trayX, 375, '#d90429');
+        this.showFeedbackText(i18n.t('customer.feedback.incomplete', { missing: requested - totalCount }), this.trayX, 375, '#d90429');
 
         // Play an angry shake tween on the customer container
         this.tweens.add({
@@ -2265,29 +2288,30 @@ export default class GameScene extends Phaser.Scene {
       const wastePenalty = excessCount * 15;
 
       this.coins = Math.max(0, this.coins + totalReward - wastePenalty);
-      this.coinsText.setText(`Monedas: ${this.coins}`);
+      this.coinsText.setText(`${this.coins}`);
 
       if (excessCount > 0) {
         SoundManager.getInstance().playCoinCollect();
-        this.showFeedbackText(`¡Pedido completo! +${totalReward} (Exceso: -${wastePenalty}) 🗑️`, this.trayX, 375, '#ffb703');
+        this.showFeedbackText(i18n.t('customer.feedback.orderExcess', { reward: totalReward, penalty: wastePenalty }), this.trayX, 375, '#ffb703');
       } else {
         const avgSim = (totalReward - drinkReward) / (requested * maxVal);
-        let feedback = '¡Pedido completado! 👍';
+        let feedback = i18n.t('customer.feedback.orderCompleted');
         let color = '#38b000';
         if (anyPerfect && avgSim >= 0.95) {
-          feedback = '¡ENTREGA PERFECTA! 🍪✨';
+          feedback = i18n.t('customer.feedback.perfectDelivery');
           SoundManager.getInstance().playCatPurr();
           SoundManager.getInstance().playPerfect();
           SoundManager.getInstance().playCoinCollect();
           this.triggerConfetti();
+          CrazyGamesSDK.getInstance().happytime();
         } else {
           SoundManager.getInstance().playCoinCollect();
           if (avgSim < 0.6) {
-            feedback = '¡Aceptable! 😐';
+            feedback = i18n.t('customer.feedback.acceptable');
             color = '#ffb703';
           }
         }
-        this.showFeedbackText(`${feedback} +${totalReward} Monedas`, this.trayX, 375, color);
+        this.showFeedbackText(`${feedback} +${totalReward} 🪙`, this.trayX, 375, color);
       }
 
       // Clean up and spawn next
@@ -2305,7 +2329,8 @@ export default class GameScene extends Phaser.Scene {
 
   handleCustomerTimeout() {
     SoundManager.getInstance().playCatSad();
-    this.showFeedbackText('¡Me cansé de esperar! 😡', this.trayX, 375, '#d90429');
+    const i18n = I18nManager.getInstance();
+    this.showFeedbackText(i18n.t('customer.feedback.timeout'), this.trayX, 375, '#d90429');
     
     // Do NOT reset the cookie or oven state — the player may still want to
     // retrieve the cookie from the oven and reuse it for the next customer.
@@ -2328,13 +2353,9 @@ export default class GameScene extends Phaser.Scene {
     SoundManager.getInstance().playScratch();
     SoundManager.getInstance().playCustomerAngry();
 
-    const dialogues = [
-      '¡AUCH! ¡Qué servicio tan salvaje! 😡🐾',
-      '¡Miau! ¡Eso dolió mucho! 😿',
-      '¡Llamaré al control de animales! 😤',
-      '¡Me rasguñó! ¡No volveré jamás! 😡'
-    ];
-    const chosenText = dialogues[Math.floor(Math.random() * dialogues.length)];
+    const i18n = I18nManager.getInstance();
+    const dialogues = i18n.t('customer.scratchDialogues');
+    const chosenText = Array.isArray(dialogues) ? dialogues[Math.floor(Math.random() * dialogues.length)] : dialogues;
     this.showFeedbackText(chosenText, this.currentCustomer.container.x, this.currentCustomer.container.y - 244, '#d90429');
 
     const cx = this.currentCustomer.container.x;
@@ -2473,7 +2494,8 @@ export default class GameScene extends Phaser.Scene {
         if (this.ovenGlassSprite) {
           this.ovenGlassSprite.setTexture('oven_glass_off');
         }
-        this.showFeedbackText('¡Galletas listas! 🍪', this.ovenX, 375, '#38b000');
+        const i18n = I18nManager.getInstance();
+        this.showFeedbackText(i18n.t('game.feedback.cookiesReady'), this.ovenX, 375, '#38b000');
         this.updateExtractButtonState();
       }
 
@@ -2497,7 +2519,8 @@ export default class GameScene extends Phaser.Scene {
           }
           SoundManager.getInstance().playOvenBurnAlert();
           SoundManager.getInstance().playCookieBurnt();
-          this.showFeedbackText('¡Se ha quemado! 😭🔥', this.ovenX, 375, '#d90429');
+          const i18n = I18nManager.getInstance();
+          this.showFeedbackText(i18n.t('game.feedback.cookieBurnt'), this.ovenX, 375, '#d90429');
           this.cameras.main.shake(200, 0.005);
           this.updateExtractButtonState();
         }
@@ -2635,8 +2658,9 @@ export default class GameScene extends Phaser.Scene {
       this.drawDeliveryTrayBg();
     }
 
+    const i18n = I18nManager.getInstance();
     this.showFeedbackText(
-      this.isEditorMode ? 'Modo Editor Activo 🛠️' : 'Modo Juego Activo 🎮',
+      this.isEditorMode ? i18n.t('editor.active') : i18n.t('editor.inactive'),
       this.cameras.main.width / 2,
       100,
       this.isEditorMode ? '#d90429' : '#38b000'
@@ -2662,7 +2686,8 @@ export default class GameScene extends Phaser.Scene {
       if (element.key === 'deliveryTray') {
         this.drawDeliveryTrayBg(0xccffcc); // Green highlight for delivery tray background
       }
-      this.showFeedbackText(`Seleccionado: ${element.key}`, this.cameras.main.width / 2, 188, '#38b000');
+      const i18n = I18nManager.getInstance();
+      this.showFeedbackText(i18n.t('editor.selected', { key: element.key }), this.cameras.main.width / 2, 188, '#38b000');
     }
   }
 
@@ -2720,21 +2745,22 @@ export default class GameScene extends Phaser.Scene {
     });
 
     const jsonStr = JSON.stringify(newConfig, null, 2);
+    const i18n = I18nManager.getInstance();
 
     // Copy to clipboard
     if (navigator.clipboard) {
       navigator.clipboard.writeText(jsonStr).then(() => {
-        this.showFeedbackText('¡Configuración copiada al portapapeles! 📋', this.cameras.main.width / 2, 188, '#38b000');
+        this.showFeedbackText(i18n.t('editor.copied'), this.cameras.main.width / 2, 188, '#38b000');
         console.log('--- NUEVO UI CONFIG (COPIADO) ---');
         console.log(jsonStr);
       }).catch(err => {
         console.error('Error al copiar al portapapeles:', err);
-        this.showFeedbackText('Error al copiar. Mira la consola (F12). ⚠️', this.cameras.main.width / 2, 188, '#d90429');
+        this.showFeedbackText(i18n.t('editor.copyError'), this.cameras.main.width / 2, 188, '#d90429');
         console.log('--- NUEVO UI CONFIG (Copia manual) ---');
         console.log(jsonStr);
       });
     } else {
-      this.showFeedbackText('Copiado fallido. Mira la consola (F12). ⚠️', this.cameras.main.width / 2, 188, '#d90429');
+      this.showFeedbackText(i18n.t('editor.copyError'), this.cameras.main.width / 2, 188, '#d90429');
       console.log('--- NUEVO UI CONFIG ---');
       console.log(jsonStr);
     }
@@ -2752,7 +2778,8 @@ export default class GameScene extends Phaser.Scene {
     this.drawDeliveryTrayBg();
 
     // Text label on the tray
-    this.deliveryTrayLabel = this.add.text(this.deliveryTrayX, this.deliveryTrayY - 62, 'BANDEJA DE ENTREGA', {
+    const i18n = I18nManager.getInstance();
+    this.deliveryTrayLabel = this.add.text(this.deliveryTrayX, this.deliveryTrayY - 62, i18n.t('hud.labels.delivery'), {
       font: '17px "Outfit", sans-serif',
       fill: '#7f5539',
       fontWeight: '800'
@@ -2947,7 +2974,7 @@ export default class GameScene extends Phaser.Scene {
           this.deliveryTrayCookies = [];
           this.deliveryTrayDrinks = [];
           this.drawDeliveryTray();
-          this.showFeedbackText('¡Bandeja Vaciada! 🗑️', this.trashBinX, this.trashBinY - 50, '#d90429');
+          this.showFeedbackText(I18nManager.getInstance().t('game.feedback.trayEmptied'), this.trashBinX, this.trashBinY - 50, '#d90429');
         }
       }
 
@@ -3061,7 +3088,7 @@ export default class GameScene extends Phaser.Scene {
   handleOvenImageClick() {
     if (!this.cookiesInOven || this.cookiesInOven.length === 0) {
       SoundManager.getInstance().playUiDenied();
-      this.showFeedbackText('¡El horno está vacío!', this.ovenX, 375, '#d90429');
+      this.showFeedbackText(I18nManager.getInstance().t('game.feedback.ovenEmpty'), this.ovenX, 375, '#d90429');
       return;
     }
 
@@ -3116,7 +3143,8 @@ export default class GameScene extends Phaser.Scene {
     this.cookiesInOven = [];
     SoundManager.getInstance().playOvenDoor();
     SoundManager.getInstance().playUiTap();
-    this.showFeedbackText('¡Retirando al mostrador! 🍪', this.ovenX, 375, '#38b000');
+    const i18n = I18nManager.getInstance();
+    this.showFeedbackText(i18n.t('game.feedback.takingToCounter'), this.ovenX, 375, '#38b000');
     this.updateExtractButtonState();
   }
 
@@ -3165,6 +3193,7 @@ export default class GameScene extends Phaser.Scene {
 
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
+    const i18n = I18nManager.getInstance();
 
     // 1. Create container
     this.audioPanelContainer = this.add.container(0, 0).setDepth(20000);
@@ -3177,7 +3206,7 @@ export default class GameScene extends Phaser.Scene {
 
     // 3. Panel Container Box
     const boxW = 638;
-    const boxH = 413;
+    const boxH = 470;
     const boxX = width / 2;
     const boxY = height / 2;
 
@@ -3189,8 +3218,8 @@ export default class GameScene extends Phaser.Scene {
     this.audioPanelContainer.add(panelBg);
 
     // 4. Title
-    const titleText = this.add.text(boxX, boxY - 141, 'MÚSICA DE FONDO', {
-      font: '38px "Outfit", sans-serif',
+    const titleText = this.add.text(boxX, boxY - 170, i18n.t('settings.title'), {
+      font: '36px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800'
     }).setOrigin(0.5);
@@ -3199,7 +3228,7 @@ export default class GameScene extends Phaser.Scene {
     // 5. Volume control bar indicator
     const volumeBarBg = this.add.graphics();
     volumeBarBg.fillStyle(0xe6ccb2, 1);
-    volumeBarBg.fillRoundedRect(boxX - 131, boxY - 28, 263, 26, 8);
+    volumeBarBg.fillRoundedRect(boxX - 131, boxY - 95, 263, 26, 8);
     this.audioPanelContainer.add(volumeBarBg);
 
     const volumeFill = this.add.graphics();
@@ -3209,12 +3238,12 @@ export default class GameScene extends Phaser.Scene {
       volumeFill.clear();
       if (this.musicMuted) return;
       volumeFill.fillStyle(0x38b000, 1); // Green fill
-      volumeFill.fillRoundedRect(boxX - 128, boxY - 24, 255 * this.musicVolume, 19, 6);
+      volumeFill.fillRoundedRect(boxX - 128, boxY - 91, 255 * this.musicVolume, 19, 6);
     };
     drawVolumeBar();
 
     // 6. Volume Percentage Text
-    const volumePercentText = this.add.text(boxX, boxY + 28, `Volumen: ${Math.round(this.musicVolume * 100)}%`, {
+    const volumePercentText = this.add.text(boxX, boxY - 45, i18n.t('audio.volume', { percent: Math.round(this.musicVolume * 100) }), {
       font: '24px "Outfit", sans-serif',
       fill: '#7f5539',
       fontWeight: '700'
@@ -3228,18 +3257,18 @@ export default class GameScene extends Phaser.Scene {
     const minusBtnBg = this.add.graphics();
     minusBtnBg.fillStyle(0xddb892, 1);
     minusBtnBg.lineStyle(4, 0x582f0e, 1);
-    minusBtnBg.fillCircle(boxX - 178, boxY - 15, btnSize / 2);
-    minusBtnBg.strokeCircle(boxX - 178, boxY - 15, btnSize / 2);
+    minusBtnBg.fillCircle(boxX - 178, boxY - 82, btnSize / 2);
+    minusBtnBg.strokeCircle(boxX - 178, boxY - 82, btnSize / 2);
     this.audioPanelContainer.add(minusBtnBg);
 
-    const minusText = this.add.text(boxX - 178, boxY - 15, '-', {
+    const minusText = this.add.text(boxX - 178, boxY - 82, '-', {
       font: '38px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800'
     }).setOrigin(0.5);
     this.audioPanelContainer.add(minusText);
 
-    const minusZone = this.add.circle(boxX - 178, boxY - 15, btnSize / 2, 0x000000, 0)
+    const minusZone = this.add.circle(boxX - 178, boxY - 82, btnSize / 2, 0x000000, 0)
       .setInteractive({ useHandCursor: true });
     this.audioPanelContainer.add(minusZone);
 
@@ -3247,24 +3276,24 @@ export default class GameScene extends Phaser.Scene {
     const plusBtnBg = this.add.graphics();
     plusBtnBg.fillStyle(0xddb892, 1);
     plusBtnBg.lineStyle(4, 0x582f0e, 1);
-    plusBtnBg.fillCircle(boxX + 178, boxY - 15, btnSize / 2);
-    plusBtnBg.strokeCircle(boxX + 178, boxY - 15, btnSize / 2);
+    plusBtnBg.fillCircle(boxX + 178, boxY - 82, btnSize / 2);
+    plusBtnBg.strokeCircle(boxX + 178, boxY - 82, btnSize / 2);
     this.audioPanelContainer.add(plusBtnBg);
 
-    const plusText = this.add.text(boxX + 178, boxY - 15, '+', {
+    const plusText = this.add.text(boxX + 178, boxY - 82, '+', {
       font: '38px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800'
     }).setOrigin(0.5);
     this.audioPanelContainer.add(plusText);
 
-    const plusZone = this.add.circle(boxX + 178, boxY - 15, btnSize / 2, 0x000000, 0)
+    const plusZone = this.add.circle(boxX + 178, boxY - 82, btnSize / 2, 0x000000, 0)
       .setInteractive({ useHandCursor: true });
     this.audioPanelContainer.add(plusZone);
 
     // 8. Mute / Unmute Button
     const muteBtnX = boxX;
-    const muteBtnY = boxY + 94;
+    const muteBtnY = boxY + 25;
 
     const muteBtnBg = this.add.graphics();
     muteBtnBg.fillStyle(0xb7b7a4, 1);
@@ -3273,7 +3302,7 @@ export default class GameScene extends Phaser.Scene {
     muteBtnBg.strokeRoundedRect(muteBtnX - 131, muteBtnY - 30, 263, 60, 15);
     this.audioPanelContainer.add(muteBtnBg);
 
-    const getMuteLabel = () => this.musicMuted ? '🔇 Silenciado' : '🔊 Activado';
+    const getMuteLabel = () => this.musicMuted ? i18n.t('audio.muted') : i18n.t('audio.unmuted');
     const muteText = this.add.text(muteBtnX, muteBtnY, getMuteLabel(), {
       font: '26px "Outfit", sans-serif',
       fill: '#582f0e',
@@ -3285,9 +3314,34 @@ export default class GameScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     this.audioPanelContainer.add(muteZone);
 
-    // 9. Close Button (X)
-    const closeBtnX = boxX + boxW / 2 - 41;
-    const closeBtnY = boxY - boxH / 2 + 41;
+    // 9. Language Switcher Row
+    const langRowY = boxY + 120;
+    const langLabelText = this.add.text(boxX - 65, langRowY, i18n.t('settings.language'), {
+      font: 'bold 22px "Outfit", sans-serif',
+      fill: '#582f0e'
+    }).setOrigin(0.5);
+    this.audioPanelContainer.add(langLabelText);
+
+    const langBtnBg = this.add.graphics();
+    langBtnBg.fillStyle(0xddb892, 1);
+    langBtnBg.lineStyle(4, 0x582f0e, 1);
+    langBtnBg.fillRoundedRect(boxX + 55, langRowY - 24, 140, 48, 15);
+    langBtnBg.strokeRoundedRect(boxX + 55, langRowY - 24, 140, 48, 15);
+    this.audioPanelContainer.add(langBtnBg);
+
+    const langBtnText = this.add.text(boxX + 125, langRowY, i18n.t('settings.langButton'), {
+      font: 'bold 20px "Outfit", sans-serif',
+      fill: '#582f0e'
+    }).setOrigin(0.5);
+    this.audioPanelContainer.add(langBtnText);
+
+    const langBtnZone = this.add.rectangle(boxX + 125, langRowY, 140, 48, 0x000000, 0)
+      .setInteractive({ useHandCursor: true });
+    this.audioPanelContainer.add(langBtnZone);
+
+    // 10. Close Button (X)
+    const closeBtnX = boxX + boxW / 2 - 35;
+    const closeBtnY = boxY - boxH / 2 + 35;
 
     const closeBtnBg = this.add.graphics();
     closeBtnBg.fillStyle(0xd90429, 1);
@@ -3327,7 +3381,7 @@ export default class GameScene extends Phaser.Scene {
         this.bgMusic.setVolume(soundMgr.getEffectiveGain('bgm'));
       }
 
-      volumePercentText.setText(`Volumen: ${Math.round(this.musicVolume * 100)}%`);
+      volumePercentText.setText(i18n.t('audio.volume', { percent: Math.round(this.musicVolume * 100) }));
       drawVolumeBar();
     });
 
@@ -3348,7 +3402,7 @@ export default class GameScene extends Phaser.Scene {
         this.bgMusic.setVolume(soundMgr.getEffectiveGain('bgm'));
       }
 
-      volumePercentText.setText(`Volumen: ${Math.round(this.musicVolume * 100)}%`);
+      volumePercentText.setText(i18n.t('audio.volume', { percent: Math.round(this.musicVolume * 100) }));
       drawVolumeBar();
     });
 
@@ -3364,6 +3418,20 @@ export default class GameScene extends Phaser.Scene {
 
       muteText.setText(getMuteLabel());
       drawVolumeBar();
+    });
+
+    // Language Toggle Interaction
+    langBtnZone.on('pointerdown', () => {
+      const nextLang = i18n.getLanguage() === 'en' ? 'es' : 'en';
+      i18n.setLanguage(nextLang);
+      soundMgr.playUiTap();
+      this.refreshLocalizedTexts();
+
+      titleText.setText(i18n.t('settings.title'));
+      volumePercentText.setText(i18n.t('audio.volume', { percent: Math.round(this.musicVolume * 100) }));
+      muteText.setText(getMuteLabel());
+      langLabelText.setText(i18n.t('settings.language'));
+      langBtnText.setText(i18n.t('settings.langButton'));
     });
 
     // Close Button Interaction
@@ -3385,7 +3453,30 @@ export default class GameScene extends Phaser.Scene {
     plusZone.on('pointerout', () => plusText.setScale(1.0));
     muteZone.on('pointerover', () => muteText.setScale(1.05));
     muteZone.on('pointerout', () => muteText.setScale(1.0));
+    langBtnZone.on('pointerover', () => langBtnText.setScale(1.08));
+    langBtnZone.on('pointerout', () => langBtnText.setScale(1.0));
     closeZone.on('pointerover', () => closeText.setScale(1.2));
     closeZone.on('pointerout', () => closeText.setScale(1.0));
+  }
+
+  refreshLocalizedTexts() {
+    const i18n = I18nManager.getInstance();
+    if (this.daySignText) {
+      this.daySignText.setText(i18n.t('hud.day', { day: this.day }));
+    }
+    if (this.deliveryTrayLabel) {
+      this.deliveryTrayLabel.setText(i18n.t('hud.labels.delivery'));
+    }
+    if (this.ovenExtractBtnText) {
+      this.ovenExtractBtnText.setText(i18n.t('stations.ovenExtract'));
+    }
+    if (this.editorIndicator) {
+      this.editorIndicator.setText(i18n.t('editor.indicator'));
+    }
+    this.updateStockTexts();
+    this.updateDrinkStockTexts();
+    if (this.currentCustomer) {
+      this.currentCustomer.updateProgress(this.currentCustomer.acceptedCookies ? this.currentCustomer.acceptedCookies.length : 0);
+    }
   }
 }

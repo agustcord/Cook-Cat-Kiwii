@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
 import SoundManager from '../game/SoundManager.js';
+import I18nManager from '../game/services/I18nManager.js';
+import SaveManager from '../game/services/SaveManager.js';
+import PillSwitcher from '../game/PillSwitcher.js';
 
 export default class MainMenuScene extends Phaser.Scene {
   constructor() {
@@ -8,6 +11,8 @@ export default class MainMenuScene extends Phaser.Scene {
 
   create() {
     const sound = SoundManager.getInstance();
+    const i18n = I18nManager.getInstance();
+    const saveManager = SaveManager.getInstance();
 
     // Play introductory main menu synthesized music
     sound.playMainMenuMusic();
@@ -19,7 +24,7 @@ export default class MainMenuScene extends Phaser.Scene {
     this.add.image(width / 2, height / 2, 'menu_bg').setDisplaySize(width, height);
 
     // Title text with white stroke and shadow for high legibility
-    this.add.text(width / 2, height / 4, 'Kiwipaw Bakehouse', {
+    this.titleText = this.add.text(width / 2, height / 4, i18n.t('mainMenu.title'), {
       font: '90px "Outfit", sans-serif',
       fill: '#582f0e',
       stroke: '#ffffff',
@@ -28,7 +33,7 @@ export default class MainMenuScene extends Phaser.Scene {
       fontWeight: '800'
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height / 4 + 95, 'El gato Kiwi repostero para CrazyGames', {
+    this.subtitleText = this.add.text(width / 2, height / 4 + 95, i18n.t('mainMenu.subtitle'), {
       font: '32px "Outfit", sans-serif',
       fill: '#7f5539',
       stroke: '#ffffff',
@@ -37,65 +42,160 @@ export default class MainMenuScene extends Phaser.Scene {
       fontWeight: '600'
     }).setOrigin(0.5);
 
-    // Play Button Box
-    const btnX = width / 2 - 190;
-    const btnY = height / 2 + 180;
-    const btnW = 380;
-    const btnH = 100;
+    // Pill Switcher Dual [ EN | ES ] (Top-Right: x: width - 190, y: 90, depth: 100)
+    this.pillSwitcher = new PillSwitcher(this, {
+      x: width - 190,
+      y: 90,
+      width: 320,
+      height: 82,
+      depth: 100,
+      onLanguageChange: () => {
+        this.refreshLocalizedTexts();
+      }
+    });
 
-    const playBtnBg = this.add.graphics();
-    playBtnBg.fillStyle(0x7f5539, 1);
-    playBtnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 25);
+    // Check saved game state for Continue / New Game
+    const hasSave = saveManager.hasSavedGame();
+    const savedState = saveManager.loadGame();
 
-    const playText = this.add.text(width / 2, btnY + btnH / 2, 'JUGAR', {
-      font: '42px "Outfit", sans-serif',
-      fill: '#fff1e6',
-      fontWeight: '800'
-    }).setOrigin(0.5);
+    const startFreshGame = () => {
+      saveManager.clearSave();
+      this.scene.start('GameScene', saveManager.getDefaultState());
+    };
 
-    // Make interactive transparent rectangle
-    const playZone = this.add.rectangle(width / 2, btnY + btnH / 2, btnW, btnH, 0x000000, 0)
-      .setInteractive({ useHandCursor: true });
+    if (hasSave && savedState) {
+      // DUAL BUTTONS: CONTINUE & NEW GAME
+      const btnW = 380;
+      const btnH = 80;
+      const continueY = height / 2 + 130;
+      const newGameY = height / 2 + 230;
 
-    // Transition to game scene on tap/click
-    playZone.on('pointerdown', () => {
-      sound.playUiTap();
-      this.scene.start('GameScene', {
-        day: 1,
-        coins: 0,
-        loanRemaining: 200,
-        unlockedShapes: ['star'],
-        stock: {
-          dough: { classic: 10, chocolate: 0, oat: 0 },
-          topping: { sprinkles: 2, choco: 0, glazing: 0 },
-          drink: { coffee_beans: 2, milk: 2 }
+      // 1. Continue Button
+      const continueBtn = this.createMenuButton({
+        x: width / 2,
+        y: continueY,
+        width: btnW,
+        height: btnH,
+        text: `${i18n.t('mainMenu.continue')} (D${savedState.day})`,
+        color: 0x38b000,
+        hoverColor: 0x4cc9f0,
+        onClick: () => {
+          sound.playUiTap();
+          this.scene.start('GameScene', savedState);
         }
       });
-    });
+      this.continueBtnText = continueBtn.btnText;
 
-    // Simple micro-animations/hover feedback
-    playZone.on('pointerover', () => {
-      sound.playUiHover();
-      playBtnBg.clear();
-      playBtnBg.fillStyle(0x9c6644, 1); // Lighter brown on hover
-      playBtnBg.fillRoundedRect(btnX - 8, btnY - 5, btnW + 16, btnH + 10, 28);
-      playText.setScale(1.08);
-      playText.setColor('#ffe5d9');
-    });
+      // 2. New Game Button
+      const newGameBtn = this.createMenuButton({
+        x: width / 2,
+        y: newGameY,
+        width: btnW,
+        height: btnH,
+        text: i18n.t('mainMenu.newGame'),
+        color: 0x7f5539,
+        hoverColor: 0x9c6644,
+        onClick: () => {
+          sound.playUiTap();
+          startFreshGame();
+        }
+      });
+      this.newGameBtnText = newGameBtn.btnText;
+    } else {
+      // SINGLE PLAY BUTTON
+      const btnW = 380;
+      const btnH = 96;
+      const btnY = height / 2 + 180;
 
-    playZone.on('pointerout', () => {
-      playBtnBg.clear();
-      playBtnBg.fillStyle(0x7f5539, 1);
-      playBtnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 25);
-      playText.setScale(1);
-      playText.setColor('#fff1e6');
-    });
+      const playBtn = this.createMenuButton({
+        x: width / 2,
+        y: btnY,
+        width: btnW,
+        height: btnH,
+        text: i18n.t('mainMenu.play'),
+        color: 0x7f5539,
+        hoverColor: 0x9c6644,
+        fontSize: '42px',
+        onClick: () => {
+          sound.playUiTap();
+          startFreshGame();
+        }
+      });
+      this.playBtnText = playBtn.btnText;
+    }
 
     // Subtext
-    this.add.text(width / 2, height - 50, 'Soporta Mouse & Pantalla Táctil', {
+    this.subtextObj = this.add.text(width / 2, height - 50, i18n.t('mainMenu.subtext'), {
       font: '24px "Outfit", sans-serif',
       fill: '#7f5539',
       fontWeight: '600'
     }).setOrigin(0.5);
+  }
+
+  refreshLocalizedTexts() {
+    const i18n = I18nManager.getInstance();
+    const saveManager = SaveManager.getInstance();
+    const savedState = saveManager.loadGame();
+
+    if (this.titleText) {
+      this.titleText.setText(i18n.t('mainMenu.title'));
+    }
+    if (this.subtitleText) {
+      this.subtitleText.setText(i18n.t('mainMenu.subtitle'));
+    }
+    if (this.subtextObj) {
+      this.subtextObj.setText(i18n.t('mainMenu.subtext'));
+    }
+    if (this.continueBtnText && savedState) {
+      this.continueBtnText.setText(`${i18n.t('mainMenu.continue')} (D${savedState.day})`);
+    }
+    if (this.newGameBtnText) {
+      this.newGameBtnText.setText(i18n.t('mainMenu.newGame'));
+    }
+    if (this.playBtnText) {
+      this.playBtnText.setText(i18n.t('mainMenu.play'));
+    }
+    if (this.pillSwitcher) {
+      this.pillSwitcher.updateVisuals();
+    }
+  }
+
+  createMenuButton({ x, y, width, height, text, color, hoverColor, fontSize = '32px', onClick }) {
+    const sound = SoundManager.getInstance();
+    const btnBg = this.add.graphics();
+    btnBg.fillStyle(color, 1);
+    btnBg.fillRoundedRect(x - width / 2, y - height / 2, width, height, 22);
+
+    const btnText = this.add.text(x, y, text, {
+      font: `${fontSize} "Outfit", sans-serif`,
+      fill: '#fff1e6',
+      fontWeight: '800'
+    }).setOrigin(0.5);
+
+    const zone = this.add.rectangle(x, y, width, height, 0x000000, 0)
+      .setInteractive({ useHandCursor: true });
+
+    zone.on('pointerdown', () => {
+      onClick();
+    });
+
+    zone.on('pointerover', () => {
+      sound.playUiHover();
+      btnBg.clear();
+      btnBg.fillStyle(hoverColor, 1);
+      btnBg.fillRoundedRect(x - width / 2 - 4, y - height / 2 - 2, width + 8, height + 4, 24);
+      btnText.setScale(1.05);
+      btnText.setColor('#ffe5d9');
+    });
+
+    zone.on('pointerout', () => {
+      btnBg.clear();
+      btnBg.fillStyle(color, 1);
+      btnBg.fillRoundedRect(x - width / 2, y - height / 2, width, height, 22);
+      btnText.setScale(1);
+      btnText.setColor('#fff1e6');
+    });
+
+    return { btnBg, btnText, zone };
   }
 }

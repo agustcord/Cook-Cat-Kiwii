@@ -15,16 +15,79 @@ const EXPENSE_TABLE = {
 };
 
 /**
+ * Generador procedural de configuración de jornada (Día 1..4 y escalado infinito Día 5+).
+ * @param {number} [day=1]
+ * @returns {{meta: number, patienceTime: number, maxCustomers: number, bakeMin: number, bakeMax: number}}
+ */
+export function getDayConfig(day = 1) {
+  const d = Math.max(1, Math.floor(Number(day) || 1));
+  if (d === 1) {
+    return {
+      meta: 100,
+      patienceTime: 40,
+      maxCustomers: 3,
+      bakeMin: 5.5,
+      bakeMax: 7.5
+    };
+  }
+  if (d === 2) {
+    return {
+      meta: 150,
+      patienceTime: 35,
+      maxCustomers: 4,
+      bakeMin: 6.0,
+      bakeMax: 7.5
+    };
+  }
+  if (d === 3) {
+    return {
+      meta: 200,
+      patienceTime: 30,
+      maxCustomers: 4,
+      bakeMin: 6.5,
+      bakeMax: 7.5
+    };
+  }
+  if (d === 4) {
+    return {
+      meta: 300,
+      patienceTime: 28,
+      maxCustomers: 5,
+      bakeMin: 7.0,
+      bakeMax: 7.5
+    };
+  }
+
+  // Día 5 en adelante: Escalado procedural equilibrado
+  return {
+    meta: 300 + (d - 4) * 60,
+    patienceTime: Math.max(20, 28 - (d - 4) * 1.5),
+    maxCustomers: Math.min(8, 5 + Math.floor((d - 4) / 2)),
+    bakeMin: Math.min(7.2, 7.0 + (d - 4) * 0.05),
+    bakeMax: 7.5
+  };
+}
+
+/**
  * Calcula los gastos fijos del día (Alquiler, Mantenimiento/Servicios, Cuota del Banco).
- * @param {number} day - Número del día (1..4)
+ * @param {number} day - Número del día (1..4 o 5+)
  * @returns {{rent: number, maintenance: number, loanPayment: number, total: number}}
  */
-export function calculateExpenses(day) {
-  const defaults = { rent: 20, maintenance: 20, loanPayment: 0 };
-  const current = EXPENSE_TABLE[day] || defaults;
-  const rent = current.rent;
-  const maintenance = current.maintenance;
-  const loanPayment = current.loanPayment;
+export function calculateExpenses(day = 1) {
+  const d = Math.max(1, Math.floor(Number(day) || 1));
+  if (EXPENSE_TABLE[d]) {
+    const current = EXPENSE_TABLE[d];
+    const rent = current.rent;
+    const maintenance = current.maintenance;
+    const loanPayment = current.loanPayment;
+    const total = rent + maintenance + loanPayment;
+    return { rent, maintenance, loanPayment, total };
+  }
+
+  // Día 5 en adelante: Escalado dinámico
+  const rent = 20 + (d - 4) * 5;
+  const maintenance = 15 + (d - 1) * 5;
+  const loanPayment = Math.min(100, 85 + (d - 4) * 15);
   const total = rent + maintenance + loanPayment;
   return { rent, maintenance, loanPayment, total };
 }
@@ -54,8 +117,9 @@ export function calculatePerformanceRating(dayEarnings, meta = 100) {
     return {
       stars: 3,
       ratio,
-      label: 'Excelente',
-      message: '¡Récord de Ventas! Superaste la meta del día con creces.'
+      key: 'excellent',
+      label: 'excellent',
+      message: 'msgExcellent'
     };
   }
 
@@ -63,16 +127,18 @@ export function calculatePerformanceRating(dayEarnings, meta = 100) {
     return {
       stars: 2,
       ratio,
-      label: 'Bueno',
-      message: '¡Buen trabajo! Estuviste muy cerca de la meta comercial.'
+      key: 'good',
+      label: 'good',
+      message: 'msgGood'
     };
   }
 
   return {
     stars: 1,
     ratio,
-    label: 'Ajustado',
-    message: 'Día tranquilo. No se alcanzó la meta, pero el negocio sigue en pie y solvente.'
+    key: 'tight',
+    label: 'tight',
+    message: 'msgTight'
   };
 }
 

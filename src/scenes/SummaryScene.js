@@ -1,6 +1,10 @@
 import Phaser from 'phaser';
 import SoundManager from '../game/SoundManager.js';
+import CrazyGamesSDK from '../game/services/CrazyGamesSDK.js';
+import I18nManager from '../game/services/I18nManager.js';
+import SaveManager from '../game/services/SaveManager.js';
 import { evaluateSolvency } from '../game/EconomyManager.js';
+import PillSwitcher from '../game/PillSwitcher.js';
 import {
   computeSubtitleLayout,
   computeDebtLayout,
@@ -61,11 +65,27 @@ export default class SummaryScene extends Phaser.Scene {
   }
 
   create() {
-    // Play appropriate sound when entering summary
+    const i18n = I18nManager.getInstance();
+
+    // Autosave progress if not bankrupt
+    if (!this.isBankrupt) {
+      SaveManager.getInstance().saveGame({
+        day: this.day,
+        coins: this.netCoins,
+        loanRemaining: this.updatedLoanRemaining,
+        unlockedShapes: this.unlockedShapes,
+        stock: this.stock
+      });
+    }
+
+    // Play appropriate sound and trigger happytime if 3 stars
     if (this.isBankrupt) {
       SoundManager.getInstance().playGameOverMelody();
     } else {
       SoundManager.getInstance().playCoinCascade();
+      if (this.performance?.stars === 3) {
+        CrazyGamesSDK.getInstance().happytime();
+      }
     }
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
@@ -105,7 +125,9 @@ export default class SummaryScene extends Phaser.Scene {
     // ============================================================
     // PASO 2: Título con stroke blanco + sombra café (estilo MainMenu)
     // ============================================================
-    const titleText = this.isBankrupt ? '¡CIERRE POR QUIEBRA!' : `DÍA ${this.day} COMPLETADO`;
+    const titleText = this.isBankrupt
+      ? i18n.t('summary.bankruptcyClosure')
+      : i18n.t('summary.dayCompleted', { day: this.day });
     const titleColor = this.isBankrupt ? '#d90429' : '#38b000';
 
     const titleObj = this.add.text(width / 2, 58, titleText, {
@@ -117,17 +139,42 @@ export default class SummaryScene extends Phaser.Scene {
       shadow: { color: '#4e3629', fill: false, offsetX: 3, offsetY: 3, blur: 5 }
     }).setOrigin(0.5);
 
+    // Pill Switcher Dual [ EN | ES ] (Top-Right: x: width - 190, y: 80, depth: 100)
+    this.pillSwitcher = new PillSwitcher(this, {
+      x: width - 190,
+      y: 80,
+      width: 320,
+      height: 82,
+      depth: 100,
+      onLanguageChange: () => {
+        this.scene.restart({
+          day: this.day,
+          coins: this.coins,
+          meta: this.meta,
+          loanRemaining: this.loanRemaining,
+          coinsAtStart: this.coinsAtStart,
+          loanRemainingAtStart: this.loanRemainingAtStart,
+          unlockedShapesAtStart: this.unlockedShapesAtStart,
+          stockAtStart: this.stockAtStart,
+          unlockedShapes: this.unlockedShapes,
+          stock: this.stock
+        });
+      }
+    });
+
     // ============================================================
     // PASO 3: Desempeño Comercial y Estrellas Vectoriales
     // Centrado armónico del bloque completo de rating
     // ============================================================
     const starsEarned = this.performance.stars;
+    const perfKey = this.performance.key || (starsEarned === 3 ? 'excellent' : starsEarned === 2 ? 'good' : 'tight');
+    const localizedRatingLabel = i18n.t(`summary.performance.${perfKey}`);
 
     const performanceHeader = this.isBankrupt
       ? (this.bankruptcyReason === 'debt'
-          ? 'Insolvencia Financiera: Fondos insuficientes para cubrir los gastos del día'
-          : 'Desabastecimiento Operativo: Sin masa en despensa ni fondos para reponerla')
-      : `Desempeño Comercial: (${this.performance.label})`;
+          ? i18n.t('summary.performance.insolvencyDebt')
+          : i18n.t('summary.performance.insolvencySupplies'))
+      : i18n.t('summary.performance.header', { label: localizedRatingLabel });
 
     const performanceColor = this.isBankrupt ? '#d90429' : '#7f5539';
 
@@ -178,9 +225,10 @@ export default class SummaryScene extends Phaser.Scene {
       fontWeight: '600'
     };
 
-    const tMeta = this.add.text(0, 0, `Meta: ${this.meta}`, subStyle).setOrigin(0, 0.5);
-    const tEarnings = this.add.text(0, 0, `•   Ventas Hoy: ${this.dayEarnings}`, subStyle).setOrigin(0, 0.5);
-    const tMessage = this.add.text(0, 0, `•   ${this.performance.message}`, subStyle).setOrigin(0, 0.5);
+    const tMeta = this.add.text(0, 0, i18n.t('summary.sub.goal', { meta: this.meta }), subStyle).setOrigin(0, 0.5);
+    const tEarnings = this.add.text(0, 0, i18n.t('summary.sub.earnings', { earnings: this.dayEarnings }), subStyle).setOrigin(0, 0.5);
+    const ratingMsg = i18n.t(`summary.performance.msg${perfKey.charAt(0).toUpperCase() + perfKey.slice(1)}`);
+    const tMessage = this.add.text(0, 0, `•   ${ratingMsg}`, subStyle).setOrigin(0, 0.5);
 
     const subLayout = computeSubtitleLayout({
       metaTextWidth: tMeta.width,
@@ -251,7 +299,7 @@ export default class SummaryScene extends Phaser.Scene {
     receipt.lineBetween(cardX + 20, cardY + 444, cardX + cardW - 20, cardY + 444);
 
     // Título de la cabecera del recibo
-    const headerTextObj = this.add.text(width / 2, cardY + 27, 'DETALLE DE FACTURACIÓN Y BALANCE', {
+    const headerTextObj = this.add.text(width / 2, cardY + 27, i18n.t('summary.card.title'), {
       font: '23px "Outfit", sans-serif',
       fill: '#ffffff',
       fontWeight: '800',
@@ -265,23 +313,23 @@ export default class SummaryScene extends Phaser.Scene {
     // Configuración de filas del balance
     const tableRowsConfig = [
       // Bloque 1: Ingresos y Caja
-      { id: 'ventas', label: 'Ventas de la Jornada (Hoy):', val: `+${this.dayEarnings}`, yOffset: 86, styleLeft: textStyleLeft, styleRight: textStyleRight },
-      { id: 'saldoPrevio', label: 'Saldo Previo en Caja:', val: `+${this.coinsAtStart}`, yOffset: 122, styleLeft: textStyleLeft, styleRight: textStyleRight },
+      { id: 'ventas', label: i18n.t('summary.card.sales'), val: `+${this.dayEarnings}`, yOffset: 86, styleLeft: textStyleLeft, styleRight: textStyleRight },
+      { id: 'saldoPrevio', label: i18n.t('summary.card.startCoins'), val: `+${this.coinsAtStart}`, yOffset: 122, styleLeft: textStyleLeft, styleRight: textStyleRight },
       {
         id: 'totalFondos',
-        label: 'Total Fondos en Caja al Cierre:',
+        label: i18n.t('summary.card.totalCoins'),
         val: `${this.coins}`,
         yOffset: 158,
         styleLeft: { font: '24px "Outfit", sans-serif', fill: '#582f0e', fontWeight: '800' },
         styleRight: { font: '24px "Outfit", sans-serif', fill: '#d48c47', fontWeight: '800' }
       },
       // Bloque 2: Gastos Fijos
-      { id: 'alquiler', label: 'Alquiler del Local (Fijo):', val: `-${this.rent}`, yOffset: 210, styleLeft: textStyleLeft, styleRight: textStyleRight },
-      { id: 'servicios', label: 'Servicios de Luz / Agua / Gas:', val: `-${this.maintenance}`, yOffset: 244, styleLeft: textStyleLeft, styleRight: textStyleRight },
-      { id: 'cuota', label: 'Cuota del Préstamo Bancario:', val: `-${this.loanPayment}`, yOffset: 278, styleLeft: textStyleLeft, styleRight: textStyleRight },
+      { id: 'alquiler', label: i18n.t('summary.card.rent'), val: `-${this.rent}`, yOffset: 210, styleLeft: textStyleLeft, styleRight: textStyleRight },
+      { id: 'servicios', label: i18n.t('summary.card.maintenance'), val: `-${this.maintenance}`, yOffset: 244, styleLeft: textStyleLeft, styleRight: textStyleRight },
+      { id: 'cuota', label: i18n.t('summary.card.loanPayment'), val: `-${this.loanPayment}`, yOffset: 278, styleLeft: textStyleLeft, styleRight: textStyleRight },
       {
         id: 'totalGastos',
-        label: 'Total Gastos Deducidos:',
+        label: i18n.t('summary.card.totalExpenses'),
         val: `-${this.totalExpenses}`,
         yOffset: 316,
         styleLeft: { font: '24px "Outfit", sans-serif', fill: '#8c2f39', fontWeight: '800' },
@@ -308,7 +356,7 @@ export default class SummaryScene extends Phaser.Scene {
     const badgeBorderColor = balanceIsPositive ? 0x2b9348 : 0xd90429;
     const balanceColor = balanceIsPositive ? '#2b9348' : '#d90429';
 
-    const saldoLabelObj = this.add.text(cardX + 32, cardY + 384, 'SALDO NETO RESTANTE:', {
+    const saldoLabelObj = this.add.text(cardX + 32, cardY + 384, i18n.t('summary.card.netBalance'), {
       font: '29px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800'
@@ -354,17 +402,17 @@ export default class SummaryScene extends Phaser.Scene {
     let pantryColor = '#2b9348';
 
     if (this.totalDoughStock >= 1) {
-      pantryStatus = `${this.totalDoughStock} u. disponibles para abrir mañana`;
+      pantryStatus = i18n.t('summary.card.pantryAvailable', { count: this.totalDoughStock });
       pantryColor = '#2b9348';
     } else if (this.netCoins >= 10) {
-      pantryStatus = `0 u. (Saldo disponible para reponer en tienda)`;
+      pantryStatus = i18n.t('summary.card.pantryRestock');
       pantryColor = '#d48c47';
     } else {
-      pantryStatus = `0 u. (Fondos insuficientes para masa básica: 10)`;
+      pantryStatus = i18n.t('summary.card.pantryBroke');
       pantryColor = '#d90429';
     }
 
-    const pantryTitleObj = this.add.text(cardX + 32, cardY + 462, 'Despensa de Masa:', textStyleLeft).setOrigin(0, 0.5);
+    const pantryTitleObj = this.add.text(cardX + 32, cardY + 462, i18n.t('summary.card.pantryTitle'), textStyleLeft).setOrigin(0, 0.5);
     const pantryValObj = this.add.text(cardX + cardW - 32, cardY + 462, pantryStatus, {
       font: '21px "Outfit", sans-serif',
       fill: pantryColor,
@@ -378,8 +426,8 @@ export default class SummaryScene extends Phaser.Scene {
       fontWeight: '700'
     };
 
-    const tDebt1 = this.add.text(0, 0, `Préstamo restante con el banco: ${this.updatedLoanRemaining}`, debtStyle).setOrigin(0, 0.5);
-    const tDebt2 = this.add.text(0, 0, `(Inicial: 200)`, debtStyle).setOrigin(0, 0.5);
+    const tDebt1 = this.add.text(0, 0, i18n.t('summary.card.loanRemaining', { amount: this.updatedLoanRemaining }), debtStyle).setOrigin(0, 0.5);
+    const tDebt2 = this.add.text(0, 0, i18n.t('summary.card.loanInitial'), debtStyle).setOrigin(0, 0.5);
 
     const debtLayout = computeDebtLayout({
       debtTextWidth: tDebt1.width,
@@ -405,21 +453,21 @@ export default class SummaryScene extends Phaser.Scene {
     let nextSceneCallback = null;
 
     if (this.isBankrupt) {
-      btnTextString = 'DECLARAR QUIEBRA';
+      btnTextString = i18n.t('summary.buttons.declareBankruptcy');
       btnColor = 0xd90429;
       btnHoverColor = 0xef233c;
       nextSceneCallback = () => {
         this.scene.start('GameOverScene', { reason: this.bankruptcyReason });
       };
     } else if (this.updatedLoanRemaining <= 0) {
-      btnTextString = 'VICTORIA FINANCIERA';
+      btnTextString = i18n.t('summary.buttons.victory');
       btnColor = 0x38b000;
       btnHoverColor = 0x4cc9f0;
       nextSceneCallback = () => {
         this.scene.start('VictoryScene', { coins: this.netCoins });
       };
     } else {
-      btnTextString = 'IR A LA TIENDA';
+      btnTextString = i18n.t('summary.buttons.shop');
       btnColor = 0x7f5539;
       btnHoverColor = 0x9c6644;
       nextSceneCallback = () => {
@@ -440,7 +488,7 @@ export default class SummaryScene extends Phaser.Scene {
 
     let warningObj = null;
     if (!this.isBankrupt && this.dayEarnings < this.meta) {
-      warningObj = this.add.text(width / 2, btnY - 26, 'Rendimiento comercial por debajo de la meta. Puedes continuar a la tienda o reintentar.', {
+      warningObj = this.add.text(width / 2, btnY - 26, i18n.t('summary.buttons.warningBelowGoal'), {
         font: '20px "Outfit", sans-serif',
         fill: '#8c5847',
         fontWeight: '700'
@@ -466,8 +514,11 @@ export default class SummaryScene extends Phaser.Scene {
     const actionZone = this.add.rectangle(width / 2, btnY + btnH / 2, btnW, btnH, 0x000000, 0)
       .setInteractive({ useHandCursor: true });
 
-    actionZone.on('pointerdown', () => {
+    actionZone.on('pointerdown', async () => {
       SoundManager.getInstance().playUiTap();
+      if (!this.isBankrupt && this.updatedLoanRemaining > 0) {
+        await CrazyGamesSDK.getInstance().requestMidgameAd();
+      }
       nextSceneCallback();
     });
 
@@ -506,7 +557,7 @@ export default class SummaryScene extends Phaser.Scene {
       retryBg.lineStyle(2, 0x7f5539, 1);
       retryBg.strokeRoundedRect(retryBtnX, retryBtnY, retryBtnW, retryBtnH, 14);
 
-      const retryText = this.add.text(width / 2, retryBtnY + retryBtnH / 2, 'REINTENTAR EL DÍA', {
+      const retryText = this.add.text(width / 2, retryBtnY + retryBtnH / 2, i18n.t('summary.buttons.retry'), {
         font: '22px "Outfit", sans-serif',
         fill: '#7f5539',
         fontWeight: '800'

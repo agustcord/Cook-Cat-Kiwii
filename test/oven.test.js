@@ -75,12 +75,12 @@ describe('Oven Station & Cookie Baking Integration & Logic Matrix', () => {
     
     // Debe bloquear con '¡Primero enciende el horno!' si no está precalentado
     assert.ok(
-      bakeClickFn.includes("this.showFeedbackText('¡Primero enciende el horno!'"),
+      bakeClickFn.includes("turnOnOvenFirst") || bakeClickFn.includes("this.showFeedbackText('¡Primero enciende el horno!'"),
       'handleOvenBakeClick debe exigir encendido/precalentado previo'
     );
     // Debe validar existencia de galletas en el horno
     assert.ok(
-      bakeClickFn.includes("this.showFeedbackText('¡El horno está vacío!'"),
+      bakeClickFn.includes("ovenEmpty") || bakeClickFn.includes("this.showFeedbackText('¡El horno está vacío!'"),
       'handleOvenBakeClick debe rechazar hornear si el horno está vacío'
     );
     // Debe cambiar texturas a estado activo (_on)

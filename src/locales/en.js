@@ -1,0 +1,241 @@
+export default {
+  boot: {
+    loading: 'Loading Kiwipaw Bakehouse...'
+  },
+  mainMenu: {
+    title: 'Kiwipaw Bakehouse',
+    subtitle: 'Kiwi the baker cat for CrazyGames',
+    play: 'PLAY',
+    continue: 'CONTINUE',
+    newGame: 'NEW GAME',
+    subtext: 'Supports Mouse & Touch Screen',
+    langToggle: '🌐 Language: English',
+    langButton: '🌐 EN'
+  },
+  hud: {
+    day: 'DAY {day}',
+    coins: '{coins}',
+    goal: '{meta}',
+    labels: {
+      dough: 'DOUGH',
+      shape: 'SHAPE',
+      topping: 'TOPPING',
+      delivery: 'DELIVERY'
+    }
+  },
+  stations: {
+    trash: 'TRASH',
+    oven: 'OVEN',
+    drinks: 'DRINKS',
+    ovenExtract: 'TAKE OUT COOKIES'
+  },
+  recipes: {
+    bases: {
+      classic: 'Vanilla',
+      chocolate: 'Chocolate',
+      oat: 'Oat'
+    },
+    shapes: {
+      star: 'Star',
+      heart: 'Heart',
+      cat: 'Cat',
+      fish: 'Fish'
+    },
+    toppings: {
+      sprinkles: 'with Sprinkles',
+      choco: 'with Choco Chips',
+      glazing: 'with Glaze'
+    },
+    drinks: {
+      coffee: 'Coffee',
+      milk: 'Milk',
+      coffee_milk: 'Coffee w/ Milk'
+    }
+  },
+  customer: {
+    order: 'Order: {count} / {total}',
+    orderDrinkOnly: 'Order: {drink}',
+    orderWithDrink: 'Order: {count} / {total} + {drink}',
+    scratchDialogues: [
+      "OUCH! What a wild service! 😡🐾",
+      "Meow! That hurt a lot! 😿",
+      "I'm calling animal control! 😤",
+      "It scratched me! I'm never coming back! 😡"
+    ],
+    feedback: {
+      perfectDelivery: 'PERFECT DELIVERY! 🍪✨',
+      perfectDrink: 'Perfect Delivery! ☕ +{reward} Coins',
+      orderCompleted: 'Order completed! 👍',
+      acceptable: 'Acceptable! 😐',
+      orderExcess: 'Order complete! +{reward} (Excess: -{penalty}) 🗑️',
+      emptyTray: 'The delivery tray is empty!',
+      wrongOrder: 'This is not what I ordered! 😡',
+      rawCookie: 'This cookie is raw! 🤮',
+      burntCookie: 'This cookie is burnt! 🥵',
+      missingTopping: 'Missing toppings! 🍓',
+      wrongShape: 'This shape is wrong! 📐',
+      wrongBase: 'Wrong dough flavor! 🍫',
+      incomplete: 'Incomplete! Missing {missing} cookies 😡',
+      timeout: "I'm tired of waiting! 😾",
+      coinsAdded: '+{reward} Coins'
+    }
+  },
+  game: {
+    stock: 'Stock: {qty}',
+    stockInfinite: 'Stock: ∞',
+    stockUnit: '{qty}u',
+    feedback: {
+      outOfStock: 'Out of stock! Buy more in the shop 🛒',
+      doughSelected: '{name} Dough!',
+      tableFull: 'Table full! (Max 3)',
+      shapeSelected: '{name} Shape!',
+      selectDoughFirst: 'Select dough first!',
+      cutShapeFirst: 'Cut shape first!',
+      toppingAdded: 'Added {name}! ✨',
+      pressDrinkButton: 'Press Coffee or Milk on the panel! ☕🥛',
+      dragCupToTray: 'Drag cup to delivery tray! ☕➡️',
+      brewingDrink: 'Brewing beverage...! ⏳',
+      noCoffeeStock: 'No Coffee beans! Restock in shop 🛒',
+      noMilkStock: 'No Milk cartons! Restock in shop 🛒',
+      cupAlreadyInMachine: 'A cup is already in the machine! ☕',
+      cupPlaced: 'Cup placed! ☕',
+      placeCupFirst: 'Place a cup first! ☕🥛',
+      drinkReady: 'Beverage ready! ☕',
+      coffeeMilkReady: 'Coffee with milk ready! ☕🥛',
+      machineBusy: 'Machine is busy! ☕',
+      drinkServed: '{name} served! ☕',
+      ovenPreheating: 'Oven on (preheating)! 🔥',
+      ovenOff: 'Oven turned off.',
+      turnOnOvenFirst: 'Turn on the oven first!',
+      ovenEmpty: 'Oven is empty!',
+      cookingCookies: 'Baking cookies! ⏳',
+      cookieStillRaw: 'Still raw! 🥣',
+      cookieBurnt: 'It burnt! 😭🔥',
+      perfectBake: 'Perfect Bake! 🍪✨',
+      someReady: 'Some cookies are ready! 🍪',
+      cookiesReady: 'Cookies ready! 🍪',
+      ovenAlreadyOn: 'Oven is already on!',
+      ovenFull: 'Oven is full! (Max 3)',
+      cookieInserted: 'Cookie inserted ({count}/{total}) 🍪',
+      cookieReadyDelivery: 'Cookie ready for delivery! 📦',
+      missingDrink: 'Missing drink: {drink}! ☕',
+      discarded: 'Discarded! 🗑️',
+      takingToCounter: 'Moving to counter! 🍪',
+      trayEmptied: 'Tray Emptied! 🗑️'
+    }
+  },
+  audio: {
+    title: 'BACKGROUND MUSIC',
+    volume: 'Volume: {percent}%',
+    muted: '🔇 Muted',
+    unmuted: '🔊 Active'
+  },
+  settings: {
+    title: 'SETTINGS & AUDIO',
+    language: 'LANGUAGE',
+    langToggle: '🌐 Language: English',
+    langButton: '🌐 EN'
+  },
+  editor: {
+    indicator: '🛠️ UI EDITOR MODE ACTIVE\n[Drag signs / ⬆️⬇️⬅️➡️ to Resize / S to Save / E to Exit]',
+    active: 'Editor Mode Active 🛠️',
+    inactive: 'Game Mode Active 🎮',
+    selected: 'Selected: {key}',
+    copied: 'Configuration copied to clipboard! 📋',
+    copyError: 'Copy failed. Check console (F12). ⚠️'
+  },
+  summary: {
+    dayCompleted: 'DAY {day} COMPLETED',
+    bankruptcyClosure: 'BANKRUPTCY CLOSURE',
+    performance: {
+      header: 'Commercial Performance: ({label})',
+      insolvencyDebt: 'Financial Insolvency: Insufficient funds to cover daily expenses',
+      insolvencySupplies: 'Operational Stockout: No dough in pantry and insufficient funds to restock',
+      excellent: 'Excellent',
+      good: 'Good',
+      tight: 'Tight',
+      msgExcellent: 'Sales Record! You well exceeded the daily goal.',
+      msgGood: 'Good job! You were very close to the sales goal.',
+      msgTight: 'Quiet day. Goal was not reached, but the business remains solvent.'
+    },
+    sub: {
+      goal: 'Goal: {meta}',
+      earnings: "•   Today's Sales: {earnings}"
+    },
+    card: {
+      title: 'BILLING & BALANCE BREAKDOWN',
+      sales: "Today's Shift Sales:",
+      startCoins: 'Previous Cash Balance:',
+      totalCoins: 'Total Cash at Closing:',
+      rent: 'Store Rent (Fixed):',
+      maintenance: 'Electricity / Water / Gas:',
+      loanPayment: 'Bank Loan Installment:',
+      totalExpenses: 'Total Deducted Expenses:',
+      netBalance: 'NET REMAINING BALANCE:',
+      pantryTitle: 'Dough Pantry:',
+      pantryAvailable: '{count} u. available to open tomorrow',
+      pantryRestock: '0 u. (Balance available to restock in shop)',
+      pantryBroke: '0 u. (Insufficient funds for basic dough: 10)',
+      loanRemaining: 'Remaining Bank Loan: {amount}',
+      loanInitial: '(Initial: 200)'
+    },
+    buttons: {
+      declareBankruptcy: 'DECLARE BANKRUPTCY',
+      victory: 'FINANCIAL VICTORY',
+      shop: 'GO TO SHOP',
+      retry: 'RETRY DAY',
+      warningBelowGoal: 'Sales below goal. You can proceed to the shop or retry.'
+    }
+  },
+  shop: {
+    title: 'KIWI BAKEHOUSE SHOP',
+    subtitle: 'Restock your ingredients before Day {day}!',
+    availableCoins: '🪙 Available Coins: {coins}',
+    columns: {
+      molds: 'MOLDS',
+      dough: 'DOUGH',
+      toppings: 'TOPPINGS',
+      drinks: 'DRINKS'
+    },
+    items: {
+      moldHeart: 'Heart Mold',
+      moldCat: 'Cat Mold',
+      moldFish: 'Fish Mold',
+      doughClassic: 'Classic Dough',
+      doughChocolate: 'Chocolate Dough',
+      doughOat: 'Oat Dough',
+      toppingSprinkles: 'Sugar Sprinkles',
+      toppingChoco: 'Choco Chips',
+      toppingGlazing: 'Sweet Glaze',
+      drinkCoffee: 'Coffee Beans',
+      drinkMilk: 'Milk Carton'
+    },
+    units: {
+      permanent: 'Permanent',
+      pack5: 'Pack x5',
+      unlocked: 'Unlocked',
+      locked: 'Locked',
+      stock: 'Stock: {qty} u.',
+      ready: 'READY'
+    },
+    feedback: {
+      unlocked: 'Unlocked! ✨',
+      bought: '+5 {name} 🛒'
+    },
+    warningDough: '⚠️ Warning! You have no dough to open the bakery. Buy at least 1 pack of Classic Dough.',
+    startNextDay: 'START NEXT DAY ☕'
+  },
+  gameOver: {
+    title: 'BANKRUPTCY',
+    subtitleDebt: 'FINANCIAL INSOLVENCY',
+    subtitleSupplies: 'OPERATIONAL STOCKOUT',
+    narrativeDebt: 'The burden of debts and daily maintenance costs were too much for Kiwipaw Bakehouse.\n\nWithout enough coins to cover rent, utilities, and bank loan installments, Kiwi had to declare bankruptcy and close the doors permanently.',
+    narrativeSupplies: 'You covered fixed daily expenses, but the bakery ran out of dough in the pantry and lacked sufficient funds to buy a basic dough pack in the shop (min. 10 🪙).\n\nWithout flour or dough to bake, Kiwipaw Bakehouse cannot open tomorrow and had to close its doors permanently.',
+    retryCampaign: 'RETRY CAMPAIGN 🔄'
+  },
+  victory: {
+    title: 'COMMERCIAL VICTORY',
+    narrative: 'YOU DID IT! You have paid off the bank loan completely.\n\nKiwipaw Bakehouse is 100% yours. Now you are a successful pastry cat, free from office stress, and master of your own destiny and delicious cookies.\n\nYou finished with a final net capital of: 🪙 {coins}',
+    returnMenu: 'RETURN TO MENU 🏠'
+  }
+};
