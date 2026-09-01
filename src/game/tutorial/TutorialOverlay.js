@@ -247,24 +247,23 @@ export default class TutorialOverlay {
   _createDialogueBubble() {
     this.bubbleContainer = this.scene.add.container(this.screenWidth / 2, 860);
 
-    const bubbleW = 1040;
-    const bubbleH = 175;
-    const halfW = bubbleW / 2;
-    const halfH = bubbleH / 2;
-    const radius = 24;
+    this.bubbleW = 1040;
+    this.minBubbleH = 175;
+    this.bubbleH = 175;
+    this.bubbleHeight = 175;
+    this.bubbleRadius = 24;
+    this.bubblePaddingBottom = 24;
+    this.bubblePaddingTop = 52;
+
+    const halfW = this.bubbleW / 2;
+    const halfH = this.bubbleH / 2;
 
     // 1. Sombra suave proyectada
     this.bubbleShadow = this.scene.add.graphics();
-    this.bubbleShadow.fillStyle(0x000000, 0.4);
-    this.bubbleShadow.fillRoundedRect(-halfW + 6, -halfH + 8, bubbleW, bubbleH, radius);
     this.bubbleContainer.add(this.bubbleShadow);
 
     // 2. Fondo crema acogedor con borde de cacao
     this.bubbleBg = this.scene.add.graphics();
-    this.bubbleBg.fillStyle(0xfffaeb, 0.98);
-    this.bubbleBg.lineStyle(6, 0x582f0e, 1.0);
-    this.bubbleBg.fillRoundedRect(-halfW, -halfH, bubbleW, bubbleH, radius);
-    this.bubbleBg.strokeRoundedRect(-halfW, -halfH, bubbleW, bubbleH, radius);
     this.bubbleContainer.add(this.bubbleBg);
 
     // 3. Avatar de Kiwii (Badge circular en el lateral izquierdo)
@@ -272,10 +271,6 @@ export default class TutorialOverlay {
     const avatarY = 0;
 
     this.avatarGfx = this.scene.add.graphics();
-    this.avatarGfx.fillStyle(0xffd6ba, 1.0);
-    this.avatarGfx.lineStyle(4, 0x7f5539, 1.0);
-    this.avatarGfx.fillCircle(avatarX, avatarY, 52);
-    this.avatarGfx.strokeCircle(avatarX, avatarY, 52);
     this.bubbleContainer.add(this.avatarGfx);
 
     // Sprite de chef_cat si existe
@@ -291,8 +286,6 @@ export default class TutorialOverlay {
     const tagY = -halfH + 24;
 
     this.nameTagGfx = this.scene.add.graphics();
-    this.nameTagGfx.fillStyle(0x7f5539, 1.0);
-    this.nameTagGfx.fillRoundedRect(tagX, tagY - 14, 210, 30, 8);
     this.bubbleContainer.add(this.nameTagGfx);
 
     const i18n = I18nManager.getInstance();
@@ -309,11 +302,11 @@ export default class TutorialOverlay {
     // 5. Texto del Diálogo con word-wrap
     const textX = -halfW + 160;
     const textY = -halfH + 52;
-    const textWidth = bubbleW - 190 - 150;
+    const textWidth = this.bubbleW - 340; // 700 con botón por defecto
 
     this.dialogueText = this.scene.add.text(textX, textY, '', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '24px',
+      fontSize: '22px',
       color: '#432818',
       fontWeight: '600',
       lineSpacing: 5,
@@ -366,6 +359,126 @@ export default class TutorialOverlay {
 
     this.bubbleContainer.add(this.actionBtnContainer);
     this.container.add(this.bubbleContainer);
+
+    // Render inicial con fondo y posiciones calibradas
+    this._updateBubbleLayout(false);
+  }
+
+  /**
+   * Estima la altura en píxeles que ocupará el texto cuando el entorno no provee métricas DOM canvas.
+   * @private
+   */
+  _estimateTextHeight(text, wrapWidth = 700) {
+    if (!text || typeof text !== 'string') return 28;
+    const lines = text.split('\n');
+    let totalLines = 0;
+    // ~12.5px promedio por carácter para tipografía Outfit 22px semi-bold
+    const charsPerLine = Math.max(20, Math.floor(wrapWidth / 12.5));
+    for (const line of lines) {
+      if (line.length === 0) {
+        totalLines += 1;
+      } else {
+        totalLines += Math.max(1, Math.ceil(line.length / charsPerLine));
+      }
+    }
+    const lineHeight = 27; // 22px fontSize + 5px lineSpacing
+    return totalLines * lineHeight;
+  }
+
+  /**
+   * Recalcula la altura dinámica del globo de diálogo y redibuja fondos y elementos
+   * garantizando que nunca haya desborde de texto ni se toque el borde de cacao (>= 24px padding inferior).
+   * @private
+   */
+  _updateBubbleLayout(showNextBtn = false) {
+    if (!this.bubbleContainer) return;
+
+    const availableTextWidth = showNextBtn
+      ? (this.bubbleW - 340)  // 700px con botón Siguiente visible
+      : (this.bubbleW - 200); // 840px con ancho holgado cuando no hay botón
+
+    if (this.dialogueText) {
+      if (typeof this.dialogueText.setWordWrapWidth === 'function') {
+        this.dialogueText.setWordWrapWidth(availableTextWidth);
+      } else if (this.dialogueText.style) {
+        if (!this.dialogueText.style.wordWrap) {
+          this.dialogueText.style.wordWrap = { width: availableTextWidth };
+        } else {
+          this.dialogueText.style.wordWrap.width = availableTextWidth;
+        }
+      }
+    }
+
+    const rawHeight = (this.dialogueText && typeof this.dialogueText.height === 'number' && this.dialogueText.height > 0)
+      ? this.dialogueText.height
+      : 0;
+    const estimatedHeight = this._estimateTextHeight(this.dialogueText?.text || '', availableTextWidth);
+    const textHeight = Math.max(rawHeight, estimatedHeight);
+
+    // Altura mínima segura (175px) o altura adaptativa con 52px top y 24px bottom padding (>=20px garantizado)
+    const requiredBubbleH = Math.ceil(this.bubblePaddingTop + textHeight + this.bubblePaddingBottom);
+    this.bubbleH = Math.max(this.minBubbleH, requiredBubbleH);
+    this.bubbleHeight = this.bubbleH;
+
+    const halfW = this.bubbleW / 2;
+    const halfH = this.bubbleH / 2;
+    const radius = this.bubbleRadius;
+
+    // 1. Redibujar sombra suave
+    if (this.bubbleShadow && typeof this.bubbleShadow.clear === 'function') {
+      this.bubbleShadow.clear();
+      this.bubbleShadow.fillStyle(0x000000, 0.4);
+      this.bubbleShadow.fillRoundedRect(-halfW + 6, -halfH + 8, this.bubbleW, this.bubbleH, radius);
+    }
+
+    // 2. Redibujar fondo crema acogedor con borde de cacao
+    if (this.bubbleBg && typeof this.bubbleBg.clear === 'function') {
+      this.bubbleBg.clear();
+      this.bubbleBg.fillStyle(0xfffaeb, 0.98);
+      this.bubbleBg.lineStyle(6, 0x582f0e, 1.0);
+      this.bubbleBg.fillRoundedRect(-halfW, -halfH, this.bubbleW, this.bubbleH, radius);
+      this.bubbleBg.strokeRoundedRect(-halfW, -halfH, this.bubbleW, this.bubbleH, radius);
+    }
+
+    // 3. Avatar de Kiwii
+    const avatarX = -halfW + 85;
+    const avatarY = 0;
+    if (this.avatarGfx && typeof this.avatarGfx.clear === 'function') {
+      this.avatarGfx.clear();
+      this.avatarGfx.fillStyle(0xffd6ba, 1.0);
+      this.avatarGfx.lineStyle(4, 0x7f5539, 1.0);
+      this.avatarGfx.fillCircle(avatarX, avatarY, 52);
+      this.avatarGfx.strokeCircle(avatarX, avatarY, 52);
+    }
+    if (this.avatarSprite && typeof this.avatarSprite.setPosition === 'function') {
+      this.avatarSprite.setPosition(avatarX, avatarY - 4);
+    }
+
+    // 4. Etiqueta / Nombre del Mentor
+    const tagX = -halfW + 160;
+    const tagY = -halfH + 24;
+    if (this.nameTagGfx && typeof this.nameTagGfx.clear === 'function') {
+      this.nameTagGfx.clear();
+      this.nameTagGfx.fillStyle(0x7f5539, 1.0);
+      this.nameTagGfx.fillRoundedRect(tagX, tagY - 14, 210, 30, 8);
+    }
+    if (this.nameTagText && typeof this.nameTagText.setPosition === 'function') {
+      this.nameTagText.setPosition(tagX + 105, tagY + 1);
+    }
+
+    // 5. Posicionar texto de diálogo
+    const textX = -halfW + 160;
+    const textY = -halfH + 52;
+    if (this.dialogueText && typeof this.dialogueText.setPosition === 'function') {
+      this.dialogueText.setPosition(textX, textY);
+    }
+
+    // 6. Posicionar botón de acción
+    const btnX = halfW - 100;
+    const btnY = 0;
+    if (this.actionBtnContainer && typeof this.actionBtnContainer.setPosition === 'function') {
+      this.actionBtnContainer.setPosition(btnX, btnY);
+    }
   }
 
   /**
@@ -851,7 +964,7 @@ export default class TutorialOverlay {
   }
 
   /**
-   * Actualiza el contenido y visibilidad del diálogo de Kiwii.
+   * Actualiza el contenido, disposición adaptativa y visibilidad del diálogo de Kiwii.
    */
   setDialogue(text, options = {}) {
     const i18n = I18nManager.getInstance();
@@ -869,6 +982,9 @@ export default class TutorialOverlay {
       const btnLabel = options.nextBtnText || i18n.t('tutorial.nextButton') || 'NEXT ➡️';
       this.actionBtnText.setText(btnLabel);
     }
+
+    // Recalcular layout y altura adaptativa del diálogo
+    this._updateBubbleLayout(showNext);
 
     if (options.bubblePosition === 'top' && this.bubbleContainer && typeof this.bubbleContainer.setPosition === 'function') {
       this.bubbleContainer.setPosition(this.screenWidth / 2, 140);
@@ -990,6 +1106,8 @@ export default class TutorialOverlay {
       if (this.currentStepConfig.showNextBtn && this.actionBtnText && typeof this.actionBtnText.setText === 'function') {
         this.actionBtnText.setText(this.currentStepConfig.nextBtnText || i18n.t('tutorial.nextButton') || 'NEXT ➡️');
       }
+      const showNext = Boolean(this.currentStepConfig.showNextBtn || this.currentStepConfig.allowedAction === 'DIALOG_ACK');
+      this._updateBubbleLayout(showNext);
     }
   }
 

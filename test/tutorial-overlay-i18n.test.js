@@ -269,7 +269,15 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
             setVisible: function() { return this; },
             setColor: function() { return this; },
             setFontSize: function() { return this; },
-            setFontStyle: function() { return this; }
+            setFontStyle: function() { return this; },
+            setPosition: function(nx, ny) { this.x = nx; this.y = ny; return this; },
+            setWordWrapWidth: function(w) {
+              if (this.style) {
+                if (!this.style.wordWrap) this.style.wordWrap = {};
+                this.style.wordWrap.width = w;
+              }
+              return this;
+            }
           }),
           image: (x, y, key) => ({
             x, y, key,
@@ -594,7 +602,7 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
       // Background #fffaeb / #fff1e6, Text #432818
       const getLuminance = (r, g, b) => {
         const a = [r, g, b].map(v => {
-          v /= 255;
+          v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
           return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
         });
         return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
@@ -615,6 +623,254 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
 
       assert.ok(skipButtonWidth >= 44 && skipButtonHeight >= 44, 'Skip button must meet 44x44 minimum');
       assert.ok(actionButtonWidth >= 44 && actionButtonHeight >= 44, 'Action button must meet 44x44 minimum');
+    });
+  });
+
+  describe('4. Dialogue Bubble Dynamic Height, WordWrap & Interior Padding Matrix (Anti-Overflow Verification)', () => {
+    let mockScene;
+
+    beforeEach(() => {
+      mockScene = {
+        cameras: {
+          main: { width: 1920, height: 1080 }
+        },
+        add: {
+          container: (x, y) => {
+            const children = [];
+            return {
+              x, y, depth: 0, visible: true, scaleX: 1, scaleY: 1, alpha: 1,
+              setDepth: function(d) { this.depth = d; return this; },
+              setVisible: function(v) { this.visible = v; return this; },
+              setScale: function(s) { this.scaleX = s; this.scaleY = s; return this; },
+              setAlpha: function(a) { this.alpha = a; return this; },
+              setPosition: function(nx, ny) { this.x = nx; this.y = ny; return this; },
+              add: function(c) { children.push(c); return this; },
+              destroy: function() { this.destroyed = true; }
+            };
+          },
+          graphics: () => ({
+            clear: function() { return this; },
+            fillStyle: function() { return this; },
+            fillRect: function() { return this; },
+            fillRoundedRect: function() { return this; },
+            fillCircle: function() { return this; },
+            fillPoints: function() { return this; },
+            lineStyle: function() { return this; },
+            strokeRect: function() { return this; },
+            strokeRoundedRect: function() { return this; },
+            strokeCircle: function() { return this; },
+            strokePoints: function() { return this; },
+            setPosition: function() { return this; },
+            setVisible: function() { return this; },
+            setDepth: function() { return this; },
+            beginPath: function() { return this; },
+            moveTo: function() { return this; },
+            lineTo: function() { return this; },
+            closePath: function() { return this; },
+            fillPath: function() { return this; },
+            strokePath: function() { return this; }
+          }),
+          rectangle: (x, y, w, h) => ({
+            x, y, width: w, height: h, interactive: false, visible: true, input: null,
+            setInteractive: function() { this.interactive = true; return this; },
+            disableInteractive: function() { this.interactive = false; return this; },
+            setPosition: function(nx, ny) { this.x = nx; this.y = ny; return this; },
+            setSize: function(nw, nh) { this.width = nw; this.height = nh; return this; },
+            setOrigin: function() { return this; },
+            setVisible: function(v) { this.visible = v; return this; },
+            on: function() { return this; }
+          }),
+          text: (x, y, text, style) => {
+            const textObj = {
+              x, y, text, style: JSON.parse(JSON.stringify(style || {})),
+              height: 0,
+              setText: function(nt) {
+                this.text = nt;
+                return this;
+              },
+              setOrigin: function() { return this; },
+              setVisible: function() { return this; },
+              setColor: function() { return this; },
+              setFontSize: function() { return this; },
+              setFontStyle: function() { return this; },
+              setPosition: function(nx, ny) { this.x = nx; this.y = ny; return this; },
+              setWordWrapWidth: function(w) {
+                if (!this.style) this.style = {};
+                if (!this.style.wordWrap) this.style.wordWrap = {};
+                this.style.wordWrap.width = w;
+                return this;
+              }
+            };
+            return textObj;
+          },
+          image: (x, y, key) => ({
+            x, y, key,
+            setDisplaySize: function() { return this; },
+            setOrigin: function() { return this; },
+            setVisible: function() { return this; },
+            setPosition: function(nx, ny) { this.x = nx; this.y = ny; return this; }
+          })
+        },
+        tweens: {
+          add: () => ({ remove: () => {} })
+        },
+        events: {
+          on: () => {},
+          emit: () => {},
+          off: () => {},
+          removeAllListeners: () => {}
+        },
+        textures: {
+          exists: () => true
+        }
+      };
+    });
+
+    test('bubble background initializes with default minimum safe height 175px and generous padding tokens', () => {
+      const overlay = new TutorialOverlay(mockScene);
+      assert.equal(overlay.minBubbleH, 175, 'minBubbleH must be 175px');
+      assert.equal(overlay.bubbleH, 175, 'Initial bubbleH must be 175px');
+      assert.equal(overlay.bubbleHeight, 175, 'Initial bubbleHeight must be 175px');
+      assert.equal(overlay.bubblePaddingTop, 52, 'Top padding for nameTag header clearance must be 52px');
+      assert.ok(overlay.bubblePaddingBottom >= 20, 'Bottom padding token must be >= 20px');
+      assert.equal(overlay.bubblePaddingBottom, 24, 'Bottom padding token is calibrated to 24px');
+    });
+
+    test('wordWrap width dynamically expands to 840px for interactive steps without next button', () => {
+      const overlay = new TutorialOverlay(mockScene);
+      overlay.setDialogue('Arrastra la masa al bol', { showNextBtn: false });
+
+      assert.equal(overlay.dialogueText.style.wordWrap.width, 840, 'Available wordWrap width should be 840px without next button');
+    });
+
+    test('wordWrap width adapts to 700px when next button is visible to maintain 20px lateral clearance', () => {
+      const overlay = new TutorialOverlay(mockScene);
+      overlay.setDialogue('¡Bienvenido al tutorial!', { showNextBtn: true });
+
+      assert.equal(overlay.dialogueText.style.wordWrap.width, 700, 'Available wordWrap width should be 700px with next button');
+    });
+
+    test('short text (1-2 lines) stays at clean default height of 175px with generous margin to bottom border', () => {
+      const overlay = new TutorialOverlay(mockScene);
+      overlay.setDialogue('¡Bienvenido a Kiwipaw Bakehouse!', { showNextBtn: true });
+
+      assert.equal(overlay.bubbleH, 175, 'Short dialogue should remain at 175px');
+      const halfH = overlay.bubbleH / 2;
+      const textTop = overlay.dialogueText.y;
+      const estimatedTextH = overlay._estimateTextHeight('¡Bienvenido a Kiwipaw Bakehouse!', 700);
+      const textBottom = textTop + estimatedTextH;
+      const bottomClearance = halfH - textBottom;
+
+      assert.ok(bottomClearance >= 20, `Bottom clearance (${bottomClearance}px) must be >= 20px`);
+    });
+
+    test('long multi-line dialogue (e.g. stockExplanation) dynamically expands bubble height and guarantees >= 20px bottom padding', () => {
+      const overlay = new TutorialOverlay(mockScene);
+      const longText = "¡Excelente descarte! 🗑️\n¿Ves el contador de stock debajo de cada cuenco? Cada masa que usas o tiras consume tus ingredientes del almacén.\n✨ Durante este tutorial te reabasteceré mágicamente si te quedas sin masa, pero en días normales ¡deberás comprar provisiones en la TIENDA!";
+
+      overlay.setDialogue(longText, { showNextBtn: true });
+
+      assert.ok(overlay.bubbleH > 175, `Bubble height (${overlay.bubbleH}px) must adaptively expand beyond 175px for long dialogue`);
+
+      const halfH = overlay.bubbleH / 2;
+      const textTop = overlay.dialogueText.y;
+      const estimatedTextH = overlay._estimateTextHeight(longText, 700);
+      const textBottom = textTop + estimatedTextH;
+      const bottomClearance = halfH - textBottom;
+
+      assert.ok(
+        bottomClearance >= 24,
+        `Bottom clearance (${bottomClearance}px) must be >= 24px (strictly >= 20px), preventing any clipping of cocoa border`
+      );
+    });
+
+    test('dialogueText with real Phaser canvas height automatically drives bubble height and bottom clearance', () => {
+      const overlay = new TutorialOverlay(mockScene);
+      overlay.dialogueText.height = 140; // Simulated canvas text height for 5 lines
+
+      overlay.setDialogue('Texto de prueba con altura canvas de 140px', { showNextBtn: true });
+
+      const expectedMinHeight = Math.ceil(52 + 140 + 24); // 216px
+      assert.ok(overlay.bubbleH >= expectedMinHeight, `Bubble height (${overlay.bubbleH}px) must be at least ${expectedMinHeight}px`);
+
+      const halfH = overlay.bubbleH / 2;
+      const textTop = overlay.dialogueText.y;
+      const textBottom = textTop + 140;
+      const bottomClearance = halfH - textBottom;
+
+      assert.ok(bottomClearance >= 24, `Bottom clearance (${bottomClearance}px) must be >= 24px`);
+    });
+
+    test('100% of all 25 tutorial steps in English and Spanish preserve >= 20px bottom padding and zero cocoa border crossing', () => {
+      const i18n = I18nManager.getInstance();
+      const overlay = new TutorialOverlay(mockScene);
+
+      ['en', 'es'].forEach(lang => {
+        i18n.setLanguage(lang);
+
+        TUTORIAL_STEPS.forEach(step => {
+          overlay.setStep(step);
+
+          const halfH = overlay.bubbleH / 2;
+          const textTop = overlay.dialogueText.y;
+          const text = overlay.dialogueText.text;
+          const showNext = Boolean(step.showNextBtn !== undefined ? step.showNextBtn : step.allowedAction === 'DIALOG_ACK');
+          const wrapWidth = showNext ? 700 : 840;
+          const estimatedTextH = overlay._estimateTextHeight(text, wrapWidth);
+          const textBottom = textTop + estimatedTextH;
+          const bottomClearance = halfH - textBottom;
+
+          assert.ok(
+            bottomClearance >= 20,
+            `Step "${step.id}" in "${lang}" has bottom clearance ${bottomClearance}px, which must be >= 20px`
+          );
+        });
+      });
+    });
+
+    test('refreshI18n dynamically updates word-wrap and recalculates bubble layout upon language switch', () => {
+      const i18n = I18nManager.getInstance();
+      const overlay = new TutorialOverlay(mockScene);
+
+      overlay.setStep({
+        id: 'step_stock_explanation',
+        i18nKey: 'tutorial.steps.stockExplanation',
+        allowedAction: 'DIALOG_ACK'
+      });
+
+      i18n.setLanguage('en');
+      overlay.refreshI18n();
+      assert.ok(overlay.dialogueText.text.includes('stock'), 'Dialogue text should update to English');
+      assert.ok(overlay.bubbleH >= 175, 'Bubble height must be at least 175px');
+      const enHalfH = overlay.bubbleH / 2;
+      const enTextTop = overlay.dialogueText.y;
+      const enTextBottom = enTextTop + overlay._estimateTextHeight(overlay.dialogueText.text, 700);
+      const enClearance = enHalfH - enTextBottom;
+      assert.ok(enClearance >= 20, `EN bottom clearance (${enClearance}px) must be >= 20px`);
+
+      i18n.setLanguage('es');
+      overlay.refreshI18n();
+      assert.ok(overlay.dialogueText.text.includes('stock'), 'Dialogue text should update to Spanish');
+      assert.ok(overlay.bubbleH >= 175, 'Bubble height must be at least 175px');
+      const esHalfH = overlay.bubbleH / 2;
+      const esTextTop = overlay.dialogueText.y;
+      const esTextBottom = esTextTop + overlay._estimateTextHeight(overlay.dialogueText.text, 700);
+      const esClearance = esHalfH - esTextBottom;
+      assert.ok(esClearance >= 20, `ES bottom clearance (${esClearance}px) must be >= 20px`);
+    });
+
+    test('handles empty text and null dialogue gracefully without exceptions', () => {
+      const overlay = new TutorialOverlay(mockScene);
+
+      assert.doesNotThrow(() => {
+        overlay.setDialogue('');
+      });
+      assert.equal(overlay.bubbleH, 175);
+
+      assert.doesNotThrow(() => {
+        overlay.setDialogue(null);
+      });
+      assert.equal(overlay.bubbleH, 175);
     });
   });
 });
