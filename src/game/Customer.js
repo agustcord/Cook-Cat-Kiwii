@@ -299,6 +299,11 @@ export default class Customer {
   update(time, delta) {
     if (!this.isActive) return;
 
+    // Safety Net: En modo tutorial (Día 1), la paciencia no disminuye para evitar Game Over prematuro
+    if (this.scene?.tutorialManager?.isPatienceProtected()) {
+      return;
+    }
+
     // Patience decreases
     this.patience -= delta / 1000;
     this.updatePatienceBar();

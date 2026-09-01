@@ -41,6 +41,7 @@ class SaveManager {
       coins: 0,
       loanRemaining: 200,
       unlockedShapes: ['star'],
+      tutorialCompleted: false,
       stock: {
         dough: { classic: 10, chocolate: 0, oat: 0 },
         topping: { sprinkles: 2, choco: 0, glazing: 0 },
@@ -58,17 +59,21 @@ class SaveManager {
   saveGame(state = {}) {
     try {
       const defaultState = this.getDefaultState();
+      const existing = this.loadGame() || defaultState;
       const payload = {
-        day: Math.max(1, Number(state.day) || defaultState.day),
-        coins: Math.max(0, Number(state.coins) || 0),
-        loanRemaining: state.loanRemaining !== undefined ? Math.max(0, Number(state.loanRemaining)) : defaultState.loanRemaining,
+        day: Math.max(1, Number(state.day) || existing.day || defaultState.day),
+        coins: Math.max(0, state.coins !== undefined ? Number(state.coins) : existing.coins),
+        loanRemaining: state.loanRemaining !== undefined ? Math.max(0, Number(state.loanRemaining)) : (existing.loanRemaining !== undefined ? existing.loanRemaining : defaultState.loanRemaining),
         unlockedShapes: Array.isArray(state.unlockedShapes) && state.unlockedShapes.length > 0
           ? [...new Set(state.unlockedShapes)]
-          : defaultState.unlockedShapes,
+          : (existing.unlockedShapes || defaultState.unlockedShapes),
+        tutorialCompleted: state.tutorialCompleted !== undefined
+          ? Boolean(state.tutorialCompleted)
+          : Boolean(existing.tutorialCompleted),
         stock: {
-          dough: { ...defaultState.stock.dough, ...(state.stock?.dough || {}) },
-          topping: { ...defaultState.stock.topping, ...(state.stock?.topping || {}) },
-          drink: { ...defaultState.stock.drink, ...(state.stock?.drink || {}) }
+          dough: { ...defaultState.stock.dough, ...(existing.stock?.dough || {}), ...(state.stock?.dough || {}) },
+          topping: { ...defaultState.stock.topping, ...(existing.stock?.topping || {}), ...(state.stock?.topping || {}) },
+          drink: { ...defaultState.stock.drink, ...(existing.stock?.drink || {}), ...(state.stock?.drink || {}) }
         },
         updatedAt: Date.now()
       };

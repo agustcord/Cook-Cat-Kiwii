@@ -6,6 +6,8 @@ import SoundManager from '../game/SoundManager.js';
 import CrazyGamesSDK from '../game/services/CrazyGamesSDK.js';
 import I18nManager from '../game/services/I18nManager.js';
 import { getDayConfig } from '../game/EconomyManager.js';
+import SaveManager from '../game/services/SaveManager.js';
+import TutorialManager from '../game/tutorial/TutorialManager.js';
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -135,6 +137,16 @@ export default class GameScene extends Phaser.Scene {
     // Create Trash Bin (Disposal Area)
     this.createTrashBin();
 
+    // Tutorial Subsystem Initialization (Conditional for Day 1)
+    const saveState = SaveManager.getInstance().loadGame();
+    const isTutorialCompleted = Boolean(saveState?.tutorialCompleted);
+    if (this.day === 1 && !isTutorialCompleted) {
+      this.tutorialManager = new TutorialManager(this);
+      this.tutorialManager.start();
+    } else {
+      this.tutorialManager = null;
+    }
+
     // Spawn first customer
     this.time.delayedCall(1000, () => {
       this.spawnCustomer();
@@ -147,10 +159,10 @@ export default class GameScene extends Phaser.Scene {
     this.pawX = width / 2;
     this.pawY = height / 2;
 
-    this.catArmOutlineGraphics = this.add.graphics().setDepth(9998);
-    this.catArmFillGraphics = this.add.graphics().setDepth(10000);
+    this.catArmOutlineGraphics = this.add.graphics().setDepth(30000);
+    this.catArmFillGraphics = this.add.graphics().setDepth(30001);
     this.catPawSprite = this.add.image(this.pawX, this.pawY, 'cat_paw_open')
-      .setDepth(9999)
+      .setDepth(30002)
       .setOrigin(0.5, 0.55)
       .setDisplaySize(184, 184);
 
@@ -432,6 +444,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.doughButtons = {};
     this.doughStockTexts = {};
+    this.doughDragZones = {};
 
     bases.forEach((b) => {
       // Dough source image at native 1:1 scale (exact Krita illustration layer composition)
@@ -456,6 +469,7 @@ export default class GameScene extends Phaser.Scene {
       const dragZone = this.add.rectangle(b.x, b.y, b.width, b.height, 0x000000, 0);
       dragZone.setInteractive({ useHandCursor: true });
       this.input.setDraggable(dragZone);
+      this.doughDragZones[b.id] = dragZone;
 
       let portionSprite = null;
 
@@ -483,7 +497,7 @@ export default class GameScene extends Phaser.Scene {
         SoundManager.getInstance().playDoughSelect();
         portionSprite = this.add.image(dragZone.x, dragZone.y, `dough_${b.id}`);
         portionSprite.setDisplaySize(84, 84);
-        portionSprite.setDepth(1000);
+        portionSprite.setDepth(30000);
         portionSprite.setAlpha(0.9);
         doughImg.setScale(0.95);
       });
@@ -524,6 +538,7 @@ export default class GameScene extends Phaser.Scene {
             SoundManager.getInstance().playDoughPlace();
             const doughName = i18n.t(`recipes.bases.${b.id}`);
             this.showFeedbackText(i18n.t('game.feedback.doughSelected', { name: doughName }), this.trayX, 375, '#38b000');
+            this.events.emit('game:dough_placed', { base: b.id });
           } else {
             SoundManager.getInstance().playUiDenied();
             this.showFeedbackText(i18n.t('game.feedback.tableFull'), this.trayX, 375, '#d90429');
@@ -549,6 +564,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.shapeContainers = [];
     this.shapeDragZones = [];
+    this.shapeButtons = {};
 
     const shapes = [
       { id: 'star' },
@@ -583,6 +599,7 @@ export default class GameScene extends Phaser.Scene {
         dragZone.setInteractive({ useHandCursor: true });
         this.input.setDraggable(dragZone);
         this.shapeDragZones.push(dragZone);
+        this.shapeButtons[s.id] = dragZone;
 
         dragZone.on('pointerover', () => {
           shapeSprite.setDisplaySize(120, 120);
@@ -595,8 +612,8 @@ export default class GameScene extends Phaser.Scene {
         dragZone.on('dragstart', () => {
           this.isHoldingItem = true;
           SoundManager.getInstance().playUiTap();
-          container.setDepth(1000);
-          dragZone.setDepth(1000);
+          container.setDepth(30000);
+          dragZone.setDepth(30000);
         });
 
         dragZone.on('drag', (pointer, dragX, dragY) => {
@@ -634,6 +651,7 @@ export default class GameScene extends Phaser.Scene {
             SoundManager.getInstance().playDoughCut();
             const shapeName = i18n.t(`recipes.shapes.${s.id}`);
             this.showFeedbackText(i18n.t('game.feedback.shapeSelected', { name: shapeName }), this.trayX, 375, '#38b000');
+            this.events.emit('game:shape_applied', { shape: s.id });
           } else {
             const distToTrayCenter = Phaser.Math.Distance.Between(dragZone.x, dragZone.y, this.trayX, this.trayY);
             if (distToTrayCenter < 225) {
@@ -709,6 +727,7 @@ export default class GameScene extends Phaser.Scene {
     const btnPowerZone = this.add.rectangle(btnPowerCenterX, btnPowerCenterY, 50, 50, 0x000000, 0)
       .setInteractive({ useHandCursor: true })
       .setDepth(12);
+    this.ovenBtnPowerZone = btnPowerZone;
 
     btnPowerZone.on('pointerover', () => {
       this.tweens.killTweensOf(this.ovenBtnPowerSprite);
@@ -737,6 +756,7 @@ export default class GameScene extends Phaser.Scene {
     const btnBakeZone = this.add.rectangle(btnBakeCenterX, btnBakeCenterY, 50, 50, 0x000000, 0)
       .setInteractive({ useHandCursor: true })
       .setDepth(12);
+    this.ovenBtnBakeZone = btnBakeZone;
 
     btnBakeZone.on('pointerover', () => {
       this.tweens.killTweensOf(this.ovenBtnBakeSprite);
@@ -763,15 +783,22 @@ export default class GameScene extends Phaser.Scene {
     });
 
     // Zona interactiva de la puerta del horno (bbox: 52..358, 146..395)
-    const doorCenterX = this.ovenX - 200 + 205;     // 1467
-    const doorCenterY = this.ovenY - 224.5 + 270.5; // 552
+    const doorCenterX = this.ovenX - 200 + 205;     // 1467 -> 1499
+    const doorCenterY = this.ovenY - 224.5 + 270.5; // 552 -> 475
     const ovenDoorZone = this.add.rectangle(doorCenterX, doorCenterY, 306, 249, 0x000000, 0)
       .setInteractive({ useHandCursor: true })
       .setDepth(12);
+    this.ovenDoorZone = ovenDoorZone;
 
     ovenDoorZone.on('pointerdown', () => {
       this.handleOvenImageClick();
     });
+
+    // Zona de referencia del timer del horno (perilla / slider superior)
+    const timerTrackCenterX = this.ovenX - 200 + 241; // 1535
+    const timerTrackCenterY = this.ovenY - 224.5 + 57; // 261.5
+    this.ovenTimerZone = this.add.rectangle(timerTrackCenterX, timerTrackCenterY, 160, 60, 0x000000, 0)
+      .setDepth(12);
 
     // Botón SACAR GALLETAS (reubicado armónicamente bajo la base del horno en startY + 185)
     const extractBtnY = startY + 185;
@@ -837,6 +864,7 @@ export default class GameScene extends Phaser.Scene {
     const beansDragZone = this.add.rectangle(beansX, btnY, 83, 68, 0x000000, 0)
       .setDepth(5);
     beansDragZone.setInteractive({ useHandCursor: true });
+    this.btnCoffeeZone = beansDragZone;
 
     // Milk Button Image & Stock Text (integrated inside the new asset display box)
     const milkY = btnY - 2;
@@ -855,6 +883,7 @@ export default class GameScene extends Phaser.Scene {
     const milkDragZone = this.add.rectangle(milkX, milkY, 83, 68, 0x000000, 0)
       .setDepth(5);
     milkDragZone.setInteractive({ useHandCursor: true });
+    this.btnMilkZone = milkDragZone;
 
     this.updateDrinkStockTexts();
 
@@ -968,7 +997,7 @@ export default class GameScene extends Phaser.Scene {
       SoundManager.getInstance().playUiTap();
       tempDragCup = this.add.image(this.cupStackImage.x, this.cupStackImage.y, 'beverage_empty_cup')
         .setDisplaySize(cupStackW, cupStackH)
-        .setDepth(100)
+        .setDepth(30000)
         .setAlpha(0.85);
     });
 
@@ -1002,6 +1031,7 @@ export default class GameScene extends Phaser.Scene {
         const i18n = I18nManager.getInstance();
         this.showFeedbackText(i18n.t('game.feedback.cupPlaced'), startX, 375, '#38b000');
         SoundManager.getInstance().playDrinkButton();
+        this.events.emit('game:cup_placed');
       } else {
         const activeCup = tempDragCup;
         tempDragCup = null;
@@ -1123,6 +1153,7 @@ export default class GameScene extends Phaser.Scene {
             
             const i18n = I18nManager.getInstance();
             this.showFeedbackText(i18n.t('game.feedback.drinkReady'), startX, 375, '#38b000');
+            this.events.emit('game:drink_brewed', { drink: type === 'coffee_beans' ? 'coffee' : 'milk', type });
           }
         }
       });
@@ -1200,6 +1231,7 @@ export default class GameScene extends Phaser.Scene {
 
             const i18n = I18nManager.getInstance();
             this.showFeedbackText(i18n.t('game.feedback.coffeeMilkReady'), startX, 375, '#38b000');
+            this.events.emit('game:drink_brewed', { drink: 'coffee_milk', type: 'coffee_milk' });
           }
         }
       });
@@ -1224,7 +1256,7 @@ export default class GameScene extends Phaser.Scene {
     this.machineCupSprite.on('dragstart', () => {
       this.isHoldingItem = true;
       SoundManager.getInstance().playUiTap();
-      this.machineCupSprite.setDepth(1000);
+      this.machineCupSprite.setDepth(30000);
       this.machineCupSprite.setScale(baseScaleX * 1.15, baseScaleY * 1.15);
     });
 
@@ -1295,6 +1327,7 @@ export default class GameScene extends Phaser.Scene {
     const i18n = I18nManager.getInstance();
     const drinkName = i18n.t(`recipes.drinks.${drinkKey}`);
     this.showFeedbackText(i18n.t('game.feedback.drinkServed', { name: drinkName }), startX, 375, '#38b000');
+    this.events.emit('game:drink_to_tray', { drink: drinkKey });
   }
 
   handleOvenClick() {
@@ -1310,6 +1343,7 @@ export default class GameScene extends Phaser.Scene {
         this.ovenBtnPowerSprite.setTexture('oven_btn_power_on');
       }
       this.showFeedbackText(i18n.t('game.feedback.ovenPreheating'), this.ovenX, 375, '#38b000');
+      this.events.emit('game:oven_power', { isPreheated: true });
     } else {
       // Apagar horno: si estaba cocinando, se detiene
       if (this.isBaking) {
@@ -1335,6 +1369,7 @@ export default class GameScene extends Phaser.Scene {
       this.ovenOvercookTimer = 0;
       this.hasOvercookedAlarm = false;
       this.showFeedbackText(i18n.t('game.feedback.ovenOff'), this.ovenX, 375, '#582f0e');
+      this.events.emit('game:oven_power', { isPreheated: false });
     }
     this.updateExtractButtonState();
   }
@@ -1369,6 +1404,7 @@ export default class GameScene extends Phaser.Scene {
       }
       this.showFeedbackText(i18n.t('game.feedback.cookingCookies'), this.ovenX, 375, '#38b000');
       this.updateExtractButtonState();
+      this.events.emit('game:oven_bake_start');
     } else {
       // Detener cocción manualmente
       SoundManager.getInstance().stopOvenHum();
@@ -1511,7 +1547,7 @@ export default class GameScene extends Phaser.Scene {
         SoundManager.getInstance().playUiTap();
         jarClone = this.add.image(x, y, 'topping_' + t.id);
         jarClone.setDisplaySize(jarSize, jarSize);
-        jarClone.setDepth(1000);
+        jarClone.setDepth(30000);
         jarSource.setAlpha(0.35);
         initialDist = Phaser.Math.Distance.Between(x, y, this.trayX, this.trayY);
       });
@@ -1579,6 +1615,7 @@ export default class GameScene extends Phaser.Scene {
 
             const toppingName = i18n.t(`recipes.toppings.${t.id}`);
             this.showFeedbackText(i18n.t('game.feedback.toppingAdded', { name: toppingName }), this.trayX, 375, '#38b000');
+            this.events.emit('game:topping_applied', { topping: t.id });
           } else {
             const distToTrayCenter = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, this.trayX, this.trayY);
             if (distToTrayCenter < 225) {
@@ -1713,7 +1750,7 @@ export default class GameScene extends Phaser.Scene {
         sprite.on('dragstart', () => {
           this.isHoldingItem = true;
           SoundManager.getInstance().playUiTap();
-          sprite.setDepth(1000);
+          sprite.setDepth(30000);
         });
 
         sprite.on('drag', (pointer, dragX, dragY) => {
@@ -1768,6 +1805,7 @@ export default class GameScene extends Phaser.Scene {
             this.prepTrayCookies.splice(cookieIdx, 1);
             this.updateCookieVisuals();
             this.showFeedbackText(i18n.t('game.feedback.discarded'), this.trashBinX, this.trashBinY - 50, '#d90429');
+            this.events.emit('game:cookie_trashed', { item: cookieInstance });
 
             // Play vacuum fade/shrink animation
             this.tweens.add({
@@ -1797,6 +1835,7 @@ export default class GameScene extends Phaser.Scene {
               this.updateCookieVisuals();
               SoundManager.getInstance().playUiTap();
               this.showFeedbackText(i18n.t('game.feedback.cookieReadyDelivery'), this.deliveryTrayX, 375, '#38b000');
+              this.events.emit('game:cookie_to_tray', { cookie: cookieInstance });
               return;
             }
           }
@@ -1819,6 +1858,7 @@ export default class GameScene extends Phaser.Scene {
               this.updateExtractButtonState();
               SoundManager.getInstance().playOvenDoor();
               this.showFeedbackText(i18n.t('game.feedback.cookieInserted', { count: this.cookiesInOven.length, total: 3 }), this.trayX, 375, '#38b000');
+              this.events.emit('game:cookie_loaded_oven', { cookie: cookieInstance, count: this.cookiesInOven.length });
 
               // Play shrink and fade animation into the oven door window
               this.tweens.add({
@@ -2061,9 +2101,13 @@ export default class GameScene extends Phaser.Scene {
         this.showFeedbackText(i18n.t('game.feedback.missingDrink', { drink: drinkName }), this.trayX, 375, '#d90429');
         
         // Angry customer feedback
-        const patienceLoss = this.currentCustomer.maxPatience * 0.25;
-        this.currentCustomer.patience = Math.max(0, this.currentCustomer.patience - patienceLoss);
-        this.currentCustomer.updatePatienceBar();
+        if (!this.tutorialManager?.isPatienceProtected()) {
+          const patienceLoss = this.currentCustomer.maxPatience * 0.25;
+          this.currentCustomer.patience = Math.max(0, this.currentCustomer.patience - patienceLoss);
+          this.currentCustomer.updatePatienceBar();
+        }
+
+        this.events.emit('game:tray_delivered', { rejected: true, success: false, reason: 'missing_drink' });
 
         this.tweens.add({
           targets: this.currentCustomer.container,
@@ -2108,6 +2152,9 @@ export default class GameScene extends Phaser.Scene {
         this.triggerConfetti();
         CrazyGamesSDK.getInstance().happytime();
       }
+
+      this.events.emit('game:tray_delivered', { rejected: false, success: true });
+      this.events.emit('game:order_delivered', { requestedDrink });
 
       // Clean up and spawn next
       this.deliveryTrayCookies = [];
@@ -2160,6 +2207,7 @@ export default class GameScene extends Phaser.Scene {
 
       // Angry customer feedback shake (no patience penalty)
       SoundManager.getInstance().playCustomerAngry();
+      this.events.emit('game:tray_delivered', { rejected: true, success: false, reason: rejectReason });
 
       this.tweens.add({
         targets: this.currentCustomer.container,
@@ -2231,6 +2279,9 @@ export default class GameScene extends Phaser.Scene {
           SoundManager.getInstance().playCoinCollect();
         }
 
+        this.events.emit('game:tray_delivered', { rejected: false, success: true, partial: true });
+        this.events.emit('game:order_delivered', { cookies: allCookies.length, requestedDrink });
+
         // Clean up
         this.deliveryTrayCookies = [];
         this.deliveryTrayDrinks = [];
@@ -2252,6 +2303,7 @@ export default class GameScene extends Phaser.Scene {
         // Keep patience as-is (no patience penalty for partial rejection)
 
         this.showFeedbackText(i18n.t('customer.feedback.incomplete', { missing: requested - totalCount }), this.trayX, 375, '#d90429');
+        this.events.emit('game:tray_delivered', { rejected: true, success: false, reason: 'incomplete' });
 
         // Play an angry shake tween on the customer container
         this.tweens.add({
@@ -2313,6 +2365,9 @@ export default class GameScene extends Phaser.Scene {
         }
         this.showFeedbackText(`${feedback} +${totalReward} 🪙`, this.trayX, 375, color);
       }
+
+      this.events.emit('game:tray_delivered', { rejected: false, success: true });
+      this.events.emit('game:order_delivered', { cookies: totalCount, requestedDrink });
 
       // Clean up and spawn next
       this.deliveryTrayCookies = [];
@@ -2497,6 +2552,7 @@ export default class GameScene extends Phaser.Scene {
         const i18n = I18nManager.getInstance();
         this.showFeedbackText(i18n.t('game.feedback.cookiesReady'), this.ovenX, 375, '#38b000');
         this.updateExtractButtonState();
+        this.events.emit('game:oven_bell');
       }
 
       // Ventana de gracia de 5 segundos antes de quemarse (inicia tras sonar la alarma)
@@ -2523,6 +2579,7 @@ export default class GameScene extends Phaser.Scene {
           this.showFeedbackText(i18n.t('game.feedback.cookieBurnt'), this.ovenX, 375, '#d90429');
           this.cameras.main.shake(200, 0.005);
           this.updateExtractButtonState();
+          this.events.emit('game:cookie_burnt', { cookies: this.cookiesInOven });
         }
       }
     }
@@ -2807,9 +2864,9 @@ export default class GameScene extends Phaser.Scene {
       if (this.isEditorMode) return;
       this.isHoldingItem = true;
       SoundManager.getInstance().playUiTap();
-      this.deliveryDragZone.setDepth(1000);
-      this.deliveryTrayLabel.setDepth(1001);
-      this.deliveryTraySprites.forEach(s => s.setDepth(1002));
+      this.deliveryDragZone.setDepth(30000);
+      this.deliveryTrayLabel.setDepth(30001);
+      this.deliveryTraySprites.forEach(s => s.setDepth(30002));
     });
 
     this.deliveryDragZone.on('drag', (pointer, dragX, dragY) => {
@@ -2975,6 +3032,7 @@ export default class GameScene extends Phaser.Scene {
           this.deliveryTrayDrinks = [];
           this.drawDeliveryTray();
           this.showFeedbackText(I18nManager.getInstance().t('game.feedback.trayEmptied'), this.trashBinX, this.trashBinY - 50, '#d90429');
+          this.events.emit('game:tray_trashed');
         }
       }
 
@@ -3140,12 +3198,14 @@ export default class GameScene extends Phaser.Scene {
       });
     });
 
+    const extractedCookies = [...this.cookiesInOven];
     this.cookiesInOven = [];
     SoundManager.getInstance().playOvenDoor();
     SoundManager.getInstance().playUiTap();
     const i18n = I18nManager.getInstance();
     this.showFeedbackText(i18n.t('game.feedback.takingToCounter'), this.ovenX, 375, '#38b000');
     this.updateExtractButtonState();
+    this.events.emit('game:cookie_extracted', { cookies: extractedCookies });
   }
 
   drawOvenExtractBtn(enabled) {
@@ -3179,6 +3239,73 @@ export default class GameScene extends Phaser.Scene {
       .setOrigin(0.5, 0.5);
 
     this.trashContainer.add(this.trashBinSprite);
+    this.trashBinZone = this.trashContainer;
+  }
+
+  /**
+   * Retorna el GameObject interactivo o representativo correspondiente a un targetKey del tutorial.
+   * Utilizado por TutorialManager para la resolución dinámica precisa de bounds.
+   * 
+   * @param {string} targetKey - Clave del elemento (ej: 'oven_power', 'shape_star', 'customer', etc.)
+   * @returns {Phaser.GameObjects.GameObject|null}
+   */
+  getTutorialTarget(targetKey) {
+    switch (targetKey) {
+      case 'customer':
+        return this.currentCustomer?.sprite || this.currentCustomer?.container || this.customerContainer;
+      case 'dough_classic':
+        return this.doughDragZones?.classic || this.doughButtons?.classic;
+      case 'dough_chocolate':
+        return this.doughDragZones?.chocolate || this.doughButtons?.chocolate;
+      case 'dough_oat':
+        return this.doughDragZones?.oat || this.doughButtons?.oat;
+      case 'stock_dough_classic':
+        return this.doughStockTexts?.classic;
+      case 'stock_dough_chocolate':
+        return this.doughStockTexts?.chocolate;
+      case 'stock_dough_oat':
+        return this.doughStockTexts?.oat;
+      case 'shape_star':
+        return this.shapeButtons?.star || this.shapeDragZones?.[0] || this.shapeContainers?.[0];
+      case 'shape_heart':
+        return this.shapeButtons?.heart || this.shapeDragZones?.[1] || this.shapeContainers?.[1];
+      case 'shape_cat':
+        return this.shapeButtons?.cat || this.shapeDragZones?.[2] || this.shapeContainers?.[2];
+      case 'shape_fish':
+        return this.shapeButtons?.fish || this.shapeDragZones?.[3] || this.shapeContainers?.[3];
+      case 'oven_power':
+        return this.ovenBtnPowerZone || this.ovenBtnPowerSprite;
+      case 'oven_bake':
+        return this.ovenBtnBakeZone || this.ovenBtnBakeSprite;
+      case 'oven_door':
+        return this.ovenDoorZone || this.ovenGlassSprite;
+      case 'oven_timer':
+        return this.ovenTimerZone || this.ovenKnobSprite || this.ovenTimerBaseSprite;
+      case 'oven_extract':
+        return this.ovenExtractZone || this.ovenExtractBtnBg || this.ovenExtractBtnText;
+      case 'trash_bin':
+        return this.trashBinZone || this.trashContainer || this.trashBinSprite;
+      case 'cup_stack':
+        return this.cupStackZone || this.cupStackImage;
+      case 'btn_coffee':
+        return this.btnCoffeeZone || this.btnCoffeeImage;
+      case 'btn_milk':
+        return this.btnMilkZone || this.btnMilkImage;
+      case 'drink_machine':
+        return this.drinkMachine;
+      case 'delivery_tray':
+        return this.deliveryDragZone || this.deliveryTrayBg;
+      case 'prep_tray':
+        return this.prepTrayBg;
+      case 'topping_sprinkles':
+        return this.toppingDragZones?.sprinkles || this.toppingButtons?.sprinkles;
+      case 'topping_choco':
+        return this.toppingDragZones?.choco || this.toppingButtons?.choco;
+      case 'topping_glazing':
+        return this.toppingDragZones?.glazing || this.toppingButtons?.glazing;
+      default:
+        return null;
+    }
   }
 
   openAudioPanel() {
@@ -3478,5 +3605,9 @@ export default class GameScene extends Phaser.Scene {
     if (this.currentCustomer) {
       this.currentCustomer.updateProgress(this.currentCustomer.acceptedCookies ? this.currentCustomer.acceptedCookies.length : 0);
     }
+  }
+
+  acknowledgeTutorialDialog() {
+    this.events.emit('game:dialog_acknowledged');
   }
 }
