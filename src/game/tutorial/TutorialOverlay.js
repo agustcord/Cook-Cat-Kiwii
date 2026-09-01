@@ -700,18 +700,27 @@ export default class TutorialOverlay {
     }
 
     if (this.bubbleContainer && typeof this.bubbleContainer.setPosition === 'function') {
-      this.bubbleContainer.setPosition(this.screenWidth / 2, 860);
+      const bubbleY = this.currentStepConfig?.bubblePosition === 'top' ? 140 : 860;
+      this.bubbleContainer.setPosition(this.screenWidth / 2, bubbleY);
     }
   }
 
   /**
-   * Ajusta la posición del diálogo para que no tape el elemento interactivo.
+   * Ajusta la posición del diálogo para que no tape el elemento interactivo ni la mesa de trabajo.
    * @private
    */
   _adjustDialoguePosition(targetY) {
     if (!this.bubbleContainer || typeof this.bubbleContainer.setPosition !== 'function') return;
-    if (targetY > 520) {
-      this.bubbleContainer.setPosition(this.screenWidth / 2, 200);
+
+    if (this.currentStepConfig?.bubblePosition) {
+      const pos = this.currentStepConfig.bubblePosition;
+      const bubbleY = pos === 'top' ? 140 : 860;
+      this.bubbleContainer.setPosition(this.screenWidth / 2, bubbleY);
+      return;
+    }
+
+    if (targetY !== undefined && targetY > 520) {
+      this.bubbleContainer.setPosition(this.screenWidth / 2, 140);
     } else {
       this.bubbleContainer.setPosition(this.screenWidth / 2, 860);
     }
@@ -862,7 +871,7 @@ export default class TutorialOverlay {
     }
 
     if (options.bubblePosition === 'top' && this.bubbleContainer && typeof this.bubbleContainer.setPosition === 'function') {
-      this.bubbleContainer.setPosition(this.screenWidth / 2, 200);
+      this.bubbleContainer.setPosition(this.screenWidth / 2, 140);
     } else if (options.bubblePosition === 'bottom' && this.bubbleContainer && typeof this.bubbleContainer.setPosition === 'function') {
       this.bubbleContainer.setPosition(this.screenWidth / 2, 860);
     }

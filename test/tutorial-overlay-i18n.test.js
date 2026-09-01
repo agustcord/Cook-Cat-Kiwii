@@ -525,6 +525,62 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
       assert.equal(overlay.skipBtnText.text, 'SALTAR ⏭️');
     });
 
+    test('setStep positions dialogue bubble at y = 140 when bubblePosition is top and y = 860 when bottom', () => {
+      const overlay = new TutorialOverlay(mockScene);
+
+      overlay.setStep({
+        id: 'step_top_test',
+        i18nKey: 'tutorial.steps.doughClassic',
+        targetCoords: { x: 148, y: 684, width: 168, height: 116 },
+        bubblePosition: 'top'
+      });
+
+      assert.equal(overlay.bubbleContainer.y, 140, 'bubblePosition: top must place bubbleContainer at y = 140');
+      assert.equal(overlay.bubbleContainer.x, 960, 'bubbleContainer X must be centered at 960');
+
+      overlay.setStep({
+        id: 'step_bottom_test',
+        i18nKey: 'tutorial.steps.welcome',
+        targetCoords: { x: 960, y: 431, width: 320, height: 320 },
+        bubblePosition: 'bottom'
+      });
+
+      assert.equal(overlay.bubbleContainer.y, 860, 'bubblePosition: bottom must place bubbleContainer at y = 860');
+    });
+
+    test('setSpotlight and clearSpotlight preserve explicit bubblePosition from currentStepConfig', () => {
+      const overlay = new TutorialOverlay(mockScene);
+
+      // Step with bubblePosition: top and target at top of screen (y = 475 < 520)
+      overlay.setStep({
+        id: 'step_cookie_to_oven',
+        i18nKey: 'tutorial.steps.cookieToOven',
+        targetCoords: { x: 1499, y: 475, width: 306, height: 249 },
+        bubblePosition: 'top'
+      });
+
+      assert.equal(overlay.bubbleContainer.y, 140, 'Initial bubble position must be 140');
+
+      // Direct setSpotlight call on target with y = 475 should NOT override bubblePosition: top
+      overlay.setSpotlight({ x: 1499, y: 475, width: 306, height: 249 });
+      assert.equal(overlay.bubbleContainer.y, 140, 'setSpotlight must retain y = 140 when currentStepConfig.bubblePosition is top');
+
+      // clearSpotlight should also retain y = 140
+      overlay.clearSpotlight();
+      assert.equal(overlay.bubbleContainer.y, 140, 'clearSpotlight must retain y = 140 when currentStepConfig.bubblePosition is top');
+    });
+
+    test('_adjustDialoguePosition defaults to y = 140 for target.y > 520 and y = 860 for target.y <= 520 when bubblePosition is unspecified', () => {
+      const overlay = new TutorialOverlay(mockScene);
+
+      // Without currentStepConfig
+      overlay._adjustDialoguePosition(684);
+      assert.equal(overlay.bubbleContainer.y, 140, 'Target y = 684 (> 520) must place bubbleContainer at y = 140');
+
+      overlay._adjustDialoguePosition(261.5);
+      assert.equal(overlay.bubbleContainer.y, 860, 'Target y = 261.5 (<= 520) must place bubbleContainer at y = 860');
+    });
+
     test('destroy frees all containers, events, and tweens', () => {
       const overlay = new TutorialOverlay(mockScene);
       overlay.destroy();

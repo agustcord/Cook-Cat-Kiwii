@@ -293,12 +293,34 @@ export default class TutorialManager {
     const dynamicTarget = resolveTargetBounds(step, this.scene);
     const target = dynamicTarget || step.targetCoords || step.target;
 
+    // Resuelve posición inteligente de la burbuja para evitar solapar la mesa de preparación
+    let bubblePos = step.bubblePosition;
+    if (!bubblePos) {
+      const tableActions = [
+        'LOAD_OVEN',
+        'DRAG_DOUGH',
+        'DRAG_SHAPE',
+        'DRAG_COOKIE_TRAY',
+        'DRAG_DRINK_TRAY',
+        'DRAG_TRASH',
+        'CLICK_EXTRACT',
+        'DELIVER_ORDER'
+      ];
+      if (step.allowedAction && tableActions.includes(step.allowedAction)) {
+        bubblePos = 'top';
+      } else if (target && target.y > 520) {
+        bubblePos = 'top';
+      } else {
+        bubblePos = 'bottom';
+      }
+    }
+
     const overlayConfig = {
       ...step,
       target,
       targetCoords: target,
       showNextBtn: step.allowedAction === 'DIALOG_ACK' || Boolean(step.showNextBtn),
-      bubblePosition: step.bubblePosition || ((target && target.y > 520) ? 'top' : 'bottom')
+      bubblePosition: bubblePos
     };
 
     this.overlay.setStep(overlayConfig);

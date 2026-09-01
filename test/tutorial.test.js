@@ -208,7 +208,7 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
       }
     });
 
-    test('every step has valid schema: id, block, i18nKey, targetKey, allowedAction, triggerEvent, targetCoords', () => {
+    test('every step has valid schema: id, block, i18nKey, targetKey, allowedAction, triggerEvent, targetCoords, bubblePosition', () => {
       TUTORIAL_STEPS.forEach((step, idx) => {
         assert.ok(typeof step.id === 'string' && step.id.length > 0, `Step at ${idx} must have id string`);
         assert.ok(typeof step.block === 'number' && step.block >= 1 && step.block <= 5, `Step ${step.id} must have block 1-5`);
@@ -217,6 +217,7 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
         assert.ok(typeof step.allowedAction === 'string', `Step ${step.id} must have allowedAction`);
         assert.ok(typeof step.triggerEvent === 'string', `Step ${step.id} must have triggerEvent`);
         assert.ok(step.targetCoords && typeof step.targetCoords.x === 'number' && typeof step.targetCoords.y === 'number', `Step ${step.id} must have targetCoords`);
+        assert.ok(step.bubblePosition === 'top' || step.bubblePosition === 'bottom', `Step ${step.id} must have bubblePosition 'top' or 'bottom' (got ${step.bubblePosition})`);
       });
     });
 
@@ -798,4 +799,148 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
       assert.equal(overlay.currentSpotlight.y, 261.5, 'Spotlight Y should be 261.5 for oven_power');
     });
   });
+
+  describe('7. Dialogue Bubble Anti-Collision & Table Clearance Matrix (Captain Fix)', () => {
+    let mockGameScene;
+
+    beforeEach(() => {
+      mockGameScene = createMockPhaserScene();
+    });
+
+    test('step_cookie_to_oven positions Kiwii dialogue banner at top (y = 140), leaving work table (y=911) completely clear', () => {
+      const step = getStepById('step_cookie_to_oven');
+      assert.ok(step, 'step_cookie_to_oven must exist');
+      assert.equal(step.bubblePosition, 'top', 'step_cookie_to_oven must be configured with bubblePosition: top');
+
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+      const success = tm.goToStep('step_cookie_to_oven');
+      assert.equal(success, true);
+
+      const overlay = tm.overlay;
+      assert.ok(overlay, 'TutorialOverlay must exist');
+      assert.equal(overlay.bubbleContainer.y, 140, 'Dialogue bubble must be at y = 140 (top) during step_cookie_to_oven');
+      assert.equal(overlay.bubbleContainer.x, 960, 'Dialogue bubble X must be centered (960)');
+
+      // Prep tray is at y = 911, bubble is at y = 140 (height 175 -> range 52.5 to 227.5)
+      const bubbleTop = overlay.bubbleContainer.y - 175 / 2; // 52.5
+      const bubbleBottom = overlay.bubbleContainer.y + 175 / 2; // 227.5
+      const prepTableTop = 650;
+      const prepTableBottom = 950;
+
+      // Ensure absolutely zero overlap between bubble and prep table
+      assert.ok(bubbleBottom < prepTableTop, `Dialogue banner bottom (${bubbleBottom}) must be completely above prep table top (${prepTableTop})`);
+    });
+
+    test('all 17 prep table interaction steps position dialogue banner cleanly at top (y = 140)', () => {
+      const expectedTopSteps = [
+        'step_dough_classic',
+        'step_shape_star',
+        'step_cookie_to_oven',
+        'step_burnt_extract',
+        'step_burnt_trash',
+        'step_stock_explanation',
+        'step_wrong_delivery_intro',
+        'step_wrong_delivery_to_tray',
+        'step_wrong_delivery_serve',
+        'step_wrong_delivery_clean',
+        'step_drink_to_tray',
+        'step_perfect_dough',
+        'step_perfect_shape',
+        'step_perfect_oven_load',
+        'step_perfect_oven_extract',
+        'step_perfect_cookie_to_tray',
+        'step_patience_delivery'
+      ];
+
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+
+      expectedTopSteps.forEach(stepId => {
+        const step = getStepById(stepId);
+        assert.ok(step, `Step ${stepId} must exist`);
+        assert.equal(step.bubblePosition, 'top', `Step ${stepId} must have bubblePosition: top`);
+
+        tm.goToStep(stepId);
+        assert.equal(tm.overlay.bubbleContainer.y, 140, `Step ${stepId} must place dialogue bubble at y = 140`);
+      });
+    });
+
+    test('all 8 upper station / ACK steps position dialogue banner cleanly at bottom (y = 860)', () => {
+      const expectedBottomSteps = [
+        'step_welcome',
+        'step_oven_power',
+        'step_oven_bake',
+        'step_burn_wait',
+        'step_drink_cup',
+        'step_drink_coffee_btn',
+        'step_perfect_oven_bake',
+        'step_tutorial_complete'
+      ];
+
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+
+      expectedBottomSteps.forEach(stepId => {
+        const step = getStepById(stepId);
+        assert.ok(step, `Step ${stepId} must exist`);
+        assert.equal(step.bubblePosition, 'bottom', `Step ${stepId} must have bubblePosition: bottom`);
+
+        tm.goToStep(stepId);
+        assert.equal(tm.overlay.bubbleContainer.y, 860, `Step ${stepId} must place dialogue bubble at y = 860`);
+      });
+    });
+
+    test('TutorialManager._syncOverlayStep infers top position for table actions even if bubblePosition is omitted', () => {
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+
+      const customTableStep = {
+        id: 'step_custom_drag',
+        block: 1,
+        i18nKey: 'tutorial.steps.doughClassic',
+        targetKey: 'oven_door',
+        targetCoords: { x: 1499, y: 475, width: 306, height: 249 },
+        allowedAction: 'LOAD_OVEN',
+        triggerEvent: 'game:cookie_loaded_oven'
+        // bubblePosition omitted on purpose
+      };
+
+      tm._syncOverlayStep(customTableStep);
+      assert.equal(tm.overlay.bubbleContainer.y, 140, 'Inferred bubblePosition must be top (y = 140) for LOAD_OVEN action');
+
+      const customHighYStep = {
+        id: 'step_custom_bottom_target',
+        block: 1,
+        i18nKey: 'tutorial.steps.doughClassic',
+        targetKey: 'custom',
+        targetCoords: { x: 500, y: 700, width: 100, height: 100 },
+        allowedAction: 'CUSTOM_ACTION',
+        triggerEvent: 'game:custom'
+        // bubblePosition omitted on purpose
+      };
+
+      tm._syncOverlayStep(customHighYStep);
+      assert.equal(tm.overlay.bubbleContainer.y, 140, 'Inferred bubblePosition must be top (y = 140) for target.y = 700 > 520');
+    });
+
+    test('Geometry validation: top banner bounding box (y in [52.5, 227.5]) has zero overlap with table interaction zone (y in [650, 950])', () => {
+      const bannerW = 1040;
+      const bannerH = 175;
+      const topBannerY = 140;
+
+      const topBannerBounds = {
+        top: topBannerY - bannerH / 2,     // 52.5
+        bottom: topBannerY + bannerH / 2,  // 227.5
+        left: 960 - bannerW / 2,          // 440
+        right: 960 + bannerW / 2          // 1480
+      };
+
+      assert.ok(topBannerBounds.top >= 0, 'Top banner must not clip past top screen boundary (y >= 0)');
+      assert.ok(topBannerBounds.bottom <= 350, 'Top banner bottom must stay above y = 350');
+      assert.ok(topBannerBounds.bottom < 650, 'Top banner bottom must not touch work table zone (y = 650..950)');
+      assert.ok(topBannerBounds.left >= 0 && topBannerBounds.right <= 1920, 'Top banner X must stay fully on screen');
+    });
+  });
 });
+
