@@ -494,6 +494,7 @@ export default class GameScene extends Phaser.Scene {
         }
 
         this.isHoldingItem = true;
+        this.events.emit('game:drag_start', { item: 'dough', base: b.id, id: b.id });
         SoundManager.getInstance().playDoughSelect();
         portionSprite = this.add.image(dragZone.x, dragZone.y, `dough_${b.id}`);
         portionSprite.setDisplaySize(84, 84);
@@ -515,6 +516,7 @@ export default class GameScene extends Phaser.Scene {
           doughImg.setScale(1.0);
           dragZone.x = b.x;
           dragZone.y = b.y;
+          this.events.emit('game:drag_end', { item: 'dough', base: b.id, id: b.id });
           return;
         }
 
@@ -555,6 +557,7 @@ export default class GameScene extends Phaser.Scene {
         doughImg.setScale(1.0);
         dragZone.x = b.x;
         dragZone.y = b.y;
+        this.events.emit('game:drag_end', { item: 'dough', base: b.id, id: b.id });
       });
     });
   }
@@ -611,6 +614,7 @@ export default class GameScene extends Phaser.Scene {
         // Drag handlers
         dragZone.on('dragstart', () => {
           this.isHoldingItem = true;
+          this.events.emit('game:drag_start', { item: 'shape', shape: s.id, id: s.id });
           SoundManager.getInstance().playUiTap();
           container.setDepth(30000);
           dragZone.setDepth(30000);
@@ -661,6 +665,8 @@ export default class GameScene extends Phaser.Scene {
               SoundManager.getInstance().playUiTap();
             }
           }
+
+          this.events.emit('game:drag_end', { item: 'shape', shape: s.id, id: s.id });
 
           // Return transition for both the interactive dragZone and the visual container
           this.tweens.add({
@@ -994,6 +1000,7 @@ export default class GameScene extends Phaser.Scene {
       }
       this.isHoldingItem = true;
       dragBlocked = false;
+      this.events.emit('game:drag_start', { item: 'cup_stack' });
       SoundManager.getInstance().playUiTap();
       tempDragCup = this.add.image(this.cupStackImage.x, this.cupStackImage.y, 'beverage_empty_cup')
         .setDisplaySize(cupStackW, cupStackH)
@@ -1046,6 +1053,7 @@ export default class GameScene extends Phaser.Scene {
           }
         });
       }
+      this.events.emit('game:drag_end', { item: 'cup_stack' });
     });
   }
 
@@ -1255,6 +1263,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.machineCupSprite.on('dragstart', () => {
       this.isHoldingItem = true;
+      this.events.emit('game:drag_start', { item: 'drink_cup' });
       SoundManager.getInstance().playUiTap();
       this.machineCupSprite.setDepth(30000);
       this.machineCupSprite.setScale(baseScaleX * 1.15, baseScaleY * 1.15);
@@ -1297,6 +1306,7 @@ export default class GameScene extends Phaser.Scene {
           }
         });
       }
+      this.events.emit('game:drag_end', { item: 'drink_cup' });
     });
   }
 
@@ -1544,6 +1554,7 @@ export default class GameScene extends Phaser.Scene {
           return;
         }
 
+        this.events.emit('game:drag_start', { item: 'topping', topping: t.id, id: t.id });
         SoundManager.getInstance().playUiTap();
         jarClone = this.add.image(x, y, 'topping_' + t.id);
         jarClone.setDisplaySize(jarSize, jarSize);
@@ -1569,6 +1580,7 @@ export default class GameScene extends Phaser.Scene {
           jarSource.setDisplaySize(jarSize, jarSize);
           dragZone.x = x;
           dragZone.y = y;
+          this.events.emit('game:drag_end', { item: 'topping', topping: t.id, id: t.id });
           return;
         }
 
@@ -1635,6 +1647,7 @@ export default class GameScene extends Phaser.Scene {
         jarSource.setDisplaySize(jarSize, jarSize);
         dragZone.x = x;
         dragZone.y = y;
+        this.events.emit('game:drag_end', { item: 'topping', topping: t.id, id: t.id });
       });
     });
   }
@@ -1700,6 +1713,8 @@ export default class GameScene extends Phaser.Scene {
     trayBg.lineStyle(6, 0x999999, 1);
     trayBg.strokeRoundedRect(trayX - 188, trayY - 84, 375, 169, 19);
 
+    this.prepTrayBg = trayBg;
+    this.prepTrayZone = this.add.rectangle(trayX, trayY, 375, 169, 0x000000, 0);
 
     this.prepTraySprites = [];
   }
@@ -1749,6 +1764,9 @@ export default class GameScene extends Phaser.Scene {
 
         sprite.on('dragstart', () => {
           this.isHoldingItem = true;
+          const cookieIdx = sprite.getData('cookieIndex');
+          const cookieInstance = this.prepTrayCookies[cookieIdx] || cookie;
+          this.events.emit('game:drag_start', { item: 'table_cookie', cookie: cookieInstance, index: cookieIdx });
           SoundManager.getInstance().playUiTap();
           sprite.setDepth(30000);
         });
@@ -1796,7 +1814,7 @@ export default class GameScene extends Phaser.Scene {
           const distTrash = Phaser.Math.Distance.Between(sprite.x, sprite.y, this.trashBinX, this.trashBinY);
 
           const cookieIdx = sprite.getData('cookieIndex');
-          const cookieInstance = this.prepTrayCookies[cookieIdx];
+          const cookieInstance = this.prepTrayCookies[cookieIdx] || cookie;
           const i18n = I18nManager.getInstance();
 
           // 1. Drop on Trash Bin
@@ -1806,6 +1824,7 @@ export default class GameScene extends Phaser.Scene {
             this.updateCookieVisuals();
             this.showFeedbackText(i18n.t('game.feedback.discarded'), this.trashBinX, this.trashBinY - 50, '#d90429');
             this.events.emit('game:cookie_trashed', { item: cookieInstance });
+            this.events.emit('game:drag_end', { item: 'table_cookie', cookie: cookieInstance, index: cookieIdx });
 
             // Play vacuum fade/shrink animation
             this.tweens.add({
@@ -1836,6 +1855,7 @@ export default class GameScene extends Phaser.Scene {
               SoundManager.getInstance().playUiTap();
               this.showFeedbackText(i18n.t('game.feedback.cookieReadyDelivery'), this.deliveryTrayX, 375, '#38b000');
               this.events.emit('game:cookie_to_tray', { cookie: cookieInstance });
+              this.events.emit('game:drag_end', { item: 'table_cookie', cookie: cookieInstance, index: cookieIdx });
               return;
             }
           }
@@ -1859,6 +1879,7 @@ export default class GameScene extends Phaser.Scene {
               SoundManager.getInstance().playOvenDoor();
               this.showFeedbackText(i18n.t('game.feedback.cookieInserted', { count: this.cookiesInOven.length, total: 3 }), this.trayX, 375, '#38b000');
               this.events.emit('game:cookie_loaded_oven', { cookie: cookieInstance, count: this.cookiesInOven.length });
+              this.events.emit('game:drag_end', { item: 'table_cookie', cookie: cookieInstance, index: cookieIdx });
 
               // Play shrink and fade animation into the oven door window
               this.tweens.add({
@@ -1876,6 +1897,8 @@ export default class GameScene extends Phaser.Scene {
               return;
             }
           }
+
+          this.events.emit('game:drag_end', { item: 'table_cookie', cookie: cookieInstance, index: cookieIdx });
 
           // Failed or non-target drop: tween back to home
           this.tweens.add({
@@ -2863,6 +2886,7 @@ export default class GameScene extends Phaser.Scene {
     this.deliveryDragZone.on('dragstart', () => {
       if (this.isEditorMode) return;
       this.isHoldingItem = true;
+      this.events.emit('game:drag_start', { item: 'delivery_tray' });
       SoundManager.getInstance().playUiTap();
       this.deliveryDragZone.setDepth(30000);
       this.deliveryTrayLabel.setDepth(30001);
@@ -3042,6 +3066,8 @@ export default class GameScene extends Phaser.Scene {
         // Deliver!
         this.deliverCookie();
       }
+
+      this.events.emit('game:drag_end', { item: 'delivery_tray' });
 
       // Tween back to counter center
       this.tweens.add({
@@ -3295,8 +3321,14 @@ export default class GameScene extends Phaser.Scene {
         return this.drinkMachine;
       case 'delivery_tray':
         return this.deliveryDragZone || this.deliveryTrayBg;
+      case 'table_cookie':
+      case 'prep_cookie':
+        return this.prepTraySprites?.[0] || this.prepTrayZone || this.prepTrayBg;
+      case 'prep_table':
       case 'prep_tray':
-        return this.prepTrayBg;
+        return this.prepTrayZone || this.prepTrayBg;
+      case 'drink_cup':
+        return this.machineCupSprite || this.cupStackZone;
       case 'topping_sprinkles':
         return this.toppingDragZones?.sprinkles || this.toppingButtons?.sprinkles;
       case 'topping_choco':

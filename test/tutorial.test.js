@@ -1,5 +1,8 @@
 import { test, describe, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import Cookie from '../src/game/Cookie.js';
 import { TUTORIAL_STEPS, getStepById, getStepsByBlock } from '../src/game/tutorial/TutorialSteps.js';
 import TutorialManager, { resolveTargetBounds, extractGameObjectBounds, DEFAULT_TARGET_BOUNDS } from '../src/game/tutorial/TutorialManager.js';
 import TutorialOverlay from '../src/game/tutorial/TutorialOverlay.js';
@@ -658,6 +661,11 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
       mockGameScene.drinkMachine.height = 320;
 
       mockGameScene.deliveryDragZone = mockGameScene.add.rectangle(1037, 675, 375, 118);
+      mockGameScene.prepTrayZone = mockGameScene.add.rectangle(960, 911, 375, 169);
+      mockGameScene.prepTraySprites = [mockGameScene.add.image(960, 911, 'cookie_star_classic_baked')];
+      mockGameScene.prepTraySprites[0].width = 103;
+      mockGameScene.prepTraySprites[0].height = 103;
+
       mockGameScene.currentCustomer = {
         x: 960,
         y: 431,
@@ -688,6 +696,11 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
           case 'btn_milk': return this.btnMilkZone;
           case 'drink_machine': return this.drinkMachine;
           case 'delivery_tray': return this.deliveryDragZone;
+          case 'table_cookie':
+          case 'prep_cookie': return this.prepTraySprites?.[0] || this.prepTrayZone;
+          case 'prep_table':
+          case 'prep_tray': return this.prepTrayZone;
+          case 'drink_cup': return this.machineCupSprite || this.cupStackZone;
           default: return null;
         }
       };
@@ -942,5 +955,430 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
       assert.ok(topBannerBounds.left >= 0 && topBannerBounds.right <= 1920, 'Top banner X must stay fully on screen');
     });
   });
+
+  describe('8. Two-Phase Visual Guidance (Origin ➔ Destination) Drag Matrix (Captain Fix)', () => {
+    let mockGameScene;
+
+    beforeEach(() => {
+      mockGameScene = createMockPhaserScene();
+
+      mockGameScene.ovenBtnPowerZone = mockGameScene.add.rectangle(1375, 261.5, 50, 50);
+      mockGameScene.ovenBtnBakeZone = mockGameScene.add.rectangle(1434, 261.5, 50, 50);
+      mockGameScene.ovenDoorZone = mockGameScene.add.rectangle(1499, 475, 306, 249);
+      mockGameScene.ovenTimerZone = mockGameScene.add.rectangle(1535, 261.5, 160, 60);
+      mockGameScene.ovenExtractZone = mockGameScene.add.rectangle(1494, 717, 206, 56);
+      mockGameScene.trashContainer = mockGameScene.add.container(619, 911);
+      mockGameScene.trashBinZone = mockGameScene.trashContainer;
+
+      mockGameScene.doughButtons = {
+        classic: mockGameScene.add.image(148, 684, 'masa_vainilla'),
+        chocolate: mockGameScene.add.image(142, 829.5, 'masa_chocolate'),
+        oat: mockGameScene.add.image(135.5, 958.5, 'masa_avena')
+      };
+      mockGameScene.doughButtons.classic.width = 168;
+      mockGameScene.doughButtons.classic.height = 116;
+
+      mockGameScene.doughStockTexts = {
+        classic: mockGameScene.add.text(148, 750, 'Stock: 10')
+      };
+
+      mockGameScene.shapeButtons = {
+        star: mockGameScene.add.rectangle(384, 721, 109, 109),
+        heart: mockGameScene.add.rectangle(497, 721, 109, 109),
+        cat: mockGameScene.add.rectangle(610, 721, 109, 109),
+        fish: mockGameScene.add.rectangle(723, 721, 109, 109)
+      };
+
+      mockGameScene.cupStackZone = mockGameScene.add.rectangle(431, 347, 64, 51);
+      mockGameScene.btnCoffeeZone = mockGameScene.add.rectangle(287, 424, 83, 68);
+      mockGameScene.btnMilkZone = mockGameScene.add.rectangle(385, 422, 83, 68);
+      mockGameScene.drinkMachine = mockGameScene.add.image(351, 507, 'drink_machine');
+      mockGameScene.drinkMachine.width = 320;
+      mockGameScene.drinkMachine.height = 320;
+
+      mockGameScene.deliveryDragZone = mockGameScene.add.rectangle(1037, 675, 375, 118);
+      mockGameScene.prepTrayZone = mockGameScene.add.rectangle(960, 911, 375, 169);
+      mockGameScene.prepTraySprites = [mockGameScene.add.image(960, 911, 'cookie_star_classic_baked')];
+      mockGameScene.prepTraySprites[0].width = 103;
+      mockGameScene.prepTraySprites[0].height = 103;
+
+      mockGameScene.currentCustomer = {
+        x: 960,
+        y: 431,
+        sprite: {
+          x: 960,
+          y: 506,
+          width: 338,
+          height: 338,
+          getBounds: () => ({ x: 791, y: 337, width: 338, height: 338, centerX: 960, centerY: 506 })
+        }
+      };
+
+      mockGameScene.getTutorialTarget = function(targetKey) {
+        switch (targetKey) {
+          case 'customer': return this.currentCustomer.sprite;
+          case 'dough_classic': return this.doughButtons.classic;
+          case 'stock_dough_classic': return this.doughStockTexts.classic;
+          case 'shape_star': return this.shapeButtons.star;
+          case 'oven_power': return this.ovenBtnPowerZone;
+          case 'oven_bake': return this.ovenBtnBakeZone;
+          case 'oven_door': return this.ovenDoorZone;
+          case 'oven_timer': return this.ovenTimerZone;
+          case 'oven_extract': return this.ovenExtractZone;
+          case 'trash_bin': return this.trashBinZone;
+          case 'cup_stack': return this.cupStackZone;
+          case 'btn_coffee': return this.btnCoffeeZone;
+          case 'btn_milk': return this.btnMilkZone;
+          case 'drink_machine': return this.drinkMachine;
+          case 'delivery_tray': return this.deliveryDragZone;
+          case 'table_cookie':
+          case 'prep_cookie': return this.prepTraySprites?.[0] || this.prepTrayZone;
+          case 'prep_table':
+          case 'prep_tray': return this.prepTrayZone;
+          case 'drink_cup': return this.machineCupSprite || this.cupStackZone;
+          default: return null;
+        }
+      };
+    });
+
+    test('all drag steps in TUTORIAL_STEPS define sourceTargetKey and destinationTargetKey with valid coords', () => {
+      const dragSteps = TUTORIAL_STEPS.filter(s =>
+        s.allowedAction.startsWith('DRAG_') ||
+        s.allowedAction === 'LOAD_OVEN' ||
+        s.allowedAction === 'DELIVER_ORDER'
+      );
+
+      assert.ok(dragSteps.length >= 10, `There must be at least 10 drag steps, found ${dragSteps.length}`);
+
+      dragSteps.forEach(step => {
+        assert.ok(
+          typeof step.sourceTargetKey === 'string' && step.sourceTargetKey.length > 0,
+          `Step ${step.id} must define sourceTargetKey (got ${step.sourceTargetKey})`
+        );
+        assert.ok(
+          typeof step.destinationTargetKey === 'string' && step.destinationTargetKey.length > 0,
+          `Step ${step.id} must define destinationTargetKey (got ${step.destinationTargetKey})`
+        );
+        assert.ok(
+          step.sourceCoords && typeof step.sourceCoords.x === 'number' && typeof step.sourceCoords.y === 'number',
+          `Step ${step.id} must define valid sourceCoords`
+        );
+        assert.ok(
+          step.destinationCoords && typeof step.destinationCoords.x === 'number' && typeof step.destinationCoords.y === 'number',
+          `Step ${step.id} must define valid destinationCoords`
+        );
+      });
+    });
+
+    test('step_cookie_to_oven targets table_cookie (origin) at rest and oven_door (destination) during drag', () => {
+      const step = getStepById('step_cookie_to_oven');
+      assert.ok(step, 'step_cookie_to_oven must exist');
+      assert.equal(step.sourceTargetKey, 'table_cookie', 'Source key must be table_cookie');
+      assert.equal(step.destinationTargetKey, 'oven_door', 'Destination key must be oven_door');
+      assert.equal(step.targetKey, 'table_cookie', 'targetKey at rest should match source');
+
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+      tm.goToStep('step_cookie_to_oven');
+
+      const overlay = tm.overlay;
+
+      // Fase 1: En reposo (Antes de agarrar) -> Señala la galleta en la mesa (y = 911, x = 960)
+      assert.ok(overlay.currentSpotlight);
+      assert.equal(overlay.currentSpotlight.x, 960, 'Phase 1 spotlight X must point to cookie on table');
+      assert.equal(overlay.currentSpotlight.y, 911, 'Phase 1 spotlight Y must point to cookie on table');
+
+      // Fase 2: Al agarrar y arrastrar (game:drag_start) -> Señala la puerta del horno (y = 475, x = 1499)
+      mockGameScene.events.emit('game:drag_start', { item: 'table_cookie' });
+
+      assert.equal(tm.isDragging, true);
+      assert.equal(overlay.currentSpotlight.x, 1499, 'Phase 2 spotlight X must dynamically switch to oven door');
+      assert.equal(overlay.currentSpotlight.y, 475, 'Phase 2 spotlight Y must dynamically switch to oven door');
+
+      // Fase 3: Al soltar sin completar (game:drag_end) -> Vuelve a señalar la galleta en la mesa
+      mockGameScene.events.emit('game:drag_end', { item: 'table_cookie' });
+
+      assert.equal(tm.isDragging, false);
+      assert.equal(overlay.currentSpotlight.x, 960, 'Phase 3 spotlight X must smoothly revert to cookie on table');
+      assert.equal(overlay.currentSpotlight.y, 911, 'Phase 3 spotlight Y must smoothly revert to cookie on table');
+
+      // Fase 4: Al completar la acción (game:cookie_loaded_oven) -> Avanza al paso siguiente (step_oven_bake)
+      mockGameScene.events.emit('game:drag_start', { item: 'table_cookie' });
+      assert.equal(overlay.currentSpotlight.x, 1499);
+
+      mockGameScene.events.emit('game:cookie_loaded_oven', { count: 1 });
+      mockGameScene.events.emit('game:drag_end', { item: 'table_cookie' });
+
+      assert.equal(tm.getCurrentStep().id, 'step_oven_bake', 'Should advance to step_oven_bake upon successful oven load');
+      assert.equal(overlay.currentSpotlight.x, 1434, 'Next step spotlight should point to oven bake button');
+      assert.equal(overlay.currentSpotlight.y, 261.5, 'Next step spotlight should point to oven bake button');
+    });
+
+    test('step_burnt_trash targets table_cookie at rest and trash_bin during drag', () => {
+      const step = getStepById('step_burnt_trash');
+      assert.ok(step);
+      assert.equal(step.sourceTargetKey, 'table_cookie');
+      assert.equal(step.destinationTargetKey, 'trash_bin');
+
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+      tm.goToStep('step_burnt_trash');
+
+      const overlay = tm.overlay;
+
+      // Fase 1: En reposo
+      assert.equal(overlay.currentSpotlight.x, 960);
+      assert.equal(overlay.currentSpotlight.y, 911);
+
+      // Fase 2: Arrastre a basurero
+      mockGameScene.events.emit('game:drag_start', { item: 'table_cookie' });
+      assert.equal(overlay.currentSpotlight.x, 619);
+      assert.equal(overlay.currentSpotlight.y, 911);
+      assert.equal(overlay.currentSpotlight.isError, true, 'Trash bin highlight must indicate error style');
+
+      // Fase 3: Descarte exitoso
+      mockGameScene.events.emit('game:cookie_trashed');
+      mockGameScene.events.emit('game:drag_end', { item: 'table_cookie' });
+
+      assert.equal(tm.getCurrentStep().id, 'step_stock_explanation');
+    });
+
+    test('step_dough_classic targets dough_classic at rest and prep_table during drag', () => {
+      const step = getStepById('step_dough_classic');
+      assert.ok(step);
+      assert.equal(step.sourceTargetKey, 'dough_classic');
+      assert.equal(step.destinationTargetKey, 'prep_table');
+
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+      tm.goToStep('step_dough_classic');
+
+      const overlay = tm.overlay;
+
+      // Fase 1: Masa en reposo
+      assert.equal(overlay.currentSpotlight.x, 148);
+      assert.equal(overlay.currentSpotlight.y, 684);
+
+      // Fase 2: Sosteniendo masa -> Mesa de preparación
+      mockGameScene.events.emit('game:drag_start', { item: 'dough', base: 'classic' });
+      assert.equal(overlay.currentSpotlight.x, 960);
+      assert.equal(overlay.currentSpotlight.y, 911);
+
+      // Fase 3: Soltar fuera -> Vuelve a masa
+      mockGameScene.events.emit('game:drag_end', { item: 'dough', base: 'classic' });
+      assert.equal(overlay.currentSpotlight.x, 148);
+      assert.equal(overlay.currentSpotlight.y, 684);
+
+      // Colocación exitosa
+      mockGameScene.events.emit('game:dough_placed', { base: 'classic' });
+      assert.equal(tm.getCurrentStep().id, 'step_shape_star');
+    });
+
+    test('step_shape_star targets shape_star at rest and table_cookie during drag', () => {
+      const step = getStepById('step_shape_star');
+      assert.ok(step);
+      assert.equal(step.sourceTargetKey, 'shape_star');
+      assert.equal(step.destinationTargetKey, 'table_cookie');
+
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+      tm.goToStep('step_shape_star');
+
+      const overlay = tm.overlay;
+
+      // Fase 1: Molde estrella en reposo
+      assert.equal(overlay.currentSpotlight.x, 384);
+      assert.equal(overlay.currentSpotlight.y, 721);
+
+      // Fase 2: Sosteniendo molde -> Galleta en mesa
+      mockGameScene.events.emit('game:drag_start', { item: 'shape', shape: 'star' });
+      assert.equal(overlay.currentSpotlight.x, 960);
+      assert.equal(overlay.currentSpotlight.y, 911);
+
+      // Fase 3: Aplicar corte
+      mockGameScene.events.emit('game:shape_applied', { shape: 'star' });
+      assert.equal(tm.getCurrentStep().id, 'step_oven_power');
+    });
+
+    test('step_drink_cup targets cup_stack at rest and drink_machine during drag', () => {
+      const step = getStepById('step_drink_cup');
+      assert.ok(step);
+      assert.equal(step.sourceTargetKey, 'cup_stack');
+      assert.equal(step.destinationTargetKey, 'drink_machine');
+
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+      tm.goToStep('step_drink_cup');
+
+      const overlay = tm.overlay;
+
+      // Fase 1: Pila de vasos en reposo
+      assert.equal(overlay.currentSpotlight.x, 431);
+      assert.equal(overlay.currentSpotlight.y, 347);
+
+      // Fase 2: Arrastrando vaso -> Cafetera
+      mockGameScene.events.emit('game:drag_start', { item: 'cup_stack' });
+      assert.equal(overlay.currentSpotlight.x, 351);
+      assert.equal(overlay.currentSpotlight.y, 507);
+
+      // Fase 3: Vaso colocado
+      mockGameScene.events.emit('game:cup_placed');
+      assert.equal(tm.getCurrentStep().id, 'step_drink_coffee_btn');
+    });
+
+    test('step_wrong_delivery_serve and step_patience_delivery target delivery_tray at rest and customer during drag', () => {
+      ['step_wrong_delivery_serve', 'step_patience_delivery'].forEach(stepId => {
+        const step = getStepById(stepId);
+        assert.equal(step.sourceTargetKey, 'delivery_tray');
+        assert.equal(step.destinationTargetKey, 'customer');
+
+        const tm = new TutorialManager(mockGameScene);
+        tm.start();
+        tm.goToStep(stepId);
+
+        const overlay = tm.overlay;
+
+        // Fase 1: Bandeja en reposo
+        assert.equal(overlay.currentSpotlight.x, 1037);
+        assert.equal(overlay.currentSpotlight.y, 675);
+
+        // Fase 2: Arrastre a cliente
+        mockGameScene.events.emit('game:drag_start', { item: 'delivery_tray' });
+        assert.equal(overlay.currentSpotlight.x, 960);
+        assert.equal(overlay.currentSpotlight.y, 506); // sprite centerY in mock
+      });
+    });
+
+    test('non-drag steps (buttons and ACK) ignore game:drag_start and game:drag_end cleanly', () => {
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+      tm.goToStep('step_oven_power');
+
+      const overlay = tm.overlay;
+      assert.equal(overlay.currentSpotlight.x, 1375);
+      assert.equal(overlay.currentSpotlight.y, 261.5);
+
+      // Emit drag start on a button step
+      mockGameScene.events.emit('game:drag_start', { item: 'something' });
+      assert.equal(overlay.currentSpotlight.x, 1375, 'Spotlight should remain on power button');
+      assert.equal(overlay.currentSpotlight.y, 261.5);
+
+      mockGameScene.events.emit('game:drag_end', { item: 'something' });
+      assert.equal(overlay.currentSpotlight.x, 1375, 'Spotlight should remain on power button');
+      assert.equal(overlay.currentSpotlight.y, 261.5);
+    });
+
+    test('TutorialOverlay.setTarget switches target coordinates without clearing or resetting dialogue text', () => {
+      const overlay = new TutorialOverlay(mockGameScene);
+      overlay.setStep({
+        id: 'test_step',
+        text: 'Instrucción de prueba de Kiwii',
+        targetCoords: { x: 100, y: 200, width: 50, height: 50 }
+      });
+
+      assert.equal(overlay.dialogueText.text, 'Instrucción de prueba de Kiwii');
+      assert.equal(overlay.currentSpotlight.x, 100);
+      assert.equal(overlay.currentSpotlight.y, 200);
+
+      // Call setTarget to update target coordinates only
+      overlay.setTarget({ x: 500, y: 600, width: 80, height: 80 });
+
+      assert.equal(overlay.dialogueText.text, 'Instrucción de prueba de Kiwii', 'Dialogue text must not be cleared or altered');
+      assert.equal(overlay.currentSpotlight.x, 500);
+      assert.equal(overlay.currentSpotlight.y, 600);
+      assert.equal(overlay.currentSpotlight.width, 80);
+      assert.equal(overlay.currentSpotlight.height, 80);
+    });
+  });
+
+  // =========================================================================
+  // 9. PREP TRAY COOKIE DRAG & STEP_COOKIE_TO_OVEN INTEGRATION MATRIX
+  // =========================================================================
+  describe('9. Prep Tray Cookie Drag & step_cookie_to_oven Integration Matrix', () => {
+    let mockGameScene;
+
+    beforeEach(() => {
+      mockGameScene = createMockPhaserScene();
+      mockGameScene.ovenBtnPowerZone = { x: 1375, y: 261.5, displayWidth: 60, displayHeight: 60 };
+      mockGameScene.ovenBtnBakeZone = { x: 1434, y: 261.5, displayWidth: 60, displayHeight: 60 };
+      mockGameScene.ovenDoorZone = { x: 1499, y: 475, displayWidth: 306, displayHeight: 249 };
+      mockGameScene.prepTrayZone = { x: 960, y: 911, displayWidth: 375, displayHeight: 169 };
+      mockGameScene.prepTraySprites = [{ x: 960, y: 911, displayWidth: 103, displayHeight: 103 }];
+
+      mockGameScene.getTutorialTarget = function(targetKey) {
+        switch (targetKey) {
+          case 'oven_power': return this.ovenBtnPowerZone;
+          case 'oven_bake': return this.ovenBtnBakeZone;
+          case 'oven_door': return this.ovenDoorZone;
+          case 'table_cookie':
+          case 'prep_cookie': return this.prepTraySprites?.[0] || this.prepTrayZone;
+          case 'prep_table':
+          case 'prep_tray': return this.prepTrayZone;
+          default: return null;
+        }
+      };
+    });
+
+    test('GameScene.js has no undefined cookieInstance references in dragstart', () => {
+      const gameSceneCode = fs.readFileSync(path.join(process.cwd(), 'src', 'scenes', 'GameScene.js'), 'utf8');
+      
+      const drawCookieStartIndex = gameSceneCode.indexOf('drawCookie()');
+      assert.ok(drawCookieStartIndex !== -1, 'drawCookie method must exist');
+      const drawCookieCode = gameSceneCode.slice(drawCookieStartIndex, gameSceneCode.indexOf('updateCookieVisuals()', drawCookieStartIndex));
+
+      assert.ok(
+        drawCookieCode.includes('cookieInstance =') || drawCookieCode.includes('cookie,'),
+        'drawCookie dragstart must declare or bind cookieInstance before emitting game:drag_start'
+      );
+      assert.ok(
+        drawCookieCode.includes("item: 'table_cookie'"),
+        'drawCookie dragstart must emit item: table_cookie'
+      );
+      assert.ok(
+        drawCookieCode.includes('sprite.setDepth(30000)'),
+        'drawCookie dragstart must elevate cookie depth to 30000 above TutorialOverlay depth 25000'
+      );
+    });
+
+    test('Full step_cookie_to_oven execution cycle: drag start -> arrow moves to oven -> drop -> advances to step_oven_bake', () => {
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+      tm.goToStep('step_cookie_to_oven');
+
+      assert.equal(tm.getCurrentStep().id, 'step_cookie_to_oven');
+      assert.equal(tm.isDragging, false);
+      assert.equal(tm.overlay.currentSpotlight.x, 960);
+      assert.equal(tm.overlay.currentSpotlight.y, 911);
+
+      // 1. User starts dragging table_cookie
+      const fakeCookie = new Cookie();
+      fakeCookie.base = 'classic';
+      fakeCookie.shape = 'star';
+
+      let dragStartEmitted = false;
+      mockGameScene.events.on('game:drag_start', (data) => {
+        dragStartEmitted = true;
+        assert.equal(data.item, 'table_cookie');
+        assert.equal(data.cookie.shape, 'star');
+      });
+
+      mockGameScene.events.emit('game:drag_start', { item: 'table_cookie', cookie: fakeCookie, index: 0 });
+
+      assert.ok(dragStartEmitted);
+      assert.equal(tm.isDragging, true);
+      assert.equal(tm.overlay.currentSpotlight.x, 1499, 'Spotlight must point to oven door');
+      assert.equal(tm.overlay.currentSpotlight.y, 475);
+
+      // 2. User successfully drops cookie in oven
+      mockGameScene.events.emit('game:cookie_loaded_oven', { cookie: fakeCookie, count: 1 });
+      mockGameScene.events.emit('game:drag_end', { item: 'table_cookie', cookie: fakeCookie, index: 0 });
+
+      assert.equal(tm.getCurrentStep().id, 'step_oven_bake', 'Must advance to step_oven_bake');
+      assert.equal(tm.overlay.currentSpotlight.x, 1434, 'Spotlight points to oven bake button');
+      assert.equal(tm.overlay.currentSpotlight.y, 261.5);
+    });
+  });
 });
+
+
 

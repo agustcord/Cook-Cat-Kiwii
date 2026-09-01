@@ -919,6 +919,26 @@ export default class TutorialOverlay {
   // =========================================================================
 
   /**
+   * Actualiza el spotlight y el puntero hacia un nuevo target sin reiniciar el diálogo de Kiwii.
+   * @param {Object} target - { x, y, width, height, radius, isErrorHighlight }
+   * @param {Object} [options] - { pointerDirection, pointerOffset }
+   */
+  setTarget(target, options = {}) {
+    if (target && target.x !== undefined && target.y !== undefined) {
+      this.setSpotlight(target);
+      this.setPointer(
+        target.x,
+        target.y,
+        options.pointerDirection || this.currentStepConfig?.pointerDirection || 'auto',
+        options.pointerOffset || this.currentStepConfig?.pointerOffset || (Math.max(target.width || 140, target.height || 140) / 2 + 35)
+      );
+    } else {
+      this.clearSpotlight();
+      this.clearPointer();
+    }
+  }
+
+  /**
    * Configura un paso completo del tutorial (diálogo, spotlight y puntero).
    */
   setStep(stepConfig) {
@@ -947,18 +967,10 @@ export default class TutorialOverlay {
     });
 
     const target = stepConfig.targetCoords || stepConfig.target;
-    if (target && target.x !== undefined && target.y !== undefined) {
-      this.setSpotlight(target);
-      this.setPointer(
-        target.x,
-        target.y,
-        stepConfig.pointerDirection || 'auto',
-        stepConfig.pointerOffset || (Math.max(target.width || 140, target.height || 140) / 2 + 35)
-      );
-    } else {
-      this.clearSpotlight();
-      this.clearPointer();
-    }
+    this.setTarget(target, {
+      pointerDirection: stepConfig.pointerDirection,
+      pointerOffset: stepConfig.pointerOffset
+    });
 
     this.show();
   }

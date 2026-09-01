@@ -27,6 +27,9 @@ export const DEFAULT_TARGET_BOUNDS = {
   shape_heart: { x: 497, y: 721, width: 110, height: 110, radius: 20 },
   shape_cat: { x: 610, y: 721, width: 110, height: 110, radius: 20 },
   shape_fish: { x: 723, y: 721, width: 110, height: 110, radius: 20 },
+  table_cookie: { x: 960, y: 911, width: 120, height: 120, radius: 20 },
+  prep_table: { x: 960, y: 911, width: 375, height: 169, radius: 20 },
+  prep_tray: { x: 960, y: 911, width: 375, height: 169, radius: 20 },
   oven_power: { x: 1375, y: 261.5, width: 60, height: 60, radius: 18 },
   oven_door: { x: 1499, y: 475, width: 306, height: 249, radius: 20 },
   oven_bake: { x: 1434, y: 261.5, width: 60, height: 60, radius: 18 },
@@ -37,6 +40,7 @@ export const DEFAULT_TARGET_BOUNDS = {
   btn_coffee: { x: 287, y: 424, width: 83, height: 68, radius: 16 },
   btn_milk: { x: 385, y: 422, width: 83, height: 68, radius: 16 },
   drink_machine: { x: 351, y: 507, width: 320, height: 320, radius: 24 },
+  drink_cup: { x: 351, y: 582, width: 70, height: 60, radius: 16 },
   delivery_tray: { x: 1037, y: 675, width: 375, height: 94, radius: 16 }
 };
 
@@ -143,6 +147,12 @@ export function resolveTargetBounds(targetKeyOrStep, scene) {
       // Búsqueda en propiedades conocidas de scene
       if (targetKey === 'customer') {
         targetObj = scene.currentCustomer?.sprite || scene.currentCustomer?.container || scene.customerContainer;
+      } else if (targetKey === 'table_cookie' || targetKey === 'prep_cookie') {
+        targetObj = scene.prepTraySprites?.[0] || scene.prepTrayZone || scene.prepTrayBg;
+      } else if (targetKey === 'prep_table' || targetKey === 'prep_tray') {
+        targetObj = scene.prepTrayZone || scene.prepTrayBg;
+      } else if (targetKey === 'drink_cup') {
+        targetObj = scene.machineCupSprite;
       } else if (targetKey?.startsWith('dough_')) {
         const id = targetKey.replace('dough_', '');
         targetObj = scene.doughDragZones?.[id] || scene.doughButtons?.[id];
@@ -234,6 +244,7 @@ export default class TutorialManager {
     this.currentStepIndex = 0;
     this.isActive = false;
     this.isCompleted = false;
+    this.isDragging = false;
 
     // Callbacks de eventos internos (step_changed, completed, skipped)
     this._listeners = new Map();
@@ -261,6 +272,8 @@ export default class TutorialManager {
     // Handlers vinculados para desuscripción limpia
     this._boundGameEventHandler = (eventName, data) => this.handleGameEvent(eventName, data);
     this._monitoredEvents = [
+      'game:drag_start',
+      'game:drag_end',
       'game:dough_placed',
       'game:shape_applied',
       'game:topping_applied',
@@ -283,15 +296,39 @@ export default class TutorialManager {
 
   /**
    * Sincroniza la configuración del paso actual con TutorialOverlay.
+   * Soporta guía dinámica en dos fases: 'source' (objeto a tomar) y 'destination' (destino a soltar).
    * Resuelve dinámicamente las coordenadas del target desde los GameObjects de la escena.
    * @param {Object} step
+   * @param {'source'|'destination'} [phase='source']
    * @private
    */
-  _syncOverlayStep(step) {
-    if (!this.overlay || !step || typeof this.overlay.setStep !== 'function') return;
+  _syncOverlayStep(step, phase = 'source') {
+    if (!this.overlay || !step) return;
 
-    const dynamicTarget = resolveTargetBounds(step, this.scene);
-    const target = dynamicTarget || step.targetCoords || step.target;
+    let targetKey = step.targetKey;
+    let fallbackCoords = step.targetCoords;
+
+    if (phase === 'destination' && step.destinationTargetKey) {
+      targetKey = step.destinationTargetKey;
+      fallbackCoords = step.destinationCoords || DEFAULT_TARGET_BOUNDS[targetKey];
+    } else if (phase === 'source' && step.sourceTargetKey) {
+      targetKey = step.sourceTargetKey;
+      fallbackCoords = step.sourceCoords || step.targetCoords || DEFAULT_TARGET_BOUNDS[targetKey];
+    }
+
+    const dynamicTarget = resolveTargetBounds({ targetKey, targetCoords: fallbackCoords }, this.scene);
+    const target = dynamicTarget || fallbackCoords || step.target;
+
+    // Si solo es un cambio de fase dinámica (arrastrando/soltando) del mismo paso y el overlay ya tiene diálogo montado:
+    if (this.overlay.currentStepConfig?.id === step.id && typeof this.overlay.setTarget === 'function') {
+      this.overlay.setTarget(target, {
+        pointerDirection: step.pointerDirection,
+        pointerOffset: step.pointerOffset
+      });
+      return;
+    }
+
+    if (typeof this.overlay.setStep !== 'function') return;
 
     // Resuelve posición inteligente de la burbuja para evitar solapar la mesa de preparación
     let bubblePos = step.bubblePosition;
@@ -334,6 +371,7 @@ export default class TutorialManager {
 
     this.isActive = true;
     this.isCompleted = false;
+    this.isDragging = false;
     this.currentStepIndex = 0;
 
     // Suscribir a los eventos de la escena
@@ -354,7 +392,7 @@ export default class TutorialManager {
     // Notificar primer paso
     const firstStep = this.getCurrentStep();
     if (firstStep) {
-      this._syncOverlayStep(firstStep);
+      this._syncOverlayStep(firstStep, 'source');
       this.emit('step_changed', firstStep);
     }
   }
@@ -376,12 +414,14 @@ export default class TutorialManager {
   nextStep() {
     if (!this.isActive) return;
 
+    this.isDragging = false;
+
     if (this.currentStepIndex + 1 < this.steps.length) {
       this.currentStepIndex++;
       const next = this.getCurrentStep();
       this.checkSafetyRestock();
       if (next) {
-        this._syncOverlayStep(next);
+        this._syncOverlayStep(next, 'source');
         this.emit('step_changed', next);
       }
     } else {
@@ -403,16 +443,45 @@ export default class TutorialManager {
     }
 
     if (index >= 0 && index < this.steps.length) {
+      this.isDragging = false;
       this.currentStepIndex = index;
       const step = this.getCurrentStep();
       this.checkSafetyRestock();
       if (step) {
-        this._syncOverlayStep(step);
+        this._syncOverlayStep(step, 'source');
         this.emit('step_changed', step);
       }
       return true;
     }
     return false;
+  }
+
+  /**
+   * Maneja el inicio de arrastre de un objeto interactivo (Fase 2: Origen -> Destino).
+   * @param {Object} [payload]
+   */
+  handleDragStart(payload) {
+    if (!this.isActive) return;
+
+    const step = this.getCurrentStep();
+    if (!step || !step.destinationTargetKey) return;
+
+    this.isDragging = true;
+    this._syncOverlayStep(step, 'destination');
+  }
+
+  /**
+   * Maneja el fin de arrastre si se soltó sin completar la acción (Fase 3: Destino -> Origen).
+   * @param {Object} [payload]
+   */
+  handleDragEnd(payload) {
+    if (!this.isActive || !this.isDragging) return;
+
+    this.isDragging = false;
+    const step = this.getCurrentStep();
+    if (step) {
+      this._syncOverlayStep(step, 'source');
+    }
   }
 
   /**
@@ -422,6 +491,16 @@ export default class TutorialManager {
    */
   handleGameEvent(eventName, payload) {
     if (!this.isActive) return;
+
+    if (eventName === 'game:drag_start') {
+      this.handleDragStart(payload);
+      return;
+    }
+
+    if (eventName === 'game:drag_end') {
+      this.handleDragEnd(payload);
+      return;
+    }
 
     const step = this.getCurrentStep();
     if (!step) return;
@@ -433,6 +512,7 @@ export default class TutorialManager {
           return;
         }
       }
+      this.isDragging = false;
       this.nextStep();
     }
   }
