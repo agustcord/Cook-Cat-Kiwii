@@ -3,7 +3,7 @@ import SoundManager from '../game/SoundManager.js';
 import CrazyGamesSDK from '../game/services/CrazyGamesSDK.js';
 import I18nManager from '../game/services/I18nManager.js';
 
-const ASSET_VERSION = '15';
+const ASSET_VERSION = '16';
 const assetUrl = (path) => `${path}?v=${ASSET_VERSION}`;
 
 export default class BootScene extends Phaser.Scene {
@@ -34,7 +34,7 @@ export default class BootScene extends Phaser.Scene {
     loadingText.setOrigin(0.5);
 
     // Preload background image & audio & machines
-    this.load.image('bakery_background', assetUrl('assets/backgrounds/bakery_background_top.png'));
+    this.load.image('bakery_background', assetUrl('assets/backgrounds/fondo_pared.png'));
     this.load.audio('bg_music', assetUrl("assets/audio/Kiwi's Simple Bakehouse Loop.mp3"));
     this.load.image('drink_machine', assetUrl('assets/cafeteteria_base.png'));
     this.load.image('btn_coffee_asset', assetUrl('assets/boton_cafe.png'));

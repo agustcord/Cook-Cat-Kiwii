@@ -315,8 +315,11 @@ export default class GameScene extends Phaser.Scene {
   }
 
   drawBackground(width, height) {
-    // Render the blurred storefront background to cover the entire canvas
-    this.add.image(0, 0, 'bakery_background').setOrigin(0, 0).setDisplaySize(width, height);
+    // Render the storefront wall background at bottom-most layer to prevent occluding any UI/gameplay
+    this.add.image(0, 0, 'bakery_background')
+      .setOrigin(0, 0)
+      .setDisplaySize(width, height)
+      .setDepth(-100);
   }
 
   setupHUD(width) {
