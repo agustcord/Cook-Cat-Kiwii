@@ -192,12 +192,17 @@ export default {
     title: 'KIWI BAKEHOUSE SHOP',
     subtitle: 'Restock your ingredients before Day {day}!',
     availableCoins: '🪙 Available Coins: {coins}',
+    tabs: {
+      supplies: 'Kitchen Supplies',
+      decorations: 'Café Decoration'
+    },
     columns: {
       molds: 'MOLDS',
       dough: 'DOUGH',
       toppings: 'TOPPINGS',
       drinks: 'DRINKS'
     },
+    decorHeader: 'Customize your bakery atmosphere with cozy upgrades!',
     items: {
       moldHeart: 'Heart Mold',
       moldCat: 'Cat Mold',
@@ -211,17 +216,43 @@ export default {
       drinkCoffee: 'Coffee Beans',
       drinkMilk: 'Milk Carton'
     },
+    decorItems: {
+      decor_window: {
+        name: 'Rustic Window',
+        desc: 'Beautiful wooden window with a view of the café garden.',
+        tag: 'Permanent Decor'
+      },
+      decor_bunting: {
+        name: 'Festive Bunting',
+        desc: 'Cheerful decorative bunting flags that brighten up the bakery café.',
+        tag: 'Permanent Decor'
+      },
+      decor_clock: {
+        name: 'Cat Wall Clock',
+        desc: 'Handcrafted pendulum clock with cat silhouette.',
+        tag: 'Permanent Decor'
+      },
+      decor_lights: {
+        name: 'Cozy Fairy Lights',
+        desc: 'Warm golden fairy lights to illuminate the bakery.',
+        tag: 'Permanent Decor'
+      }
+    },
     units: {
       permanent: 'Permanent',
       pack5: 'Pack x5',
       unlocked: 'Unlocked',
       locked: 'Locked',
       stock: 'Stock: {qty} u.',
-      ready: 'READY'
+      ready: 'READY',
+      comingSoon: 'COMING SOON',
+      costLabel: 'Cost: 🪙 {cost}'
     },
     feedback: {
       unlocked: 'Unlocked! ✨',
-      bought: '+5 {name} 🛒'
+      bought: '+5 {name} 🛒',
+      decorUnlocked: 'Renovation Installed! ✨',
+      comingSoonNotice: 'Available in upcoming updates! 🔒'
     },
     warningDough: '⚠️ Warning! You have no dough to open the bakery. Buy at least 1 pack of Classic Dough.',
     startNextDay: 'START NEXT DAY ☕'

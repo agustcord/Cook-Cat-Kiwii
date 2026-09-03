@@ -17,8 +17,9 @@ describe('SaveManager - Game State Persistence & LocalStorage Matrix', () => {
     assert.equal(def.loanRemaining, 200);
     assert.deepEqual(def.unlockedShapes, ['star']);
     assert.equal(def.stock.dough.classic, 10);
-    assert.equal(def.stock.topping.sprinkles, 2);
-    assert.equal(def.stock.drink.coffee_beans, 2);
+    assert.equal(def.stock.topping.sprinkles, 5);
+    assert.equal(def.stock.drink.coffee_beans, 5);
+    assert.equal(def.stock.drink.milk, 5);
   });
 
   test('hasSavedGame returns false on fresh start', () => {
@@ -93,5 +94,91 @@ describe('SaveManager - Game State Persistence & LocalStorage Matrix', () => {
     const sm = SaveManager.getInstance({ reset: true, storage: mockStorage });
     assert.equal(sm.hasSavedGame(), false);
     assert.equal(sm.loadGame(), null);
+  });
+
+  test('getDefaultState includes empty decorations array', () => {
+    const sm = SaveManager.getInstance({ reset: true });
+    const def = sm.getDefaultState();
+    assert.ok(Array.isArray(def.decorations));
+    assert.deepEqual(def.decorations, []);
+  });
+
+  test('saveGame persists decorations idempotently without duplicates', () => {
+    const memory = new Map();
+    const mockStorage = {
+      getItem: (k) => memory.get(k) || null,
+      setItem: (k, v) => memory.set(k, String(v)),
+      removeItem: (k) => memory.delete(k)
+    };
+
+    const sm = SaveManager.getInstance({ reset: true, storage: mockStorage });
+    sm.saveGame({ day: 2, coins: 50, decorations: ['decor_window', 'decor_window'] });
+    const loaded = sm.loadGame();
+    assert.deepEqual(loaded.decorations, ['decor_window']);
+  });
+
+  test('retrocompatibility: loads legacy save without decorations as empty array', () => {
+    const memory = new Map();
+    // Simulate legacy save format without decorations key
+    const legacyState = {
+      day: 2,
+      coins: 100,
+      loanRemaining: 180,
+      unlockedShapes: ['star'],
+      stock: {
+        dough: { classic: 5, chocolate: 0, oat: 0 },
+        topping: { sprinkles: 1, choco: 0, glazing: 0 },
+        drink: { coffee_beans: 2, milk: 2 }
+      }
+    };
+    memory.set('kiwibakery_save_state', JSON.stringify(legacyState));
+
+    const mockStorage = {
+      getItem: (k) => memory.get(k) || null,
+      setItem: (k, v) => memory.set(k, String(v)),
+      removeItem: (k) => memory.delete(k)
+    };
+
+    const sm = SaveManager.getInstance({ reset: true, storage: mockStorage });
+    const loaded = sm.loadGame();
+    assert.ok(Array.isArray(loaded.decorations), 'decorations should be an array');
+    assert.deepEqual(loaded.decorations, []);
+
+    // Subsequent save preserves decorations
+    sm.saveGame({ coins: 80 });
+    const reloaded = sm.loadGame();
+    assert.deepEqual(reloaded.decorations, []);
+  });
+
+  test('saveGame retains existing decorations when omitted in payload', () => {
+    const memory = new Map();
+    const mockStorage = {
+      getItem: (k) => memory.get(k) || null,
+      setItem: (k, v) => memory.set(k, String(v)),
+      removeItem: (k) => memory.delete(k)
+    };
+
+    const sm = SaveManager.getInstance({ reset: true, storage: mockStorage });
+    sm.saveGame({ decorations: ['decor_window'] });
+    assert.deepEqual(sm.loadGame().decorations, ['decor_window']);
+
+    // Update only coins without passing decorations
+    sm.saveGame({ coins: 200 });
+    const updated = sm.loadGame();
+    assert.equal(updated.coins, 200);
+    assert.deepEqual(updated.decorations, ['decor_window']);
+  });
+
+  test('hasSavedGame returns true if player owns decorations even on day 1 with 0 coins', () => {
+    const memory = new Map();
+    const mockStorage = {
+      getItem: (k) => memory.get(k) || null,
+      setItem: (k, v) => memory.set(k, String(v)),
+      removeItem: (k) => memory.delete(k)
+    };
+
+    const sm = SaveManager.getInstance({ reset: true, storage: mockStorage });
+    sm.saveGame({ day: 1, coins: 0, loanRemaining: 200, unlockedShapes: ['star'], decorations: ['decor_window'] });
+    assert.equal(sm.hasSavedGame(), true);
   });
 });

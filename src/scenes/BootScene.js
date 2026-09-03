@@ -140,6 +140,12 @@ export default class BootScene extends Phaser.Scene {
         });
       });
     });
+
+    // Preload decorations
+    this.load.image('decor_window', assetUrl('assets/decorations/decor_window_overlay.png'));
+    this.load.image('decor_window_thumb', assetUrl('assets/decorations/decor_window_thumb.png'));
+    this.load.image('decor_bunting', assetUrl('assets/decorations/decor_bunting_overlay.png'));
+    this.load.image('decor_bunting_thumb', assetUrl('assets/decorations/decor_bunting_thumb.png'));
   }
 
   create() {

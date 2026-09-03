@@ -41,8 +41,8 @@ function createMockPhaserScene() {
     },
     stock: {
       dough: { classic: 10, chocolate: 0, oat: 0 },
-      topping: { sprinkles: 2, choco: 0, glazing: 0 },
-      drink: { coffee_beans: 2, milk: 2 }
+      topping: { sprinkles: 5, choco: 0, glazing: 0 },
+      drink: { coffee_beans: 5, milk: 5 }
     },
     updateStockTexts: () => {},
     updateDrinkStockTexts: () => {},

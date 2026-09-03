@@ -42,10 +42,11 @@ class SaveManager {
       loanRemaining: 200,
       unlockedShapes: ['star'],
       tutorialCompleted: false,
+      decorations: [],
       stock: {
         dough: { classic: 10, chocolate: 0, oat: 0 },
-        topping: { sprinkles: 2, choco: 0, glazing: 0 },
-        drink: { coffee_beans: 2, milk: 2 }
+        topping: { sprinkles: 5, choco: 0, glazing: 0 },
+        drink: { coffee_beans: 5, milk: 5 }
       },
       updatedAt: Date.now()
     };
@@ -70,6 +71,9 @@ class SaveManager {
         tutorialCompleted: state.tutorialCompleted !== undefined
           ? Boolean(state.tutorialCompleted)
           : Boolean(existing.tutorialCompleted),
+        decorations: Array.isArray(state.decorations)
+          ? [...new Set(state.decorations)]
+          : (Array.isArray(existing.decorations) ? [...new Set(existing.decorations)] : defaultState.decorations),
         stock: {
           dough: { ...defaultState.stock.dough, ...(existing.stock?.dough || {}), ...(state.stock?.dough || {}) },
           topping: { ...defaultState.stock.topping, ...(existing.stock?.topping || {}), ...(state.stock?.topping || {}) },
@@ -122,6 +126,10 @@ class SaveManager {
         return null;
       }
 
+      if (!Array.isArray(parsed.decorations)) {
+        parsed.decorations = [];
+      }
+
       return parsed;
     } catch {
       return null;
@@ -141,6 +149,7 @@ class SaveManager {
       saved.day > 1 ||
       saved.coins > 0 ||
       (saved.unlockedShapes && saved.unlockedShapes.length > 1) ||
+      (saved.decorations && saved.decorations.length > 0) ||
       (saved.loanRemaining !== undefined && saved.loanRemaining < 200)
     );
   }

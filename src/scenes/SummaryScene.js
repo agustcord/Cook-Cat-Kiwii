@@ -29,16 +29,20 @@ export default class SummaryScene extends Phaser.Scene {
     this.unlockedShapesAtStart = safeData.unlockedShapesAtStart || ['star'];
     this.stockAtStart = safeData.stockAtStart || {
       dough: { classic: 10, chocolate: 0, oat: 0 },
-      topping: { sprinkles: 0, choco: 0, glazing: 0 },
-      drink: { coffee_beans: 2, milk: 2 }
+      topping: { sprinkles: 5, choco: 0, glazing: 0 },
+      drink: { coffee_beans: 5, milk: 5 }
     };
 
     // Current state to carry over
     this.unlockedShapes = safeData.unlockedShapes || ['star'];
+    this.decorations = Array.isArray(safeData.decorations)
+      ? [...safeData.decorations]
+      : (SaveManager.getInstance().loadGame()?.decorations || []);
+    this.decorationsAtStart = safeData.decorationsAtStart ? [...safeData.decorationsAtStart] : [...this.decorations];
     this.stock = safeData.stock || {
       dough: { classic: 10, chocolate: 0, oat: 0 },
-      topping: { sprinkles: 0, choco: 0, glazing: 0 },
-      drink: { coffee_beans: 2, milk: 2 }
+      topping: { sprinkles: 5, choco: 0, glazing: 0 },
+      drink: { coffee_beans: 5, milk: 5 }
     };
 
     // Evaluacion integral de solvencia y rendimiento contable
@@ -74,7 +78,8 @@ export default class SummaryScene extends Phaser.Scene {
         coins: this.netCoins,
         loanRemaining: this.updatedLoanRemaining,
         unlockedShapes: this.unlockedShapes,
-        stock: this.stock
+        stock: this.stock,
+        decorations: this.decorations
       });
     }
 
@@ -476,7 +481,8 @@ export default class SummaryScene extends Phaser.Scene {
           coins: this.netCoins,
           unlockedShapes: this.unlockedShapes,
           stock: this.stock,
-          loanRemaining: this.updatedLoanRemaining
+          loanRemaining: this.updatedLoanRemaining,
+          decorations: this.decorations
         });
       };
     }
@@ -573,7 +579,8 @@ export default class SummaryScene extends Phaser.Scene {
           coins: this.coinsAtStart,
           loanRemaining: this.loanRemainingAtStart,
           unlockedShapes: this.unlockedShapesAtStart,
-          stock: this.stockAtStart
+          stock: this.stockAtStart,
+          decorations: this.decorationsAtStart
         });
       });
 

@@ -747,9 +747,32 @@ export default class TutorialManager {
       this.overlay.hide();
     }
 
-    // Guardar flag de completado
+    // Garantizar piso operativo seguro al saltear el tutorial
+    if (this.scene && this.scene.stock) {
+      if (!this.scene.stock.dough) this.scene.stock.dough = {};
+      this.scene.stock.dough.classic = Math.max(5, Number(this.scene.stock.dough.classic) || 0);
+
+      if (!this.scene.stock.topping) this.scene.stock.topping = {};
+      this.scene.stock.topping.sprinkles = Math.max(3, Number(this.scene.stock.topping.sprinkles) || 0);
+
+      if (!this.scene.stock.drink) this.scene.stock.drink = {};
+      this.scene.stock.drink.coffee_beans = Math.max(3, Number(this.scene.stock.drink.coffee_beans) || 0);
+      this.scene.stock.drink.milk = Math.max(3, Number(this.scene.stock.drink.milk) || 0);
+
+      if (typeof this.scene.updateStockTexts === 'function') {
+        this.scene.updateStockTexts();
+      }
+      if (typeof this.scene.updateDrinkStockTexts === 'function') {
+        this.scene.updateDrinkStockTexts();
+      }
+    }
+
+    // Guardar flag de completado y stock actualizado
     try {
-      this.saveManager.saveGame({ tutorialCompleted: true });
+      this.saveManager.saveGame({
+        tutorialCompleted: true,
+        stock: this.scene?.stock
+      });
     } catch {
       // Ignorar fallback
     }

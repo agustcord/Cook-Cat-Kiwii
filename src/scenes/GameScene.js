@@ -23,23 +23,28 @@ export default class GameScene extends Phaser.Scene {
 
     // Load state from data, or fallback to Day 1 starting kit
     this.unlockedShapes = safeData.unlockedShapes || ['star'];
+    this.decorations = Array.isArray(safeData.decorations)
+      ? [...safeData.decorations]
+      : (SaveManager.getInstance().loadGame()?.decorations || []);
     this.stock = safeData.stock || {
       dough: { classic: 10, chocolate: 0, oat: 0 },
-      topping: { sprinkles: 2, choco: 0, glazing: 0 },
-      drink: { coffee_beans: 2, milk: 2 }
+      topping: { sprinkles: 5, choco: 0, glazing: 0 },
+      drink: { coffee_beans: 5, milk: 5 }
     };
     if (this.day === 1) {
-      if (!this.stock.topping) this.stock.topping = { sprinkles: 2, choco: 0, glazing: 0 };
-      this.stock.topping.sprinkles = Math.max(2, (this.stock.topping.sprinkles || 0));
-      if (!this.stock.drink) this.stock.drink = { coffee_beans: 2, milk: 2 };
-      this.stock.drink.milk = Math.max(2, (this.stock.drink.milk || 0));
+      if (!this.stock.topping) this.stock.topping = { sprinkles: 5, choco: 0, glazing: 0 };
+      this.stock.topping.sprinkles = Math.max(5, (this.stock.topping.sprinkles || 0));
+      if (!this.stock.drink) this.stock.drink = { coffee_beans: 5, milk: 5 };
+      this.stock.drink.coffee_beans = Math.max(5, (this.stock.drink.coffee_beans || 0));
+      this.stock.drink.milk = Math.max(5, (this.stock.drink.milk || 0));
     }
-    this.stock.drink = this.stock.drink || { coffee_beans: 2, milk: 2 };
+    this.stock.drink = this.stock.drink || { coffee_beans: 5, milk: 5 };
 
     // Save starting state of the day for re-tries
     this.coinsAtStart = this.coins;
     this.loanRemainingAtStart = this.loanRemaining;
     this.unlockedShapesAtStart = [...this.unlockedShapes];
+    this.decorationsAtStart = [...this.decorations];
     this.stockAtStart = JSON.parse(JSON.stringify(this.stock));
     
     // Core game state variables
@@ -320,6 +325,22 @@ export default class GameScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setDisplaySize(width, height)
       .setDepth(-100);
+
+    // Conditionally render purchased rustic window decoration
+    if (this.decorations && this.decorations.includes('decor_window')) {
+      this.add.image(0, 0, 'decor_window')
+        .setOrigin(0, 0)
+        .setDisplaySize(width, height)
+        .setDepth(-90);
+    }
+
+    // Conditionally render purchased festive bunting decoration
+    if (this.decorations && this.decorations.includes('decor_bunting')) {
+      this.add.image(0, 0, 'decor_bunting')
+        .setOrigin(0, 0)
+        .setDisplaySize(width, height)
+        .setDepth(-85);
+    }
   }
 
   setupHUD(width) {
@@ -2372,7 +2393,9 @@ export default class GameScene extends Phaser.Scene {
           unlockedShapesAtStart: this.unlockedShapesAtStart,
           stockAtStart: this.stockAtStart,
           unlockedShapes: this.unlockedShapes,
-          stock: this.stock
+          stock: this.stock,
+          decorations: this.decorations,
+          decorationsAtStart: this.decorationsAtStart
         });
       });
       return;
@@ -2389,22 +2412,55 @@ export default class GameScene extends Phaser.Scene {
 
     if (this.day === 1) {
       const i18n = I18nManager.getInstance();
-      // Day 1 Fixed Tutorial Sequence
+      const hasBeans = (Number(this.stock.drink?.coffee_beans) || 0) > 0;
+      const hasMilk = (Number(this.stock.drink?.milk) || 0) > 0;
+      const hasSprinkles = (Number(this.stock.topping?.sprinkles) || 0) > 0;
+
+      // Day 1 Fixed Tutorial Sequence & Reactive Safe Orders
       if (customerIndex === 0) {
         // Customer 1: 1 Vanilla Cookie + Coffee
         selectedRecipe = { name: `${i18n.t('recipes.bases.classic')} ${i18n.t('recipes.shapes.star')}`, base: 'classic', shape: 'star', toppings: [] };
         qty = 1;
         requestedDrink = 'coffee';
+        if (!hasBeans) {
+          requestedDrink = hasMilk ? 'milk' : null;
+        }
       } else if (customerIndex === 1) {
         // Customer 2: 1 Vanilla Cookie with Sprinkles + Coffee with Milk
-        selectedRecipe = { name: `${i18n.t('recipes.bases.classic')} ${i18n.t('recipes.shapes.star')} ${i18n.t('recipes.toppings.sprinkles')}`, base: 'classic', shape: 'star', toppings: ['sprinkles'] };
+        const toppings = hasSprinkles ? ['sprinkles'] : [];
+        const name = toppings.length > 0
+          ? `${i18n.t('recipes.bases.classic')} ${i18n.t('recipes.shapes.star')} ${i18n.t('recipes.toppings.sprinkles')}`
+          : `${i18n.t('recipes.bases.classic')} ${i18n.t('recipes.shapes.star')}`;
+        selectedRecipe = { name, base: 'classic', shape: 'star', toppings: ['sprinkles'] };
+        if (!hasSprinkles) {
+          selectedRecipe.toppings = [];
+        }
         qty = 1;
         requestedDrink = 'coffee_milk';
+        if (!hasBeans || !hasMilk) {
+          if (hasBeans) requestedDrink = 'coffee';
+          else if (hasMilk) requestedDrink = 'milk';
+          else requestedDrink = null;
+        }
       } else {
-        // Customer 3+: 1 Vanilla Cookie with Sprinkles + Coffee with Milk
-        selectedRecipe = { name: `${i18n.t('recipes.bases.classic')} ${i18n.t('recipes.shapes.star')} ${i18n.t('recipes.toppings.sprinkles')}`, base: 'classic', shape: 'star', toppings: ['sprinkles'] };
+        // Customer 3+: 1 Vanilla Cookie with Sprinkles + Bebida balanceada
+        const toppings = hasSprinkles ? ['sprinkles'] : [];
+        const name = toppings.length > 0
+          ? `${i18n.t('recipes.bases.classic')} ${i18n.t('recipes.shapes.star')} ${i18n.t('recipes.toppings.sprinkles')}`
+          : `${i18n.t('recipes.bases.classic')} ${i18n.t('recipes.shapes.star')}`;
+        selectedRecipe = { name, base: 'classic', shape: 'star', toppings };
         qty = 1;
-        requestedDrink = 'coffee_milk';
+
+        // Calibración comanda Cliente 3: variedad balanceada evitando softlock
+        if (hasMilk && hasBeans) {
+          requestedDrink = 'milk';
+        } else if (hasBeans) {
+          requestedDrink = 'coffee';
+        } else if (hasMilk) {
+          requestedDrink = 'milk';
+        } else {
+          requestedDrink = null;
+        }
       }
     } else {
       const i18n = I18nManager.getInstance();

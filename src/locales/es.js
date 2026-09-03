@@ -192,12 +192,17 @@ export default {
     title: 'TIENDA KIWI BAKERY',
     subtitle: '¡Abastece tus ingredientes antes del Día {day}!',
     availableCoins: '🪙 Monedas Disponibles: {coins}',
+    tabs: {
+      supplies: 'Suministros de Cocina',
+      decorations: 'Decoración del Café'
+    },
     columns: {
       molds: 'MOLDES',
       dough: 'MASAS',
       toppings: 'TOPPINGS',
       drinks: 'BEBIDAS'
     },
+    decorHeader: '¡Personaliza el ambiente de tu pastelería con mejoras acogedoras!',
     items: {
       moldHeart: 'Molde Corazón',
       moldCat: 'Molde Gato',
@@ -211,17 +216,43 @@ export default {
       drinkCoffee: 'Granos Café',
       drinkMilk: 'Cartón Leche'
     },
+    decorItems: {
+      decor_window: {
+        name: 'Ventana Rústica',
+        desc: 'Hermosa ventana de madera con vista al jardín del café.',
+        tag: 'Decoración Permanente'
+      },
+      decor_bunting: {
+        name: 'Banderines Festivos',
+        desc: 'Alegres guirnaldas de banderines que visten el salón con calidez pastelera.',
+        tag: 'Decoración Permanente'
+      },
+      decor_clock: {
+        name: 'Reloj Gatuno',
+        desc: 'Reloj de péndulo artesanal con silueta de gato.',
+        tag: 'Decoración Permanente'
+      },
+      decor_lights: {
+        name: 'Guirnalda de Luces',
+        desc: 'Cálidas lucecitas doradas para iluminar la pastelería.',
+        tag: 'Decoración Permanente'
+      }
+    },
     units: {
       permanent: 'Permanente',
       pack5: 'Pack x5',
       unlocked: 'Desbloqueado',
       locked: 'Bloqueado',
       stock: 'Stock: {qty} u.',
-      ready: 'LISTO'
+      ready: 'LISTO',
+      comingSoon: 'PRÓXIMAMENTE',
+      costLabel: 'Costo: 🪙 {cost}'
     },
     feedback: {
       unlocked: '¡Desbloqueado! ✨',
-      bought: '+5 {name} 🛒'
+      bought: '+5 {name} 🛒',
+      decorUnlocked: '¡Remodelación Instalada! ✨',
+      comingSoonNotice: '¡Disponible en próximas actualizaciones! 🔒'
     },
     warningDough: '⚠️ ¡Atención! No tienes masa para abrir la panadería. Compra al menos 1 pack de Masa Clásica.',
     startNextDay: 'EMPEZAR SIGUIENTE DÍA ☕'

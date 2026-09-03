@@ -20,8 +20,8 @@ export default class ShopScene extends Phaser.Scene {
     // Safe stock initialization for all categories including drinks
     const defaultStock = {
       dough: { classic: 10, chocolate: 0, oat: 0 },
-      topping: { sprinkles: 0, choco: 0, glazing: 0 },
-      drink: { coffee_beans: 2, milk: 2 }
+      topping: { sprinkles: 5, choco: 0, glazing: 0 },
+      drink: { coffee_beans: 5, milk: 5 }
     };
 
     const incomingStock = safeData.stock || {};
@@ -32,12 +32,20 @@ export default class ShopScene extends Phaser.Scene {
     };
 
     this.loanRemaining = safeData.loanRemaining !== undefined ? safeData.loanRemaining : 200;
+
+    // Decorations initialization from passed data or persistent storage
+    this.decorations = Array.isArray(safeData.decorations)
+      ? [...safeData.decorations]
+      : (SaveManager.getInstance().loadGame()?.decorations || []);
   }
 
   create() {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
     const i18n = I18nManager.getInstance();
+
+    // Active tab state: 'supplies' | 'decorations'
+    this.currentTab = 'supplies';
 
     // Background
     const bgGraphics = this.add.graphics();
@@ -47,20 +55,20 @@ export default class ShopScene extends Phaser.Scene {
     // =========================================================================
     // ZONA 1: HEADER FIJO (y: 0 - 330)
     // =========================================================================
-    this.titleText = this.add.text(width / 2, 84, i18n.t('shop.title'), {
-      font: '68px "Outfit", sans-serif',
+    this.titleText = this.add.text(width / 2, 68, i18n.t('shop.title'), {
+      font: '64px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800'
     }).setOrigin(0.5);
 
-    this.subtitleText = this.add.text(width / 2, 155, i18n.t('shop.subtitle', { day: this.day + 1 }), {
-      font: '30px "Outfit", sans-serif',
+    this.subtitleText = this.add.text(width / 2, 126, i18n.t('shop.subtitle', { day: this.day + 1 }), {
+      font: '26px "Outfit", sans-serif',
       fill: '#7f5539',
       fontWeight: '600'
     }).setOrigin(0.5);
 
-    this.coinBalanceText = this.add.text(width / 2, 225, i18n.t('shop.availableCoins', { coins: this.coins }), {
-      font: '45px "Outfit", sans-serif',
+    this.coinBalanceText = this.add.text(width / 2, 180, i18n.t('shop.availableCoins', { coins: this.coins }), {
+      font: '38px "Outfit", sans-serif',
       fill: '#d48c47',
       fontWeight: '800'
     }).setOrigin(0.5);
@@ -77,7 +85,83 @@ export default class ShopScene extends Phaser.Scene {
       }
     });
 
-    // Column Headers (Fixed at y = 295)
+    // -------------------------------------------------------------------------
+    // TAB SELECTOR (Tabs Cozy Bakery: Suministros vs Decoración, y: 242)
+    // -------------------------------------------------------------------------
+    const tabW = 295;
+    const tabH = 48;
+    const tabY = 242;
+    const tab1X = width / 2 - tabW / 2 - 6; // 806.5
+    const tab2X = width / 2 + tabW / 2 + 6; // 1113.5
+
+    this.tabButtons = {};
+    const tabSpecs = [
+      { key: 'supplies', x: tab1X, labelKey: 'shop.tabs.supplies' },
+      { key: 'decorations', x: tab2X, labelKey: 'shop.tabs.decorations' }
+    ];
+
+    tabSpecs.forEach(spec => {
+      const bg = this.add.graphics();
+      const text = this.add.text(spec.x, tabY, i18n.t(spec.labelKey), {
+        font: 'bold 22px "Outfit"',
+        fill: '#ffffff'
+      }).setOrigin(0.5);
+
+      const zone = this.add.rectangle(spec.x, tabY, tabW, tabH, 0x000000, 0)
+        .setInteractive({ useHandCursor: true });
+
+      const updateVisuals = () => {
+        bg.clear();
+        const isActive = (this.currentTab === spec.key);
+        if (isActive) {
+          bg.fillStyle(0x7f5539, 1);
+          bg.fillRoundedRect(spec.x - tabW / 2, tabY - tabH / 2, tabW, tabH, 14);
+          bg.lineStyle(2, 0x582f0e, 1);
+          bg.strokeRoundedRect(spec.x - tabW / 2, tabY - tabH / 2, tabW, tabH, 14);
+          text.setFont('bold 22px "Outfit"');
+          text.setColor('#ffffff');
+        } else {
+          bg.fillStyle(0xeddcd2, 1);
+          bg.fillRoundedRect(spec.x - tabW / 2, tabY - tabH / 2, tabW, tabH, 14);
+          bg.lineStyle(2, 0xddb892, 1);
+          bg.strokeRoundedRect(spec.x - tabW / 2, tabY - tabH / 2, tabW, tabH, 14);
+          text.setFont('600 20px "Outfit"');
+          text.setColor('#7f5539');
+        }
+      };
+
+      zone.on('pointerdown', () => {
+        if (this.currentTab !== spec.key) {
+          SoundManager.getInstance().playUiTap();
+          this.switchTab(spec.key);
+        }
+      });
+
+      zone.on('pointerover', () => {
+        if (this.currentTab !== spec.key) {
+          SoundManager.getInstance().playUiHover();
+          bg.clear();
+          bg.fillStyle(0xddb892, 0.7);
+          bg.fillRoundedRect(spec.x - tabW / 2, tabY - tabH / 2, tabW, tabH, 14);
+          bg.lineStyle(2, 0xb08968, 1);
+          bg.strokeRoundedRect(spec.x - tabW / 2, tabY - tabH / 2, tabW, tabH, 14);
+          text.setColor('#582f0e');
+        }
+      });
+
+      zone.on('pointerout', () => {
+        updateVisuals();
+      });
+
+      this.tabButtons[spec.key] = { bg, text, zone, updateVisuals, labelKey: spec.labelKey };
+      updateVisuals();
+    });
+
+    // -------------------------------------------------------------------------
+    // ENCABEZADOS DE ZONA (y: 300)
+    // -------------------------------------------------------------------------
+    // Suministros: 4 encabezados de columna
+    this.columnHeadersContainer = this.add.container(0, 0);
     const columns = {
       mold: { title: i18n.t('shop.columns.molds'), x: 272 },
       dough: { title: i18n.t('shop.columns.dough'), x: 731 },
@@ -88,13 +172,22 @@ export default class ShopScene extends Phaser.Scene {
     this.columnHeaderTexts = [];
     Object.keys(columns).forEach(key => {
       const col = columns[key];
-      const hText = this.add.text(col.x, 295, col.title, {
+      const hText = this.add.text(col.x, 300, col.title, {
         font: '28px "Outfit", sans-serif',
         fill: '#7f5539',
         fontWeight: '800'
       }).setOrigin(0.5);
+      this.columnHeadersContainer.add(hText);
       this.columnHeaderTexts.push(hText);
     });
+
+    // Decoraciones: Encabezado descriptivo temático
+    this.decorHeaderContainer = this.add.container(0, 0).setVisible(false);
+    this.decorHeaderText = this.add.text(width / 2, 300, i18n.t('shop.decorHeader'), {
+      font: 'bold 24px "Outfit", sans-serif',
+      fill: '#7f5539'
+    }).setOrigin(0.5);
+    this.decorHeaderContainer.add(this.decorHeaderText);
 
     // =========================================================================
     // ZONA 2: VIEWPORT SCROLLEABLE (y: 330 - 900)
@@ -103,17 +196,24 @@ export default class ShopScene extends Phaser.Scene {
     this.viewportHeight = 570;
     this.viewportBottom = this.viewportTop + this.viewportHeight; // 900
 
-    // Scrollable container for cards
+    // Master container for scrolling
     this.shopScrollContainer = this.add.container(0, 0);
 
-    // Geometry Mask for Canvas renderer fallback
+    // Hardware geometry mask for Canvas / WebGL fallback
     const maskShape = this.make.graphics();
     maskShape.fillStyle(0xffffff);
     maskShape.fillRect(0, this.viewportTop, width, this.viewportHeight);
     const mask = maskShape.createGeometryMask();
     this.shopScrollContainer.setMask(mask);
 
-    // Buyable Items Configuration
+    // Sub-contenedores para cada pestaña
+    this.suppliesContainer = this.add.container(0, 0);
+    this.decorationsContainer = this.add.container(0, 0).setVisible(false);
+    this.shopScrollContainer.add([this.suppliesContainer, this.decorationsContainer]);
+
+    // -------------------------------------------------------------------------
+    // CONTENIDO PESTAÑA 1: SUMINISTROS DE COCINA
+    // -------------------------------------------------------------------------
     const items = [
       // MOLDES (Unlock)
       { type: 'mold', id: 'heart', key: 'moldHeart', cost: 60 },
@@ -144,7 +244,7 @@ export default class ShopScene extends Phaser.Scene {
     const startY = 450;
     const rowSpacing = 215;
 
-    let maxCardBottom = 0;
+    let maxSuppliesCardBottom = 0;
 
     items.forEach((item) => {
       const colKey = item.type;
@@ -154,8 +254,8 @@ export default class ShopScene extends Phaser.Scene {
       const x = col.x;
       const y = startY + index * rowSpacing;
 
-      if (y + cardH / 2 > maxCardBottom) {
-        maxCardBottom = y + cardH / 2;
+      if (y + cardH / 2 > maxSuppliesCardBottom) {
+        maxSuppliesCardBottom = y + cardH / 2;
       }
 
       const itemName = i18n.t(`shop.items.${item.key}`);
@@ -167,7 +267,7 @@ export default class ShopScene extends Phaser.Scene {
       card.fillRoundedRect(x - cardW / 2, y - cardH / 2, cardW, cardH, cardRadius);
       card.lineStyle(2, 0xddb892, 1);
       card.strokeRoundedRect(x - cardW / 2, y - cardH / 2, cardW, cardH, cardRadius);
-      this.shopScrollContainer.add(card);
+      this.suppliesContainer.add(card);
 
       // Carril 1: Ícono (Izquierda: centro x - 156)
       const iconCircle = this.add.graphics();
@@ -175,7 +275,7 @@ export default class ShopScene extends Phaser.Scene {
       iconCircle.fillCircle(x - 156, y, 38);
       iconCircle.lineStyle(1.5, 0xddb892, 1);
       iconCircle.strokeCircle(x - 156, y, 38);
-      this.shopScrollContainer.add(iconCircle);
+      this.suppliesContainer.add(iconCircle);
 
       let iconTexture = '';
       let targetW = 56;
@@ -195,7 +295,7 @@ export default class ShopScene extends Phaser.Scene {
 
       const itemIcon = this.add.image(x - 156, y, iconTexture);
       itemIcon.setDisplaySize(targetW, targetH);
-      this.shopScrollContainer.add(itemIcon);
+      this.suppliesContainer.add(itemIcon);
 
       // Carril 2: Información (Centro: origen x - 104, ancho 185px)
       const nameTxt = this.add.text(x - 104, y - 46, itemName, {
@@ -206,21 +306,21 @@ export default class ShopScene extends Phaser.Scene {
       if (item.key === 'doughChocolate') {
         nameTxt.setLetterSpacing(-0.25);
       }
-      this.shopScrollContainer.add(nameTxt);
+      this.suppliesContainer.add(nameTxt);
 
       const descTxt = this.add.text(x - 104, y - 14, itemDesc, {
         font: '600 19px "Outfit"',
         fill: '#8c5847',
         wordWrap: { width: 185 }
       });
-      this.shopScrollContainer.add(descTxt);
+      this.suppliesContainer.add(descTxt);
 
       const statusTxt = this.add.text(x - 104, y + 16, this.getStatusString(item), {
         font: 'bold 19px "Outfit"',
         fill: '#7f5539',
         wordWrap: { width: 185 }
       });
-      this.shopScrollContainer.add(statusTxt);
+      this.suppliesContainer.add(statusTxt);
 
       // Updater for hot language switching
       const updateCardTexts = () => {
@@ -237,16 +337,16 @@ export default class ShopScene extends Phaser.Scene {
       const btnY = y - 27;
 
       const btnBg = this.add.graphics();
-      this.shopScrollContainer.add(btnBg);
+      this.suppliesContainer.add(btnBg);
 
       const btnText = this.add.text(btnX + btnW / 2, btnY + btnH / 2, `🪙 ${item.cost}`, {
         font: '800 27px "Outfit"',
         fill: '#fff1e6'
       }).setOrigin(0.5);
-      this.shopScrollContainer.add(btnText);
+      this.suppliesContainer.add(btnText);
 
       const hitZone = this.add.rectangle(btnX + btnW / 2, btnY + btnH / 2, btnW, btnH, 0x000000, 0);
-      this.shopScrollContainer.add(hitZone);
+      this.suppliesContainer.add(hitZone);
 
       const updateButtonVisuals = () => {
         btnBg.clear();
@@ -279,16 +379,14 @@ export default class ShopScene extends Phaser.Scene {
 
       // Button interaction guarded by anti-false-click and viewport bounds
       hitZone.on('pointerup', (pointer) => {
-        if (this.dragDistance > 8 || this.isDraggingScroll) {
-          return;
-        }
-        if (pointer.y < this.viewportTop || pointer.y > this.viewportBottom) {
-          return;
-        }
+        if (this.currentTab !== 'supplies') return;
+        if (this.dragDistance > 8 || this.isDraggingScroll) return;
+        if (pointer.y < this.viewportTop || pointer.y > this.viewportBottom) return;
         this.handleBuyItem(item, x, y, nameTxt, statusTxt, itemIcon, itemName);
       });
 
       hitZone.on('pointerover', (pointer) => {
+        if (this.currentTab !== 'supplies') return;
         if (pointer.y < this.viewportTop || pointer.y > this.viewportBottom) return;
         SoundManager.getInstance().playUiHover();
         const isBoughtMold = item.type === 'mold' && this.unlockedShapes.includes(item.id);
@@ -309,10 +407,323 @@ export default class ShopScene extends Phaser.Scene {
       updateButtonVisuals();
     });
 
+    // -------------------------------------------------------------------------
+    // CONTENIDO PESTAÑA 2: DECORACIÓN DEL CAFÉ (3 Decoraciones Cosméticas)
+    // -------------------------------------------------------------------------
+    const decorCatalog = [
+      {
+        id: 'decor_window',
+        cost: 150,
+        isComingSoon: false,
+        x: 400
+      },
+      {
+        id: 'decor_bunting',
+        cost: 200,
+        isComingSoon: false,
+        x: 960
+      },
+      {
+        id: 'decor_lights',
+        cost: 350,
+        isComingSoon: true,
+        x: 1520
+      }
+    ];
+
+    this.decorButtons = [];
+    this.decorTextUpdaters = [];
+
+    const decorCardW = 500;
+    const decorCardH = 490;
+    const decorCardY = 590;
+
+    decorCatalog.forEach((decor) => {
+      const x = decor.x;
+      const y = decorCardY;
+
+      // Card Background (Spacious and elegant Cozy Bakery styling)
+      const cardBg = this.add.graphics();
+      cardBg.fillStyle(0xfff1e6, 0.98);
+      cardBg.fillRoundedRect(x - decorCardW / 2, y - decorCardH / 2, decorCardW, decorCardH, 20);
+      cardBg.lineStyle(2, 0xddb892, 1);
+      cardBg.strokeRoundedRect(x - decorCardW / 2, y - decorCardH / 2, decorCardW, decorCardH, 20);
+      this.decorationsContainer.add(cardBg);
+
+      // 1. Tag superior de categoría (y = y - 205)
+      const tagBg = this.add.graphics();
+      tagBg.fillStyle(0xeddcd2, 1);
+      tagBg.fillRoundedRect(x - 120, y - 225, 240, 32, 10);
+      tagBg.lineStyle(1.5, 0xddb892, 1);
+      tagBg.strokeRoundedRect(x - 120, y - 225, 240, 32, 10);
+      this.decorationsContainer.add(tagBg);
+
+      const tagTxt = this.add.text(x, y - 209, i18n.t(`shop.decorItems.${decor.id}.tag`), {
+        font: 'bold 15px "Outfit"',
+        fill: '#8c5847'
+      }).setOrigin(0.5);
+      this.decorationsContainer.add(tagTxt);
+
+      // 2. Marco de Ilustración / Thumbnail (y = y - 105)
+      const thumbBox = this.add.graphics();
+      thumbBox.fillStyle(0xffffff, 1);
+      thumbBox.fillRoundedRect(x - 90, y - 180, 180, 150, 16);
+      thumbBox.lineStyle(2, 0xddb892, 1);
+      thumbBox.strokeRoundedRect(x - 90, y - 180, 180, 150, 16);
+      this.decorationsContainer.add(thumbBox);
+
+      let decorThumb = null;
+
+      if (decor.id === 'decor_window') {
+        // Thumbnail de alta resolución precargado
+        decorThumb = this.add.image(x, y - 105, 'decor_window_thumb');
+        decorThumb.setDisplaySize(140, 126);
+        this.decorationsContainer.add(decorThumb);
+      } else if (decor.id === 'decor_bunting') {
+        // Thumbnail de alta resolución precargado
+        decorThumb = this.add.image(x, y - 105, 'decor_bunting_thumb');
+        decorThumb.setDisplaySize(140, 133);
+        this.decorationsContainer.add(decorThumb);
+      } else if (decor.id === 'decor_clock') {
+        // Ilustración procedural de Reloj Gatuno de Pared
+        const clockGfx = this.add.graphics();
+        // Orejitas de gato
+        clockGfx.fillStyle(0x7f5539, 1);
+        clockGfx.fillTriangle(x - 36, y - 138, x - 20, y - 165, x - 6, y - 140);
+        clockGfx.fillTriangle(x + 6, y - 140, x + 20, y - 165, x + 36, y - 138);
+        // Esfera del reloj
+        clockGfx.fillStyle(0xfff8f0, 1);
+        clockGfx.lineStyle(3, 0x7f5539, 1);
+        clockGfx.fillCircle(x, y - 105, 42);
+        clockGfx.strokeCircle(x, y - 105, 42);
+        // Marcadores horarios (12, 3, 6, 9)
+        clockGfx.fillStyle(0x582f0e, 1);
+        clockGfx.fillCircle(x, y - 138, 2.5);
+        clockGfx.fillCircle(x + 33, y - 105, 2.5);
+        clockGfx.fillCircle(x, y - 72, 2.5);
+        clockGfx.fillCircle(x - 33, y - 105, 2.5);
+        // Agujas
+        clockGfx.lineStyle(3, 0x582f0e, 1);
+        clockGfx.lineBetween(x, y - 105, x, y - 126);
+        clockGfx.lineStyle(2, 0xd48c47, 1);
+        clockGfx.lineBetween(x, y - 105, x + 20, y - 95);
+        clockGfx.fillCircle(x, y - 105, 4);
+        // Péndulo
+        clockGfx.lineStyle(2, 0x7f5539, 1);
+        clockGfx.lineBetween(x, y - 63, x, y - 46);
+        clockGfx.fillStyle(0xd48c47, 1);
+        clockGfx.fillCircle(x, y - 44, 5.5);
+        this.decorationsContainer.add(clockGfx);
+        decorThumb = clockGfx;
+
+        // Badge de candado procedural elegante (sin emojis de interfaz)
+        const lockGfx = this.add.graphics();
+        lockGfx.fillStyle(0x432818, 0.88);
+        lockGfx.fillCircle(x + 58, y - 52, 17);
+        lockGfx.lineStyle(2, 0xddb892, 1);
+        lockGfx.strokeCircle(x + 58, y - 52, 17);
+        lockGfx.lineStyle(2, 0xffe5d9, 1);
+        lockGfx.strokeCircle(x + 58, y - 56, 5.5);
+        lockGfx.fillStyle(0xffe5d9, 1);
+        lockGfx.fillRoundedRect(x + 52, y - 54, 12, 9, 2);
+        this.decorationsContainer.add(lockGfx);
+      } else if (decor.id === 'decor_lights') {
+        // Ilustración procedural de Guirnalda de Luces Cálidas
+        const lightsGfx = this.add.graphics();
+        lightsGfx.fillStyle(0xfff8f0, 1);
+        lightsGfx.lineStyle(2, 0xddb892, 1);
+        lightsGfx.fillCircle(x, y - 105, 52);
+        lightsGfx.strokeCircle(x, y - 105, 52);
+        // Cable curvado
+        lightsGfx.lineStyle(2, 0x582f0e, 1);
+        lightsGfx.beginPath();
+        const pts = [
+          { x: x - 42, y: y - 120 },
+          { x: x - 21, y: y - 92 },
+          { x: x, y: y - 108 },
+          { x: x + 21, y: y - 88 },
+          { x: x + 42, y: y - 118 }
+        ];
+        lightsGfx.moveTo(pts[0].x, pts[0].y);
+        for (let p = 1; p < pts.length; p++) {
+          lightsGfx.lineTo(pts[p].x, pts[p].y);
+        }
+        lightsGfx.strokePath();
+        // Bombillas resplandecientes
+        const bulbCols = [0xffd166, 0xffbe0b, 0xf4a261, 0xffd166, 0xffb703];
+        pts.forEach((pt, pIdx) => {
+          lightsGfx.fillStyle(0xffd166, 0.35);
+          lightsGfx.fillCircle(pt.x, pt.y + 10, 12);
+          lightsGfx.fillStyle(bulbCols[pIdx], 1);
+          lightsGfx.fillCircle(pt.x, pt.y + 10, 6);
+          lightsGfx.fillStyle(0xffffff, 0.9);
+          lightsGfx.fillCircle(pt.x - 1, pt.y + 8, 2);
+        });
+        this.decorationsContainer.add(lightsGfx);
+        decorThumb = lightsGfx;
+
+        // Badge de candado procedural elegante (sin emojis de interfaz)
+        const lockGfx = this.add.graphics();
+        lockGfx.fillStyle(0x432818, 0.88);
+        lockGfx.fillCircle(x + 58, y - 52, 17);
+        lockGfx.lineStyle(2, 0xddb892, 1);
+        lockGfx.strokeCircle(x + 58, y - 52, 17);
+        lockGfx.lineStyle(2, 0xffe5d9, 1);
+        lockGfx.strokeCircle(x + 58, y - 56, 5.5);
+        lockGfx.fillStyle(0xffe5d9, 1);
+        lockGfx.fillRoundedRect(x + 52, y - 54, 12, 9, 2);
+        this.decorationsContainer.add(lockGfx);
+      }
+
+      // 3. Título del Cosmético (y = y + 5)
+      const nameTxt = this.add.text(x, y + 5, i18n.t(`shop.decorItems.${decor.id}.name`), {
+        font: 'bold 26px "Outfit"',
+        fill: '#582f0e'
+      }).setOrigin(0.5);
+      this.decorationsContainer.add(nameTxt);
+
+      // 4. Descripción acogedora (y = y + 52)
+      const descTxt = this.add.text(x, y + 52, i18n.t(`shop.decorItems.${decor.id}.desc`), {
+        font: '500 17px "Outfit"',
+        fill: '#8c5847',
+        wordWrap: { width: 440 },
+        align: 'center'
+      }).setOrigin(0.5);
+      this.decorationsContainer.add(descTxt);
+
+      // 5. Etiqueta de Costo / Estado (y = y + 115)
+      const costTxt = this.add.text(x, y + 115, '', {
+        font: 'bold 18px "Outfit"',
+        fill: '#7f5539'
+      }).setOrigin(0.5);
+      this.decorationsContainer.add(costTxt);
+
+      // 6. Botón de Acción (y = y + 172, ancho 230, alto 56)
+      const dBtnW = 230;
+      const dBtnH = 56;
+      const dBtnX = x - dBtnW / 2;
+      const dBtnY = y + 144;
+
+      const dBtnBg = this.add.graphics();
+      this.decorationsContainer.add(dBtnBg);
+
+      const dBtnText = this.add.text(x, dBtnY + dBtnH / 2, '', {
+        font: '800 24px "Outfit"',
+        fill: '#fff1e6'
+      }).setOrigin(0.5);
+      this.decorationsContainer.add(dBtnText);
+
+      const dHitZone = this.add.rectangle(x, dBtnY + dBtnH / 2, dBtnW, dBtnH, 0x000000, 0);
+      this.decorationsContainer.add(dHitZone);
+
+      const updateDecorVisuals = () => {
+        dBtnBg.clear();
+        const isBought = this.decorations.includes(decor.id);
+
+        if (decor.isComingSoon) {
+          // Ítem bloqueado / Próximamente
+          costTxt.setText(i18n.t('shop.units.costLabel', { cost: decor.cost }));
+          costTxt.setColor('#8c5847');
+
+          dBtnBg.fillStyle(0xadb5bd, 0.4);
+          dBtnBg.fillRoundedRect(dBtnX, dBtnY, dBtnW, dBtnH, 12);
+          dBtnBg.lineStyle(1.5, 0x9c6644, 0.4);
+          dBtnBg.strokeRoundedRect(dBtnX, dBtnY, dBtnW, dBtnH, 12);
+
+          dBtnText.setFont('800 20px "Outfit"');
+          dBtnText.setText(i18n.t('shop.units.comingSoon'));
+          dBtnText.setColor('#582f0e');
+
+          dHitZone.setInteractive({ useHandCursor: true });
+        } else if (isBought) {
+          // Ítem comprado
+          costTxt.setText(i18n.t('shop.units.owned'));
+          costTxt.setColor('#3a86c8');
+
+          dBtnBg.fillStyle(0x3a86c8, 1);
+          dBtnBg.fillRoundedRect(dBtnX, dBtnY, dBtnW, dBtnH, 12);
+
+          dBtnText.setFont('800 22px "Outfit"');
+          dBtnText.setText(i18n.t('shop.units.ready'));
+          dBtnText.setColor('#ffffff');
+
+          dHitZone.disableInteractive();
+        } else if (this.coins < decor.cost) {
+          // Disponible para compra pero sin monedas suficientes
+          costTxt.setText(i18n.t('shop.units.costLabel', { cost: decor.cost }));
+          costTxt.setColor('#7f5539');
+
+          dBtnBg.fillStyle(0xadb5bd, 0.45);
+          dBtnBg.fillRoundedRect(dBtnX, dBtnY, dBtnW, dBtnH, 12);
+
+          dBtnText.setFont('800 26px "Outfit"');
+          dBtnText.setText(`🪙 ${decor.cost}`);
+          dBtnText.setColor('#ffffff');
+
+          dHitZone.setInteractive({ useHandCursor: false });
+        } else {
+          // Disponible para compra inmediata
+          costTxt.setText(i18n.t('shop.units.costLabel', { cost: decor.cost }));
+          costTxt.setColor('#7f5539');
+
+          dBtnBg.fillStyle(0x7f5539, 1);
+          dBtnBg.fillRoundedRect(dBtnX, dBtnY, dBtnW, dBtnH, 12);
+
+          dBtnText.setFont('800 26px "Outfit"');
+          dBtnText.setText(`🪙 ${decor.cost}`);
+          dBtnText.setColor('#fff1e6');
+
+          dHitZone.setInteractive({ useHandCursor: true });
+        }
+      };
+
+      const updateDecorTexts = () => {
+        nameTxt.setText(i18n.t(`shop.decorItems.${decor.id}.name`));
+        descTxt.setText(i18n.t(`shop.decorItems.${decor.id}.desc`));
+        tagTxt.setText(i18n.t(`shop.decorItems.${decor.id}.tag`));
+        updateDecorVisuals();
+      };
+
+      this.decorTextUpdaters.push(updateDecorTexts);
+      this.decorButtons.push(updateDecorVisuals);
+      updateDecorVisuals();
+
+      // Interacción de botón de decoración
+      dHitZone.on('pointerup', (pointer) => {
+        if (this.currentTab !== 'decorations') return;
+        if (this.dragDistance > 8 || this.isDraggingScroll) return;
+        if (pointer.y < this.viewportTop || pointer.y > this.viewportBottom) return;
+
+        this.handleBuyDecor(decor, x, y, nameTxt, costTxt, decorThumb);
+      });
+
+      dHitZone.on('pointerover', (pointer) => {
+        if (this.currentTab !== 'decorations') return;
+        if (pointer.y < this.viewportTop || pointer.y > this.viewportBottom) return;
+
+        SoundManager.getInstance().playUiHover();
+        const isBought = this.decorations.includes(decor.id);
+        if (!decor.isComingSoon && !isBought && this.coins >= decor.cost) {
+          dBtnBg.clear();
+          dBtnBg.fillStyle(0x9c6644, 1);
+          dBtnBg.fillRoundedRect(dBtnX - 2, dBtnY - 2, dBtnW + 4, dBtnH + 4, 14);
+          dBtnText.setScale(1.04);
+        }
+      });
+
+      dHitZone.on('pointerout', () => {
+        updateDecorVisuals();
+        dBtnText.setScale(1);
+      });
+    });
+
     // Dynamic scroll limits calculation
     const bottomPadding = 32;
-    const totalContentHeight = (maxCardBottom + bottomPadding) - this.viewportTop;
-    this.maxScroll = Math.max(0, totalContentHeight - this.viewportHeight); // e.g. ~90px
+    const suppliesContentHeight = (maxSuppliesCardBottom + bottomPadding) - this.viewportTop;
+    this.suppliesMaxScroll = Math.max(0, suppliesContentHeight - this.viewportHeight); // e.g. ~90px
+    this.decorationsMaxScroll = 0; // Las 3 tarjetas de decoración entran cómodas en 570px de alto
+
+    this.maxScroll = this.suppliesMaxScroll;
     this.targetScroll = 0;
     this.currentScroll = 0;
 
@@ -359,14 +770,15 @@ export default class ShopScene extends Phaser.Scene {
 
       SoundManager.getInstance().playUiTap();
 
-      // Autosave updated inventory and state before starting next day
+      // Autosave updated inventory, decorations and state before starting next day
       const nextDay = this.day + 1;
       SaveManager.getInstance().saveGame({
         day: nextDay,
         coins: this.coins,
         unlockedShapes: this.unlockedShapes,
         stock: this.stock,
-        loanRemaining: this.loanRemaining
+        loanRemaining: this.loanRemaining,
+        decorations: this.decorations
       });
 
       this.scene.start('GameScene', {
@@ -374,7 +786,8 @@ export default class ShopScene extends Phaser.Scene {
         coins: this.coins,
         unlockedShapes: this.unlockedShapes,
         stock: this.stock,
-        loanRemaining: this.loanRemaining
+        loanRemaining: this.loanRemaining,
+        decorations: this.decorations
       });
     });
 
@@ -410,7 +823,14 @@ export default class ShopScene extends Phaser.Scene {
       this.subtitleText,
       this.coinBalanceText,
       this.pillSwitcher.container,
-      ...this.columnHeaderTexts,
+      this.tabButtons.supplies.bg,
+      this.tabButtons.supplies.text,
+      this.tabButtons.supplies.zone,
+      this.tabButtons.decorations.bg,
+      this.tabButtons.decorations.text,
+      this.tabButtons.decorations.zone,
+      this.columnHeadersContainer,
+      this.decorHeaderContainer,
       this.doughWarningContainer,
       startBtnBg,
       this.startBtnText,
@@ -501,7 +921,14 @@ export default class ShopScene extends Phaser.Scene {
     const trackW = 6;
     const trackH = 540;
 
-    if (this.maxScroll <= 0) return;
+    if (this.maxScroll <= 0) {
+      this.scrollbarTrack.setVisible(false);
+      this.scrollbarThumb.setVisible(false);
+      return;
+    }
+
+    this.scrollbarTrack.setVisible(true);
+    this.scrollbarThumb.setVisible(true);
 
     const viewportH = this.viewportHeight;
     const contentH = viewportH + this.maxScroll;
@@ -511,6 +938,30 @@ export default class ShopScene extends Phaser.Scene {
 
     this.scrollbarThumb.fillStyle(0x7f5539, 0.85);
     this.scrollbarThumb.fillRoundedRect(trackX, thumbY, trackW, thumbH, 3);
+  }
+
+  switchTab(tabKey) {
+    if (this.currentTab === tabKey) return;
+    this.currentTab = tabKey;
+
+    // Reset scroll smoothly
+    this.targetScroll = 0;
+    this.currentScroll = 0;
+    this.viewportCamera.scrollY = this.viewportTop;
+
+    // Switch container visibility
+    const isSupplies = (tabKey === 'supplies');
+    this.suppliesContainer.setVisible(isSupplies);
+    this.columnHeadersContainer.setVisible(isSupplies);
+    this.decorationsContainer.setVisible(!isSupplies);
+    this.decorHeaderContainer.setVisible(!isSupplies);
+
+    // Update active maxScroll and scrollbar
+    this.maxScroll = isSupplies ? this.suppliesMaxScroll : this.decorationsMaxScroll;
+    this.updateScrollbar();
+
+    // Update tab button appearances
+    Object.values(this.tabButtons).forEach(tab => tab.updateVisuals());
   }
 
   handleBuyItem(item, x, y, nameTxt, statusTxt, itemIcon, itemName) {
@@ -567,6 +1018,73 @@ export default class ShopScene extends Phaser.Scene {
     }
 
     this.buyButtons.forEach(btnUpdate => btnUpdate());
+    this.decorButtons.forEach(btnUpdate => btnUpdate());
+  }
+
+  handleBuyDecor(decor, x, y, nameTxt, costTxt, decorThumb) {
+    const i18n = I18nManager.getInstance();
+
+    if (decor.isComingSoon) {
+      SoundManager.getInstance().playUiDenied();
+      this.showFeedback(i18n.t('shop.feedback.comingSoonNotice'), x, y, '#8c5847');
+      return;
+    }
+
+    const isBought = this.decorations.includes(decor.id);
+    if (isBought) return;
+
+    if (this.coins < decor.cost) {
+      SoundManager.getInstance().playUiDenied();
+      return;
+    }
+
+    // Process purchase of decoration
+    this.coins -= decor.cost;
+    this.coinBalanceText.setText(i18n.t('shop.availableCoins', { coins: this.coins }));
+    this.decorations.push(decor.id);
+
+    // Persist immediately in SaveManager
+    SaveManager.getInstance().saveGame({
+      day: this.day,
+      coins: this.coins,
+      unlockedShapes: this.unlockedShapes,
+      stock: this.stock,
+      loanRemaining: this.loanRemaining,
+      decorations: this.decorations
+    });
+
+    SoundManager.getInstance().playShopBuy();
+
+    this.showFeedback(i18n.t('shop.feedback.decorUnlocked'), x, y - 45, '#2b9348');
+
+    if (decorThumb) {
+      const origScaleX = decorThumb.scaleX || 1;
+      const origScaleY = decorThumb.scaleY || 1;
+      this.tweens.add({
+        targets: decorThumb,
+        scaleX: origScaleX * 1.1,
+        scaleY: origScaleY * 1.1,
+        duration: 90,
+        yoyo: true,
+        ease: 'Quad.easeInOut',
+        onComplete: () => {
+          decorThumb.setScale(origScaleX, origScaleY);
+        }
+      });
+    }
+
+    if (nameTxt && costTxt) {
+      this.tweens.add({
+        targets: [nameTxt, costTxt],
+        scale: 1.05,
+        duration: 80,
+        yoyo: true,
+        ease: 'Quad.easeInOut'
+      });
+    }
+
+    this.buyButtons.forEach(btnUpdate => btnUpdate());
+    this.decorButtons.forEach(btnUpdate => btnUpdate());
   }
 
   showDoughWarning() {
@@ -634,11 +1152,20 @@ export default class ShopScene extends Phaser.Scene {
     if (this.coinBalanceText) {
       this.coinBalanceText.setText(i18n.t('shop.availableCoins', { coins: this.coins }));
     }
+    if (this.tabButtons) {
+      Object.values(this.tabButtons).forEach(tab => {
+        tab.text.setText(i18n.t(tab.labelKey));
+        tab.updateVisuals();
+      });
+    }
     if (this.columnHeaderTexts) {
       const colKeys = ['molds', 'dough', 'toppings', 'drinks'];
       this.columnHeaderTexts.forEach((hText, i) => {
         hText.setText(i18n.t(`shop.columns.${colKeys[i]}`));
       });
+    }
+    if (this.decorHeaderText) {
+      this.decorHeaderText.setText(i18n.t('shop.decorHeader'));
     }
     if (this.startBtnText) {
       this.startBtnText.setText(i18n.t('shop.startNextDay'));
@@ -649,8 +1176,14 @@ export default class ShopScene extends Phaser.Scene {
     if (this.cardTextUpdaters) {
       this.cardTextUpdaters.forEach(updater => updater());
     }
+    if (this.decorTextUpdaters) {
+      this.decorTextUpdaters.forEach(updater => updater());
+    }
     if (this.buyButtons) {
       this.buyButtons.forEach(btnUpdate => btnUpdate());
+    }
+    if (this.decorButtons) {
+      this.decorButtons.forEach(btnUpdate => btnUpdate());
     }
   }
 }
