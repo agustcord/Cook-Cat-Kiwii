@@ -193,17 +193,18 @@ function createMockPhaserScene() {
 describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Matrix', () => {
 
   describe('1. TutorialSteps Declarative Structure & Pedagogical Matrix', () => {
-    test('defines all 5 pedagogical blocks in correct sequential order', () => {
+    test('defines all 6 pedagogical blocks in correct sequential order', () => {
       assert.ok(Array.isArray(TUTORIAL_STEPS));
-      assert.equal(TUTORIAL_STEPS.length, 25, 'TUTORIAL_STEPS must contain exactly 25 micropasos');
+      assert.equal(TUTORIAL_STEPS.length, 40, 'TUTORIAL_STEPS must contain exactly 40 micropasos');
 
       const blocks = TUTORIAL_STEPS.map(s => s.block);
-      // Check that all blocks 1, 2, 3, 4, 5 exist
+      // Check that all blocks 1, 2, 3, 4, 5, 6 exist
       assert.ok(blocks.includes(1), 'Block 1 must exist');
       assert.ok(blocks.includes(2), 'Block 2 must exist');
       assert.ok(blocks.includes(3), 'Block 3 must exist');
       assert.ok(blocks.includes(4), 'Block 4 must exist');
       assert.ok(blocks.includes(5), 'Block 5 must exist');
+      assert.ok(blocks.includes(6), 'Block 6 must exist');
 
       // Verify non-decreasing block order
       for (let i = 1; i < blocks.length; i++) {
@@ -211,16 +212,17 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
       }
     });
 
-    test('every step has valid schema: id, block, i18nKey, targetKey, allowedAction, triggerEvent, targetCoords, bubblePosition', () => {
+    test('every step has valid schema: id, block, i18nKey, targetKey, allowedAction, triggerEvent, targetCoords, bubblePosition, showPointer', () => {
       TUTORIAL_STEPS.forEach((step, idx) => {
         assert.ok(typeof step.id === 'string' && step.id.length > 0, `Step at ${idx} must have id string`);
-        assert.ok(typeof step.block === 'number' && step.block >= 1 && step.block <= 5, `Step ${step.id} must have block 1-5`);
+        assert.ok(typeof step.block === 'number' && step.block >= 1 && step.block <= 6, `Step ${step.id} must have block 1-6`);
         assert.ok(typeof step.i18nKey === 'string' && step.i18nKey.startsWith('tutorial.steps.'), `Step ${step.id} must have valid i18nKey (got ${step.i18nKey})`);
         assert.ok(typeof step.targetKey === 'string', `Step ${step.id} must have targetKey string`);
         assert.ok(typeof step.allowedAction === 'string', `Step ${step.id} must have allowedAction`);
         assert.ok(typeof step.triggerEvent === 'string', `Step ${step.id} must have triggerEvent`);
         assert.ok(step.targetCoords && typeof step.targetCoords.x === 'number' && typeof step.targetCoords.y === 'number', `Step ${step.id} must have targetCoords`);
         assert.ok(step.bubblePosition === 'top' || step.bubblePosition === 'bottom', `Step ${step.id} must have bubblePosition 'top' or 'bottom' (got ${step.bubblePosition})`);
+        assert.ok(typeof step.showPointer === 'boolean', `Step ${step.id} must have boolean showPointer (got ${step.showPointer})`);
       });
     });
 
@@ -231,7 +233,7 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
     });
 
     test('getStepsByBlock filters steps accurately for each block', () => {
-      for (let b = 1; b <= 5; b++) {
+      for (let b = 1; b <= 6; b++) {
         const stepsInBlock = getStepsByBlock(b);
         assert.ok(stepsInBlock.length > 0, `Block ${b} should contain at least 1 step`);
         stepsInBlock.forEach(s => assert.equal(s.block, b));
@@ -264,7 +266,7 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
       assert.ok(hasFinalDelivery, 'Block 5 must include final order delivery');
     });
 
-    test('100% of all 25 tutorial steps resolve to real translated text in English and Spanish', () => {
+    test('100% of all 40 tutorial steps resolve to real translated text in English and Spanish', () => {
       const memory = new Map();
       const mockStorage = {
         getItem: (k) => memory.get(k) || null,
@@ -516,14 +518,20 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
       tm.start();
       assert.ok(mockScene.stock.dough.classic >= 3, 'Classic dough should be restocked to at least 3');
       assert.ok(mockScene.stock.drink.coffee_beans >= 2, 'Coffee beans should be restocked to at least 2');
+      assert.ok(mockScene.stock.topping.sprinkles >= 2, 'Sprinkles should be restocked to at least 2');
+      assert.ok(mockScene.stock.drink.milk >= 2, 'Milk should be restocked to at least 2');
 
       // Now deplete again mid-tutorial
       mockScene.stock.dough.classic = 0;
       mockScene.stock.drink.coffee_beans = 0;
+      mockScene.stock.topping.sprinkles = 0;
+      mockScene.stock.drink.milk = 0;
       const restocked = tm.checkSafetyRestock();
       assert.equal(restocked, true);
       assert.ok(mockScene.stock.dough.classic >= 3, 'Classic dough should be restocked to at least 3');
       assert.ok(mockScene.stock.drink.coffee_beans >= 2, 'Coffee beans should be restocked to at least 2');
+      assert.ok(mockScene.stock.topping.sprinkles >= 2, 'Sprinkles should be restocked to at least 2');
+      assert.ok(mockScene.stock.drink.milk >= 2, 'Milk should be restocked to at least 2');
     });
 
     test('isPatienceProtected returns true when tutorial is active on Day 1', () => {
@@ -787,7 +795,7 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
       assert.equal(trayFallback.y, 675);
     });
 
-    test('all 25 tutorial steps in TUTORIAL_STEPS resolve to valid calibrated bounds with 100% precision', () => {
+    test('all 40 tutorial steps in TUTORIAL_STEPS resolve to valid calibrated bounds with 100% precision', () => {
       TUTORIAL_STEPS.forEach((step, idx) => {
         const resolved = resolveTargetBounds(step, mockGameScene);
         assert.ok(resolved, `Step #${idx + 1} (${step.id}) must resolve target bounds`);
@@ -845,7 +853,7 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
       assert.ok(bubbleBottom < prepTableTop, `Dialogue banner bottom (${bubbleBottom}) must be completely above prep table top (${prepTableTop})`);
     });
 
-    test('all 17 prep table interaction steps position dialogue banner cleanly at top (y = 140)', () => {
+    test('all 25 prep table interaction steps position dialogue banner cleanly at top (y = 140)', () => {
       const expectedTopSteps = [
         'step_dough_classic',
         'step_shape_star',
@@ -863,7 +871,15 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
         'step_perfect_oven_load',
         'step_perfect_oven_extract',
         'step_perfect_cookie_to_tray',
-        'step_patience_delivery'
+        'step_patience_delivery',
+        'step_client2_dough',
+        'step_client2_shape',
+        'step_client2_oven_load',
+        'step_client2_oven_extract',
+        'step_topping_sprinkles',
+        'step_client2_cookie_to_tray',
+        'step_client2_drink_to_tray',
+        'step_client2_delivery'
       ];
 
       const tm = new TutorialManager(mockGameScene);
@@ -879,15 +895,22 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
       });
     });
 
-    test('all 8 upper station / ACK steps position dialogue banner cleanly at bottom (y = 860)', () => {
+    test('all 15 upper station / ACK steps position dialogue banner cleanly at bottom (y = 860)', () => {
       const expectedBottomSteps = [
         'step_welcome',
         'step_oven_power',
         'step_oven_bake',
-        'step_burn_wait',
+        'step_oven_baking',
+        'step_oven_bell',
         'step_drink_cup',
         'step_drink_coffee_btn',
         'step_perfect_oven_bake',
+        'step_client1_farewell',
+        'step_client2_intro',
+        'step_client2_oven_bake',
+        'step_client2_cup',
+        'step_client2_coffee',
+        'step_client2_milk_mix',
         'step_tutorial_complete'
       ];
 
@@ -1378,7 +1401,939 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
       assert.equal(tm.overlay.currentSpotlight.y, 261.5);
     });
   });
+
+  // =========================================================================
+  // 10. NO NEXT-BUTTON AMBIGUITY ON PHYSICAL ACTION STEPS MATRIX
+  // =========================================================================
+  describe('10. No Next-Button Ambiguity on Physical Action Steps Matrix', () => {
+    let mockGameScene;
+
+    beforeEach(() => {
+      mockGameScene = createMockPhaserScene();
+    });
+
+    test('TUTORIAL_STEPS guarantees showNextBtn: false on all physical action steps', () => {
+      const physicalSteps = TUTORIAL_STEPS.filter(step => step.allowedAction !== 'DIALOG_ACK');
+      assert.ok(physicalSteps.length >= 23, `Expected at least 23 physical steps, got ${physicalSteps.length}`);
+
+      physicalSteps.forEach(step => {
+        assert.strictEqual(
+          step.showNextBtn,
+          false,
+          `Step '${step.id}' (action: ${step.allowedAction}) must have showNextBtn: false to eliminate player confusion`
+        );
+      });
+    });
+
+    test('TUTORIAL_STEPS sets showNextBtn: true exclusively on pure dialogue/ACK steps', () => {
+      const ackSteps = TUTORIAL_STEPS.filter(step => step.allowedAction === 'DIALOG_ACK');
+      assert.strictEqual(ackSteps.length, 5, 'Expected exactly 5 DIALOG_ACK steps');
+
+      ackSteps.forEach(step => {
+        assert.strictEqual(
+          step.showNextBtn,
+          true,
+          `Dialogue step '${step.id}' must have showNextBtn: true`
+        );
+      });
+
+      const ackIds = ackSteps.map(s => s.id);
+      assert.deepStrictEqual(ackIds, ['step_welcome', 'step_stock_explanation', 'step_client1_farewell', 'step_client2_intro', 'step_tutorial_complete']);
+    });
+
+    test('TutorialManager._syncOverlayStep passes showNextBtn: false to TutorialOverlay on drag & click steps', () => {
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+
+      const testStepIds = [
+        'step_dough_classic',
+        'step_shape_star',
+        'step_oven_power',
+        'step_cookie_to_oven',
+        'step_oven_bake',
+        'step_burnt_trash',
+        'step_wrong_delivery_intro',
+        'step_wrong_delivery_to_tray',
+        'step_wrong_delivery_serve',
+        'step_wrong_delivery_clean',
+        'step_drink_to_tray',
+        'step_perfect_cookie_to_tray',
+        'step_patience_delivery',
+        'step_client2_dough',
+        'step_client2_shape',
+        'step_client2_oven_load',
+        'step_client2_oven_bake',
+        'step_client2_oven_extract',
+        'step_topping_sprinkles',
+        'step_client2_cookie_to_tray',
+        'step_client2_cup',
+        'step_client2_coffee',
+        'step_client2_milk_mix',
+        'step_client2_drink_to_tray',
+        'step_client2_delivery'
+      ];
+
+      testStepIds.forEach(stepId => {
+        tm.goToStep(stepId);
+        assert.strictEqual(
+          tm.overlay.actionBtnContainer.visible,
+          false,
+          `Step '${stepId}' must NOT show NEXT button on overlay`
+        );
+      });
+    });
+
+    test('TutorialOverlay hides next button and displays pointer on action steps', () => {
+      const overlay = new TutorialOverlay(mockGameScene);
+      const stepConfig = getStepById('step_wrong_delivery_to_tray');
+      assert.ok(stepConfig);
+
+      overlay.setStep(stepConfig);
+      assert.strictEqual(overlay.actionBtnContainer.visible, false, 'Action button must be hidden');
+      assert.strictEqual(overlay.pointerContainer.visible, true, 'Action pointer must be visible');
+    });
+
+    test('step_stock_explanation illuminates dough stock without spawning contradictory action arrow', () => {
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+      tm.goToStep('step_stock_explanation');
+
+      const currentStep = tm.getCurrentStep();
+      assert.strictEqual(currentStep.id, 'step_stock_explanation');
+      assert.strictEqual(currentStep.allowedAction, 'DIALOG_ACK');
+      assert.strictEqual(currentStep.showNextBtn, true);
+      assert.strictEqual(currentStep.showPointer, false);
+
+      const overlay = tm.overlay;
+      assert.ok(overlay.currentSpotlight, 'Spotlight must be present to illuminate stock area');
+      assert.strictEqual(overlay.currentSpotlight.x, 148, 'Spotlight must highlight classic dough stock');
+      assert.strictEqual(overlay.currentSpotlight.y, 750);
+      assert.strictEqual(overlay.actionBtnContainer.visible, true, 'NEXT button must be visible');
+      assert.strictEqual(overlay.pointerContainer.visible, false, 'Animated arrow pointer must NEVER appear on step_stock_explanation');
+    });
+
+    test('all DIALOG_ACK steps show NEXT button and ZERO interactive action pointer arrows', () => {
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+
+      const dialogStepIds = ['step_welcome', 'step_stock_explanation', 'step_client1_farewell', 'step_client2_intro', 'step_tutorial_complete'];
+
+      dialogStepIds.forEach(stepId => {
+        tm.goToStep(stepId);
+        const step = tm.getCurrentStep();
+        assert.strictEqual(step.showNextBtn, true, `Step ${stepId} must have showNextBtn: true`);
+        assert.strictEqual(step.showPointer, false, `Step ${stepId} must have showPointer: false`);
+        assert.strictEqual(tm.overlay.actionBtnContainer.visible, true, `Step ${stepId} must show NEXT button`);
+        assert.strictEqual(tm.overlay.pointerContainer.visible, false, `Step ${stepId} must NOT show animated pointer arrow`);
+      });
+    });
+
+    test('strict anti-contradiction invariant: across 100% of all 40 tutorial steps, next button and pointer arrow NEVER coexist', () => {
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+
+      TUTORIAL_STEPS.forEach((step, idx) => {
+        tm.goToStep(step.id);
+
+        const nextVisible = tm.overlay.actionBtnContainer.visible;
+        const pointerVisible = tm.overlay.pointerContainer.visible;
+
+        assert.ok(
+          !(nextVisible && pointerVisible),
+          `Step #${idx + 1} (${step.id}) VIOLATION: NEXT button and pointer arrow are both visible at the same time!`
+        );
+
+        if (step.allowedAction === 'DIALOG_ACK') {
+          assert.strictEqual(nextVisible, true, `Dialogue step ${step.id} must show next button`);
+          assert.strictEqual(pointerVisible, false, `Dialogue step ${step.id} must NOT show pointer`);
+        } else {
+          assert.strictEqual(nextVisible, false, `Action step ${step.id} must NOT show next button`);
+          assert.strictEqual(pointerVisible, true, `Action step ${step.id} must show pointer`);
+        }
+      });
+    });
+
+    test('setTarget on dialogue steps preserves spotlight cutout without revealing pointer arrow', () => {
+      const overlay = new TutorialOverlay(mockGameScene);
+      const stockStep = getStepById('step_stock_explanation');
+      overlay.setStep(stockStep);
+
+      assert.strictEqual(overlay.actionBtnContainer.visible, true);
+      assert.strictEqual(overlay.pointerContainer.visible, false);
+      assert.ok(overlay.currentSpotlight);
+
+      // Re-invoking setTarget should preserve spotlight but still suppress pointer
+      overlay.setTarget({ x: 148, y: 750, width: 140, height: 50 });
+
+      assert.strictEqual(overlay.actionBtnContainer.visible, true);
+      assert.strictEqual(overlay.pointerContainer.visible, false, 'Pointer must remain hidden after setTarget');
+      assert.strictEqual(overlay.currentSpotlight.x, 148);
+    });
+  });
+
+  // =========================================================================
+  // 11. RAW DOUGH DELIVERY TO TRAY & CUSTOMER FEEDBACK FLOW MATRIX
+  // =========================================================================
+  describe('11. Raw Dough Delivery to Tray & Customer Feedback Flow Matrix', () => {
+    let mockGameScene;
+
+    beforeEach(() => {
+      mockGameScene = createMockPhaserScene();
+    });
+
+    test('GameScene code allows raw unshaped dough to be dropped onto delivery tray', () => {
+      const gameSceneCode = fs.readFileSync(path.join(process.cwd(), 'src', 'scenes', 'GameScene.js'), 'utf8');
+
+      // 1. Check drawCookie dragend delivery tray branch: no cutShapeFirst restriction
+      const drawCookieStartIndex = gameSceneCode.indexOf('drawCookie() {');
+      const drawCookieEndIndex = gameSceneCode.indexOf('updateCookieVisuals() {', drawCookieStartIndex);
+      const drawCookieSection = gameSceneCode.slice(drawCookieStartIndex, drawCookieEndIndex);
+
+      const deliveryTrayBranch = drawCookieSection.slice(
+        drawCookieSection.indexOf('// 2. Drop on Delivery Tray'),
+        drawCookieSection.indexOf('// 3. Drop on Oven')
+      );
+      assert.ok(
+        !deliveryTrayBranch.includes('cutShapeFirst'),
+        'drawCookie delivery tray branch must NOT block delivery tray drops with cutShapeFirst'
+      );
+
+      // 2. Check createDoughButtons dragend: supports dropping directly onto delivery tray
+      const doughStationStartIndex = gameSceneCode.indexOf('createDoughButtons() {');
+      const doughStationEndIndex = gameSceneCode.indexOf('createShapeButtons(', doughStationStartIndex);
+      const doughStationSection = gameSceneCode.slice(doughStationStartIndex, doughStationEndIndex);
+
+      assert.ok(
+        doughStationSection.includes('distDelivery < 188'),
+        'createDoughButtons must check distance to delivery tray'
+      );
+      assert.ok(
+        doughStationSection.includes("this.events.emit('game:cookie_to_tray'"),
+        'createDoughButtons must emit game:cookie_to_tray when dropped on delivery tray'
+      );
+    });
+
+    test('drawDeliveryTray properly renders unshaped raw dough with dough texture fallback', () => {
+      const gameSceneCode = fs.readFileSync(path.join(process.cwd(), 'src', 'scenes', 'GameScene.js'), 'utf8');
+      const drawDeliveryTrayStartIndex = gameSceneCode.indexOf('drawDeliveryTray() {');
+      const drawDeliveryTrayEndIndex = gameSceneCode.indexOf('handleOvenImageClick() {', drawDeliveryTrayStartIndex);
+      const drawDeliveryTraySection = gameSceneCode.slice(drawDeliveryTrayStartIndex, drawDeliveryTrayEndIndex);
+
+      assert.ok(
+        drawDeliveryTraySection.includes("key = `dough_${cookie.base || 'classic'}`"),
+        'drawDeliveryTray must fallback to dough texture when cookie is unshaped'
+      );
+      assert.ok(
+        drawDeliveryTraySection.includes('isShaped ? 75 : 65'),
+        'drawDeliveryTray should adjust size for raw dough portions'
+      );
+    });
+
+    test('Cookie similarity is 0 for unshaped raw dough and triggers raw cookie rejection', () => {
+      const rawDoughCookie = new Cookie();
+      rawDoughCookie.base = 'classic';
+      rawDoughCookie.shape = null;
+      rawDoughCookie.bakedState = 'raw';
+
+      const targetRecipe = {
+        name: 'Vainilla Estrella',
+        base: 'classic',
+        shape: 'star',
+        toppings: []
+      };
+
+      assert.strictEqual(rawDoughCookie.isDeliverable(), false, 'Unshaped cookie is not deliverable as final recipe');
+      const similarity = rawDoughCookie.getSimilarityPercentage(targetRecipe);
+      assert.strictEqual(similarity, 0, 'Unshaped cookie similarity must be 0');
+      assert.strictEqual(rawDoughCookie.bakedState, 'raw');
+    });
+
+    test('Tutorial state machine transitions through complete Block 4 forced error flow', () => {
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+
+      // Go to Block 4 intro
+      tm.goToStep('step_wrong_delivery_intro');
+      assert.strictEqual(tm.getCurrentStep().id, 'step_wrong_delivery_intro');
+      assert.strictEqual(tm.getCurrentStep().showNextBtn, false);
+
+      // 1. Player drags dough to table
+      mockGameScene.events.emit('game:dough_placed', { base: 'classic' });
+      assert.strictEqual(tm.getCurrentStep().id, 'step_wrong_delivery_to_tray');
+      assert.strictEqual(tm.getCurrentStep().showNextBtn, false);
+
+      // 2. Player drags raw unshaped dough to delivery tray
+      const rawCookie = new Cookie();
+      rawCookie.base = 'classic';
+      rawCookie.shape = null;
+      rawCookie.bakedState = 'raw';
+      mockGameScene.events.emit('game:cookie_to_tray', { cookie: rawCookie });
+      assert.strictEqual(tm.getCurrentStep().id, 'step_wrong_delivery_serve');
+      assert.strictEqual(tm.getCurrentStep().showNextBtn, false);
+
+      // 3. Player delivers raw dough -> Customer rejects with complaint -> advances to clean step
+      mockGameScene.events.emit('game:tray_delivered', { rejected: true, success: false, reason: '¡Masa cruda!' });
+      assert.strictEqual(tm.getCurrentStep().id, 'step_wrong_delivery_clean');
+      assert.strictEqual(tm.getCurrentStep().showNextBtn, false);
+
+      // 4. Player dumps tray into trash bin -> advances to Block 5 drink step
+      mockGameScene.events.emit('game:tray_trashed');
+      assert.strictEqual(tm.getCurrentStep().id, 'step_drink_cup');
+      assert.strictEqual(tm.getCurrentStep().block, 5);
+    });
+
+    test('deliveryDragZone supports direct tap/click and emits deliverCookie in GameScene', () => {
+      const gameSceneCode = fs.readFileSync(path.join(process.cwd(), 'src', 'scenes', 'GameScene.js'), 'utf8');
+      const createDeliveryTrayStartIndex = gameSceneCode.indexOf('createDeliveryTray() {');
+      const createDeliveryTrayEndIndex = gameSceneCode.indexOf('drawDeliveryTrayBg(highlightColor', createDeliveryTrayStartIndex);
+      const createDeliveryTraySection = gameSceneCode.slice(createDeliveryTrayStartIndex, createDeliveryTrayEndIndex);
+
+      assert.ok(
+        createDeliveryTraySection.includes("this.deliveryDragZone.on('pointerup'"),
+        'deliveryDragZone must have pointerup listener for direct tap'
+      );
+      assert.ok(
+        createDeliveryTraySection.includes('this.deliverCookie()'),
+        'deliveryDragZone pointerup must call deliverCookie'
+      );
+    });
+  });
+
+  describe('12. Customer Scratch Protection & Pedagogical Guard Matrix', () => {
+    test('customer.scratchWarningTutorial translation key is defined and non-empty in English and Spanish', () => {
+      assert.ok(en.customer && en.customer.scratchWarningTutorial, 'en.js must define customer.scratchWarningTutorial');
+      assert.ok(es.customer && es.customer.scratchWarningTutorial, 'es.js must define customer.scratchWarningTutorial');
+
+      assert.ok(en.customer.scratchWarningTutorial.length > 15, 'English warning string must be descriptive');
+      assert.ok(es.customer.scratchWarningTutorial.length > 15, 'Spanish warning string must be descriptive');
+
+      assert.ok(en.customer.scratchWarningTutorial.includes('Careful!'), 'English warning must include "Careful!"');
+      assert.ok(es.customer.scratchWarningTutorial.includes('¡Cuidado!'), 'Spanish warning must include "¡Cuidado!"');
+      assert.ok(en.customer.scratchWarningTutorial.includes('🐾'), 'English warning must include paw emoji 🐾');
+      assert.ok(es.customer.scratchWarningTutorial.includes('🐾'), 'Spanish warning must include paw emoji 🐾');
+
+      const i18n = I18nManager.getInstance({ reset: true, language: 'en' });
+      assert.strictEqual(i18n.t('customer.scratchWarningTutorial'), en.customer.scratchWarningTutorial);
+
+      i18n.setLanguage('es');
+      assert.strictEqual(i18n.t('customer.scratchWarningTutorial'), es.customer.scratchWarningTutorial);
+    });
+
+    test('scratchCustomer source logic guards against customer destruction while tutorial is active', () => {
+      const gameSceneCode = fs.readFileSync(path.join(process.cwd(), 'src', 'scenes', 'GameScene.js'), 'utf8');
+      const scratchFnStart = gameSceneCode.indexOf('scratchCustomer() {');
+      const scratchFnEnd = gameSceneCode.indexOf('showFeedbackText(text, x, y, color)', scratchFnStart);
+      const scratchFnSection = gameSceneCode.slice(scratchFnStart, scratchFnEnd);
+
+      // Check tutorial guard
+      assert.ok(
+        scratchFnSection.includes('this.tutorialManager?.isActive'),
+        'scratchCustomer must check this.tutorialManager?.isActive'
+      );
+      assert.ok(
+        scratchFnSection.includes('customer.scratchWarningTutorial'),
+        'scratchCustomer must reference customer.scratchWarningTutorial translation key'
+      );
+      assert.ok(
+        scratchFnSection.includes("'#ffb703'"),
+        'scratchCustomer must display pedagogical warning text in amber #ffb703'
+      );
+      assert.ok(
+        scratchFnSection.includes("playCatMeow('curious')"),
+        'scratchCustomer must play curious cat meow in tutorial mode'
+      );
+      assert.ok(
+        scratchFnSection.includes('this.scratchBlockedUntilPointerUp = true'),
+        'scratchCustomer must set scratchBlockedUntilPointerUp = true to prevent frame spam'
+      );
+      assert.ok(
+        scratchFnSection.includes('return;'),
+        'scratchCustomer must return early in tutorial mode before setting isActive = false or calling spawnCustomer'
+      );
+    });
+
+    test('spawnCustomer source logic enforces deterministic orders for Customer 1 and Customer 2 in Day 1', () => {
+      const gameSceneCode = fs.readFileSync(path.join(process.cwd(), 'src', 'scenes', 'GameScene.js'), 'utf8');
+      const spawnFnStart = gameSceneCode.indexOf('spawnCustomer() {');
+      const spawnFnEnd = gameSceneCode.indexOf('deliverCookie() {', spawnFnStart);
+      const spawnFnSection = gameSceneCode.slice(spawnFnStart, spawnFnEnd);
+
+      assert.ok(
+        spawnFnSection.includes("requestedDrink = 'coffee'"),
+        'spawnCustomer Day 1 must force recipe 0 (Star + Coffee) for customerIndex === 0'
+      );
+      assert.ok(
+        spawnFnSection.includes("requestedDrink = 'coffee_milk'"),
+        'spawnCustomer Day 1 must force sprinkles + coffee_milk for customerIndex === 1'
+      );
+      assert.ok(
+        spawnFnSection.includes("toppings: ['sprinkles']"),
+        'spawnCustomer Day 1 must request sprinkles topping for customerIndex === 1'
+      );
+    });
+
+    test('Simulated scratchCustomer behavior in Tutorial vs Normal mode', () => {
+      // Create mock execution context replicating scratchCustomer logic
+      function simulateScratch(scene) {
+        if (!scene.currentCustomer || !scene.currentCustomer.isActive) return 'NOOP';
+
+        if (scene.tutorialManager?.isActive) {
+          scene.scratchBlockedUntilPointerUp = true;
+          scene.playedSounds.push('scratch');
+          scene.playedSounds.push('catMeow:curious');
+
+          const cx = scene.currentCustomer.container.x;
+          const cy = scene.currentCustomer.container.y + 75;
+
+          const i18n = I18nManager.getInstance();
+          scene.showFeedbackText(i18n.t('customer.scratchWarningTutorial'), cx, cy - 244, '#ffb703');
+
+          scene.tweens.add({
+            targets: scene.currentCustomer.container,
+            type: 'micro_shake',
+            onComplete: () => {
+              scene.currentCustomer.container.x = 960;
+              scene.currentCustomer.container.y = 300;
+            }
+          });
+          return 'TUTORIAL_GUARDED';
+        }
+
+        scene.currentCustomer.isActive = false;
+        scene.playedSounds.push('scratch');
+        scene.playedSounds.push('customerAngry');
+
+        const i18n = I18nManager.getInstance();
+        scene.showFeedbackText('Angry Dialogue', scene.currentCustomer.container.x, scene.currentCustomer.container.y - 244, '#d90429');
+
+        scene.tweens.add({
+          targets: scene.currentCustomer.container,
+          type: 'flee',
+          onComplete: () => {
+            scene.currentCustomer.destroyed = true;
+            scene.currentCustomer = null;
+            scene.spawnCustomer();
+          }
+        });
+        return 'NORMAL_SCRATCHED';
+      }
+
+      // Case A: Tutorial is active
+      const feedbackLogsA = [];
+      const tutorialScene = {
+        tutorialManager: { isActive: true },
+        currentCustomer: {
+          isActive: true,
+          container: { x: 960, y: 300 },
+          destroyed: false
+        },
+        playedSounds: [],
+        scratchBlockedUntilPointerUp: false,
+        spawnCustomerCalled: false,
+        showFeedbackText: (text, x, y, color) => {
+          feedbackLogsA.push({ text, x, y, color });
+        },
+        tweens: {
+          add: (config) => {
+            if (config.onComplete) config.onComplete();
+          }
+        },
+        spawnCustomer: function() { this.spawnCustomerCalled = true; }
+      };
+
+      const resultA = simulateScratch(tutorialScene);
+      assert.strictEqual(resultA, 'TUTORIAL_GUARDED');
+      assert.strictEqual(tutorialScene.currentCustomer.isActive, true, 'Customer MUST stay active');
+      assert.strictEqual(tutorialScene.currentCustomer.destroyed, false, 'Customer MUST NOT be destroyed');
+      assert.strictEqual(tutorialScene.scratchBlockedUntilPointerUp, true, 'scratchBlockedUntilPointerUp MUST be set to true');
+      assert.strictEqual(tutorialScene.spawnCustomerCalled, false, 'spawnCustomer MUST NOT be called');
+      assert.deepStrictEqual(tutorialScene.playedSounds, ['scratch', 'catMeow:curious']);
+      assert.strictEqual(feedbackLogsA.length, 1);
+      assert.strictEqual(feedbackLogsA[0].color, '#ffb703');
+      assert.ok(feedbackLogsA[0].text.includes('🐾'));
+      assert.strictEqual(tutorialScene.currentCustomer.container.x, 960);
+
+      // Case B: Tutorial is inactive (Normal service)
+      const feedbackLogsB = [];
+      const normalScene = {
+        tutorialManager: { isActive: false },
+        currentCustomer: {
+          isActive: true,
+          container: { x: 960, y: 300 },
+          destroyed: false
+        },
+        playedSounds: [],
+        scratchBlockedUntilPointerUp: false,
+        spawnCustomerCalled: false,
+        showFeedbackText: (text, x, y, color) => {
+          feedbackLogsB.push({ text, x, y, color });
+        },
+        tweens: {
+          add: (config) => {
+            if (config.onComplete) config.onComplete();
+          }
+        },
+        spawnCustomer: function() { this.spawnCustomerCalled = true; }
+      };
+
+      const resultB = simulateScratch(normalScene);
+      assert.strictEqual(resultB, 'NORMAL_SCRATCHED');
+      assert.strictEqual(normalScene.currentCustomer, null, 'Customer MUST be destroyed and set to null in normal service');
+      assert.strictEqual(normalScene.spawnCustomerCalled, true, 'spawnCustomer MUST be called in normal service');
+      assert.deepStrictEqual(normalScene.playedSounds, ['scratch', 'customerAngry']);
+      assert.strictEqual(feedbackLogsB.length, 1);
+      assert.strictEqual(feedbackLogsB[0].color, '#d90429');
+    });
+
+    test('updateCatPaw pointer check respects scratchBlockedUntilPointerUp', () => {
+      const gameSceneCode = fs.readFileSync(path.join(process.cwd(), 'src', 'scenes', 'GameScene.js'), 'utf8');
+      const updatePawStart = gameSceneCode.indexOf('// Check if scratching the active customer');
+      const updatePawSection = gameSceneCode.slice(updatePawStart, updatePawStart + 400);
+
+      assert.ok(
+        updatePawSection.includes('!this.scratchBlockedUntilPointerUp'),
+        'updateCatPaw must verify !this.scratchBlockedUntilPointerUp before invoking scratchCustomer'
+      );
+    });
+  });
+
+  describe('13. Block 6: Customer 2 Toppings & Coffee with Milk Matrix', () => {
+    let mockGameScene;
+
+    beforeEach(() => {
+      mockGameScene = createMockPhaserScene();
+    });
+
+    test('Block 6 contains exactly 14 micropasos starting with step_client2_intro and ending with step_tutorial_complete', () => {
+      const block6 = getStepsByBlock(6);
+      assert.strictEqual(block6.length, 14, 'Block 6 must define exactly 14 micropasos');
+
+      const expectedBlock6Ids = [
+        'step_client2_intro',
+        'step_client2_dough',
+        'step_client2_shape',
+        'step_client2_oven_load',
+        'step_client2_oven_bake',
+        'step_client2_oven_extract',
+        'step_topping_sprinkles',
+        'step_client2_cookie_to_tray',
+        'step_client2_cup',
+        'step_client2_coffee',
+        'step_client2_milk_mix',
+        'step_client2_drink_to_tray',
+        'step_client2_delivery',
+        'step_tutorial_complete'
+      ];
+
+      assert.deepStrictEqual(block6.map(s => s.id), expectedBlock6Ids);
+    });
+
+    test('resolveTargetBounds resolves topping jars and btn_milk accurately', () => {
+      // Direct fallback resolution
+      const sprinklesBounds = resolveTargetBounds('topping_sprinkles', null);
+      assert.ok(sprinklesBounds);
+      assert.strictEqual(sprinklesBounds.x, 1767);
+      assert.strictEqual(sprinklesBounds.y, 660);
+      assert.strictEqual(sprinklesBounds.width, 158);
+      assert.strictEqual(sprinklesBounds.height, 158);
+
+      const chocoBounds = resolveTargetBounds('topping_choco', null);
+      assert.ok(chocoBounds);
+      assert.strictEqual(chocoBounds.x, 1767);
+      assert.strictEqual(chocoBounds.y, 810);
+
+      const glazingBounds = resolveTargetBounds('topping_glazing', null);
+      assert.ok(glazingBounds);
+      assert.strictEqual(glazingBounds.x, 1767);
+      assert.strictEqual(glazingBounds.y, 960);
+
+      const btnMilkBounds = resolveTargetBounds('btn_milk', null);
+      assert.ok(btnMilkBounds);
+      assert.strictEqual(btnMilkBounds.x, 385);
+      assert.strictEqual(btnMilkBounds.y, 422);
+
+      // Resolution with GameScene getTutorialTarget fallback
+      mockGameScene.getTutorialTarget = (key) => {
+        if (key === 'topping_sprinkles') return { x: 1767, y: 660, displayWidth: 158, displayHeight: 158 };
+        if (key === 'btn_milk') return { x: 385, y: 422, displayWidth: 83, displayHeight: 68 };
+        return null;
+      };
+
+      const resolvedSprinkles = resolveTargetBounds('topping_sprinkles', mockGameScene);
+      assert.strictEqual(resolvedSprinkles.x, 1767);
+      assert.strictEqual(resolvedSprinkles.y, 660);
+
+      const resolvedBtnMilk = resolveTargetBounds('btn_milk', mockGameScene);
+      assert.strictEqual(resolvedBtnMilk.x, 385);
+      assert.strictEqual(resolvedBtnMilk.y, 422);
+    });
+
+    test('step_topping_sprinkles advances ONLY on valid game:topping_applied payload', () => {
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+      tm.goToStep('step_topping_sprinkles');
+
+      assert.strictEqual(tm.getCurrentStep().id, 'step_topping_sprinkles');
+
+      // Invalid topping event (e.g. choco) should not advance
+      tm.handleGameEvent('game:topping_applied', { topping: 'choco' });
+      assert.strictEqual(tm.getCurrentStep().id, 'step_topping_sprinkles', 'Must not advance on wrong topping');
+
+      // Valid sprinkles event advances to step_client2_cookie_to_tray
+      tm.handleGameEvent('game:topping_applied', { topping: 'sprinkles' });
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client2_cookie_to_tray', 'Must advance to cookie to tray on sprinkles');
+    });
+
+    test('coffee machine combined brew progression: step_client2_coffee -> step_client2_milk_mix -> step_client2_drink_to_tray', () => {
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+      tm.goToStep('step_client2_coffee');
+
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client2_coffee');
+
+      // Coffee brewed advances to milk mix
+      tm.handleGameEvent('game:drink_brewed', { drink: 'coffee', type: 'coffee_beans' });
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client2_milk_mix', 'Must advance to milk mix after brewing coffee');
+
+      // Mismatched drink does not advance milk mix step
+      tm.handleGameEvent('game:drink_brewed', { drink: 'tea', type: 'tea' });
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client2_milk_mix', 'Must not advance on non-coffee_milk');
+
+      // Milk combined brew event advances to drink to tray
+      tm.handleGameEvent('game:drink_brewed', { drink: 'coffee_milk', type: 'coffee_milk' });
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client2_drink_to_tray', 'Must advance to drink to tray after coffee with milk');
+    });
+
+    test('full Block 6 end-to-end state machine flow: Client 1 farewell through Client 2 victory', () => {
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+
+      // Start at end of Block 5
+      tm.goToStep('step_client1_farewell');
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client1_farewell');
+
+      // 1. Client 1 farewell ack -> Client 2 Intro
+      tm.handleGameEvent('game:dialog_acknowledged');
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client2_intro');
+
+      // 2. Client 2 intro ack -> Dough
+      tm.handleGameEvent('game:dialog_acknowledged');
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client2_dough');
+
+      // 3. Dough placed -> Shape
+      tm.handleGameEvent('game:dough_placed', { base: 'classic' });
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client2_shape');
+
+      // 4. Shape applied -> Oven load
+      tm.handleGameEvent('game:shape_applied', { shape: 'star' });
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client2_oven_load');
+
+      // 5. Oven load -> Oven bake
+      tm.handleGameEvent('game:cookie_loaded_oven');
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client2_oven_bake');
+
+      // 6. Oven bake start -> Extract
+      tm.handleGameEvent('game:oven_bake_start');
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client2_oven_extract');
+
+      // 7. Cookie extracted -> Topping sprinkles
+      tm.handleGameEvent('game:cookie_extracted', { cookies: [{ bakedState: 'baked' }] });
+      assert.strictEqual(tm.getCurrentStep().id, 'step_topping_sprinkles');
+
+      // 8. Topping sprinkles applied -> Cookie to tray
+      tm.handleGameEvent('game:topping_applied', { topping: 'sprinkles' });
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client2_cookie_to_tray');
+
+      // 9. Cookie to tray -> Cup placed
+      tm.handleGameEvent('game:cookie_to_tray');
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client2_cup');
+
+      // 10. Cup placed -> Coffee brew button
+      tm.handleGameEvent('game:cup_placed');
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client2_coffee');
+
+      // 11. Coffee brewed -> Milk mix button
+      tm.handleGameEvent('game:drink_brewed', { drink: 'coffee', type: 'coffee_beans' });
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client2_milk_mix');
+
+      // 12. Milk brewed (coffee_milk) -> Drink to tray
+      tm.handleGameEvent('game:drink_brewed', { drink: 'coffee_milk', type: 'coffee_milk' });
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client2_drink_to_tray');
+
+      // 13. Drink to tray -> Delivery
+      tm.handleGameEvent('game:drink_to_tray');
+      assert.strictEqual(tm.getCurrentStep().id, 'step_client2_delivery');
+
+      // 14. Delivery success -> Tutorial Complete dialog
+      tm.handleGameEvent('game:tray_delivered', { success: true });
+      assert.strictEqual(tm.getCurrentStep().id, 'step_tutorial_complete');
+
+      // 15. Complete dialog ack -> Completed
+      let completedFired = false;
+      tm.on('completed', () => { completedFired = true; });
+      tm.handleGameEvent('game:dialog_acknowledged');
+
+      assert.strictEqual(tm.isCompleted, true);
+      assert.strictEqual(tm.isActive, false);
+      assert.strictEqual(completedFired, true);
+    });
+  });
+
+  describe('14. Block 2: Burnt Cookie Trash & step_burnt_trash Soft-Lock Prevention Matrix', () => {
+    let mockGameScene;
+
+    beforeEach(() => {
+      mockGameScene = createMockPhaserScene();
+    });
+
+    test('step_burnt_trash validation accepts object cookie instances, string targets, and normalized payloads', () => {
+      const step = getStepById('step_burnt_trash');
+      assert.ok(step, 'step_burnt_trash must exist in TUTORIAL_STEPS');
+      assert.strictEqual(typeof step.validation, 'function', 'validation must be a callable predicate');
+
+      const mockCookie = { base: 'classic', shape: 'star', bakedState: 'burnt' };
+
+      // 1. Valid cases
+      assert.strictEqual(step.validation(undefined), true, 'No payload should be valid');
+      assert.strictEqual(step.validation(null), true, 'Null payload should be valid');
+      assert.strictEqual(step.validation({}), true, 'Empty payload should be valid');
+      assert.strictEqual(step.validation({ item: 'table_cookie' }), true, 'item table_cookie should be valid');
+      assert.strictEqual(step.validation({ item: 'prep_cookie' }), true, 'item prep_cookie should be valid');
+      assert.strictEqual(step.validation({ destination: 'trash' }), true, 'destination trash should be valid');
+      assert.strictEqual(step.validation({ destination: 'trash_bin' }), true, 'destination trash_bin should be valid');
+      assert.strictEqual(step.validation({ item: 'table_cookie', destination: 'trash' }), true, 'table_cookie to trash should be valid');
+      assert.strictEqual(step.validation({ item: mockCookie }), true, 'Object cookieInstance in item (runtime payload) MUST be valid');
+      assert.strictEqual(step.validation({ item: 'table_cookie', cookie: mockCookie, destination: 'trash' }), true, 'Normalized payload MUST be valid');
+      assert.strictEqual(step.validation({ destination: 'trash', cookie: mockCookie }), true, 'cookie property with destination trash MUST be valid');
+
+      // 2. Invalid cases
+      assert.strictEqual(step.validation({ item: 'table_cookie', destination: 'delivery_tray' }), false, 'Delivery tray destination must be rejected');
+      assert.strictEqual(step.validation({ item: 'table_cookie', destination: 'oven' }), false, 'Oven destination must be rejected');
+      assert.strictEqual(step.validation({ item: 'unknown_item', destination: 'trash' }), false, 'Unknown string item should be rejected');
+    });
+
+    test('TutorialManager advances from step_burnt_trash to step_stock_explanation with runtime cookie object payload', () => {
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+      tm.goToStep('step_burnt_trash');
+
+      assert.strictEqual(tm.getCurrentStep().id, 'step_burnt_trash');
+
+      const burntCookieInstance = {
+        base: 'classic',
+        shape: 'star',
+        bakedState: 'burnt',
+        toppings: []
+      };
+
+      // Simular emisión directa con objeto (como ocurría en GameScene antes o ante objetos crudos)
+      mockGameScene.events.emit('game:cookie_trashed', { item: burntCookieInstance });
+
+      assert.strictEqual(
+        tm.getCurrentStep().id,
+        'step_stock_explanation',
+        'State machine MUST advance to step_stock_explanation upon trashing burnt cookie object'
+      );
+    });
+
+    test('TutorialManager advances from step_burnt_trash to step_stock_explanation with normalized event payload', () => {
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+      tm.goToStep('step_burnt_trash');
+
+      assert.strictEqual(tm.getCurrentStep().id, 'step_burnt_trash');
+
+      const burntCookieInstance = {
+        base: 'classic',
+        shape: 'star',
+        bakedState: 'burnt'
+      };
+
+      // Simular emisión normalizada
+      mockGameScene.events.emit('game:cookie_trashed', {
+        item: 'table_cookie',
+        cookie: burntCookieInstance,
+        destination: 'trash'
+      });
+
+      assert.strictEqual(
+        tm.getCurrentStep().id,
+        'step_stock_explanation',
+        'State machine MUST advance to step_stock_explanation upon normalized cookie_trashed event'
+      );
+    });
+
+    test('GameScene.js contains normalized game:cookie_trashed event emission', () => {
+      const gameScenePath = path.resolve(process.cwd(), 'src/scenes/GameScene.js');
+      const gameSceneCode = fs.readFileSync(gameScenePath, 'utf-8');
+
+      assert.ok(
+        gameSceneCode.includes("this.events.emit('game:cookie_trashed', { item: 'table_cookie', cookie: cookieInstance, destination: 'trash' });"),
+        'GameScene.js must emit normalized game:cookie_trashed payload with item, cookie, and destination'
+      );
+    });
+  });
+
+  // ==========================================
+  // MATRIZ 15: Z-Index Layering, Drag Target Filtering & Visual Focus Calibration
+  // ==========================================
+  describe('15. Z-Index Layering, Drag Target Filtering & Visual Focus Calibration Matrix', () => {
+    let mockGameScene;
+
+    beforeEach(() => {
+      mockGameScene = createMockPhaserScene();
+    });
+
+    test('GameScene source code enforces prepTrayZone depth 2.5 and cookie sprites depth 4', () => {
+      const gameScenePath = path.resolve(process.cwd(), 'src/scenes/GameScene.js');
+      const gameSceneCode = fs.readFileSync(gameScenePath, 'utf-8');
+
+      // 1. Initial depth of prepTrayZone must be 2.5
+      assert.ok(
+        gameSceneCode.includes('this.prepTrayZone = this.add.rectangle(trayX, trayY, 375, 169, 0x000000, 0)') &&
+        gameSceneCode.includes('.setDepth(2.5);\n    this.input.setDraggable(this.prepTrayZone);') ||
+        gameSceneCode.includes('.setDepth(2.5);\r\n    this.input.setDraggable(this.prepTrayZone);'),
+        'prepTrayZone must have depth: 2.5 so it does not intercept cookies or cutters'
+      );
+
+      // 2. Dragend depth reset of prepTrayZone
+      assert.ok(
+        gameSceneCode.includes('this.prepTrayZone.setDepth(2.5);'),
+        'prepTrayZone dragend must reset depth to 2.5'
+      );
+
+      // 3. Cookie sprites depth must be 4
+      assert.ok(
+        gameSceneCode.includes("const sprite = this.add.image(x, y, key).setDisplaySize(size, size).setDepth(4);"),
+        'Cookie sprites in drawCookie must have depth: 4'
+      );
+    });
+
+    test('TutorialManager handleDragStart strictly filters drag payload against current step sourceTargetKey', () => {
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+      tm.goToStep('step_dough_classic');
+
+      const overlay = tm.overlay;
+
+      // Fase 1: Spotlight inicial en masa clásica
+      assert.strictEqual(overlay.currentSpotlight.x, 148);
+      assert.strictEqual(overlay.currentSpotlight.y, 684);
+
+      // Arrastre espurio de prep_tray durante step_dough_classic -> DEBE IGNORARSE
+      mockGameScene.events.emit('game:drag_start', { item: 'prep_tray' });
+      assert.strictEqual(tm.isDragging, false, 'isDragging must remain false for unrelated item drag');
+      assert.strictEqual(overlay.currentSpotlight.x, 148, 'Spotlight must NOT shift to prep table on unrelated drag');
+      assert.strictEqual(overlay.currentSpotlight.y, 684);
+
+      // Arrastre espurio de cup_stack -> DEBE IGNORARSE
+      mockGameScene.events.emit('game:drag_start', { item: 'cup_stack' });
+      assert.strictEqual(tm.isDragging, false);
+      assert.strictEqual(overlay.currentSpotlight.x, 148);
+
+      // Arrastre legítimo de masa clásica -> DEBE CAMBIAR A DESTINO (prep_table)
+      mockGameScene.events.emit('game:drag_start', { item: 'dough', base: 'classic' });
+      assert.strictEqual(tm.isDragging, true, 'isDragging must become true for matching item drag');
+      assert.strictEqual(overlay.currentSpotlight.x, 960, 'Spotlight must shift to prep table on matching dough drag');
+      assert.strictEqual(overlay.currentSpotlight.y, 911);
+
+      // Soltar -> Vuelve a masa clásica
+      mockGameScene.events.emit('game:drag_end', { item: 'dough', base: 'classic' });
+      assert.strictEqual(tm.isDragging, false);
+      assert.strictEqual(overlay.currentSpotlight.x, 148);
+    });
+
+    test('TutorialManager ignores unrelated drag during step_burnt_trash and only responds to table_cookie', () => {
+      const tm = new TutorialManager(mockGameScene);
+      tm.start();
+      tm.goToStep('step_burnt_trash');
+
+      const overlay = tm.overlay;
+
+      // Fase 1: Spotlight inicial en table_cookie (960, 911)
+      assert.strictEqual(overlay.currentSpotlight.x, 960);
+      assert.strictEqual(overlay.currentSpotlight.y, 911);
+
+      // Arrastre espurio de delivery_tray durante step_burnt_trash -> DEBE IGNORARSE
+      mockGameScene.events.emit('game:drag_start', { item: 'delivery_tray' });
+      assert.strictEqual(tm.isDragging, false);
+      assert.strictEqual(overlay.currentSpotlight.x, 960);
+      assert.strictEqual(overlay.currentSpotlight.y, 911);
+
+      // Arrastre legítimo de table_cookie -> Salta a trash_bin (619, 911)
+      mockGameScene.events.emit('game:drag_start', { item: 'table_cookie' });
+      assert.strictEqual(tm.isDragging, true);
+      assert.strictEqual(overlay.currentSpotlight.x, 619);
+      assert.strictEqual(overlay.currentSpotlight.y, 911);
+      assert.strictEqual(overlay.currentSpotlight.isError, true);
+    });
+
+    test('Dynamic target bounds resolution and GameScene getTutorialTarget for prep_table, table_cookie, and delivery_tray', () => {
+      // 1. DEFAULT_TARGET_BOUNDS check
+      assert.strictEqual(DEFAULT_TARGET_BOUNDS.prep_table.x, 960);
+      assert.strictEqual(DEFAULT_TARGET_BOUNDS.prep_table.y, 911);
+      assert.strictEqual(DEFAULT_TARGET_BOUNDS.table_cookie.x, 960);
+      assert.strictEqual(DEFAULT_TARGET_BOUNDS.table_cookie.y, 911);
+      assert.strictEqual(DEFAULT_TARGET_BOUNDS.delivery_tray.x, 1037);
+      assert.strictEqual(DEFAULT_TARGET_BOUNDS.delivery_tray.y, 675);
+
+      // 2. resolveTargetBounds with mock scene
+      const customScene = {
+        getTutorialTarget: (key) => {
+          if (key === 'prep_table') return { x: 960, y: 911, displayWidth: 375, displayHeight: 169 };
+          if (key === 'table_cookie') return { x: 960, y: 911, displayWidth: 84, displayHeight: 84 };
+          if (key === 'delivery_tray') return { x: 1037, y: 675, displayWidth: 375, displayHeight: 94 };
+          return null;
+        }
+      };
+
+      const prepBounds = resolveTargetBounds('prep_table', customScene);
+      assert.strictEqual(prepBounds.x, 960);
+      assert.strictEqual(prepBounds.y, 911);
+      assert.strictEqual(prepBounds.width, 375);
+      assert.strictEqual(prepBounds.height, 169);
+
+      const cookieBounds = resolveTargetBounds('table_cookie', customScene);
+      assert.strictEqual(cookieBounds.x, 960);
+      assert.strictEqual(cookieBounds.y, 911);
+      assert.strictEqual(cookieBounds.width, 120);
+      assert.strictEqual(cookieBounds.height, 120);
+
+      const deliveryBounds = resolveTargetBounds('delivery_tray', customScene);
+      assert.strictEqual(deliveryBounds.x, 1037);
+      assert.strictEqual(deliveryBounds.y, 675);
+      assert.strictEqual(deliveryBounds.width, 375);
+      assert.strictEqual(deliveryBounds.height, 94);
+    });
+
+    test('GameScene.js calibrates trash detection distance to 95px across all drag handlers', () => {
+      const gameScenePath = path.resolve(process.cwd(), 'src/scenes/GameScene.js');
+      const gameSceneCode = fs.readFileSync(gameScenePath, 'utf-8');
+
+      // Verify no remaining drag distance checks using old 131px threshold
+      assert.ok(
+        !gameSceneCode.includes('distToTrash < 131'),
+        'No distToTrash < 131 should remain in GameScene.js'
+      );
+      assert.ok(
+        !gameSceneCode.includes('distTrash < 131'),
+        'No distTrash < 131 should remain in GameScene.js'
+      );
+
+      // Verify 95px calibrated threshold is used in drag & drop
+      assert.ok(
+        gameSceneCode.includes('if (distToTrash < 95)'),
+        'distToTrash < 95 must be present in GameScene.js'
+      );
+      assert.ok(
+        gameSceneCode.includes('if (distTrash < 95)'),
+        'distTrash < 95 must be present in GameScene.js'
+      );
+    });
+  });
 });
+
+
 
 
 

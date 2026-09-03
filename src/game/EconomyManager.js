@@ -9,9 +9,9 @@ export const BASIC_DOUGH_PACK_COST = 10;
 
 const EXPENSE_TABLE = {
   1: { rent: 20, maintenance: 15, loanPayment: 20 },
-  2: { rent: 20, maintenance: 20, loanPayment: 35 },
-  3: { rent: 20, maintenance: 25, loanPayment: 60 },
-  4: { rent: 20, maintenance: 30, loanPayment: 85 }
+  2: { rent: 20, maintenance: 15, loanPayment: 25 },
+  3: { rent: 20, maintenance: 20, loanPayment: 35 },
+  4: { rent: 20, maintenance: 25, loanPayment: 50 }
 };
 
 /**
@@ -32,17 +32,17 @@ export function getDayConfig(day = 1) {
   }
   if (d === 2) {
     return {
-      meta: 150,
-      patienceTime: 35,
-      maxCustomers: 4,
+      meta: 110,
+      patienceTime: 48,
+      maxCustomers: 3,
       bakeMin: 6.0,
       bakeMax: 7.5
     };
   }
   if (d === 3) {
     return {
-      meta: 200,
-      patienceTime: 30,
+      meta: 150,
+      patienceTime: 42,
       maxCustomers: 4,
       bakeMin: 6.5,
       bakeMax: 7.5
@@ -50,9 +50,9 @@ export function getDayConfig(day = 1) {
   }
   if (d === 4) {
     return {
-      meta: 300,
-      patienceTime: 28,
-      maxCustomers: 5,
+      meta: 200,
+      patienceTime: 36,
+      maxCustomers: 4,
       bakeMin: 7.0,
       bakeMax: 7.5
     };
@@ -60,9 +60,9 @@ export function getDayConfig(day = 1) {
 
   // Día 5 en adelante: Escalado procedural equilibrado
   return {
-    meta: 300 + (d - 4) * 60,
-    patienceTime: Math.max(20, 28 - (d - 4) * 1.5),
-    maxCustomers: Math.min(8, 5 + Math.floor((d - 4) / 2)),
+    meta: 200 + (d - 4) * 50,
+    patienceTime: Math.max(22, 32 - (d - 5) * 1.5),
+    maxCustomers: Math.min(8, 5 + Math.floor((d - 5) / 2)),
     bakeMin: Math.min(7.2, 7.0 + (d - 4) * 0.05),
     bakeMax: 7.5
   };
@@ -84,10 +84,10 @@ export function calculateExpenses(day = 1) {
     return { rent, maintenance, loanPayment, total };
   }
 
-  // Día 5 en adelante: Escalado dinámico
+  // Día 5 en adelante: Escalado dinámico suave
   const rent = 20 + (d - 4) * 5;
-  const maintenance = 15 + (d - 1) * 5;
-  const loanPayment = Math.min(100, 85 + (d - 4) * 15);
+  const maintenance = 25 + (d - 4) * 5;
+  const loanPayment = Math.min(100, 50 + (d - 4) * 15);
   const total = rent + maintenance + loanPayment;
   return { rent, maintenance, loanPayment, total };
 }

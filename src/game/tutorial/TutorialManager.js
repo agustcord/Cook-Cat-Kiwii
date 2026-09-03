@@ -12,6 +12,7 @@ import { TUTORIAL_STEPS } from './TutorialSteps.js';
 import TutorialOverlay from './TutorialOverlay.js';
 import SaveManager from '../services/SaveManager.js';
 import CrazyGamesSDK from '../services/CrazyGamesSDK.js';
+import SoundManager from '../SoundManager.js';
 
 /**
  * Coordenadas y dimensiones de respaldo calibradas para los elementos de la interfaz y estaciones de juego.
@@ -41,7 +42,10 @@ export const DEFAULT_TARGET_BOUNDS = {
   btn_milk: { x: 385, y: 422, width: 83, height: 68, radius: 16 },
   drink_machine: { x: 351, y: 507, width: 320, height: 320, radius: 24 },
   drink_cup: { x: 351, y: 582, width: 70, height: 60, radius: 16 },
-  delivery_tray: { x: 1037, y: 675, width: 375, height: 94, radius: 16 }
+  delivery_tray: { x: 1037, y: 675, width: 375, height: 94, radius: 16 },
+  topping_sprinkles: { x: 1767, y: 660, width: 158, height: 158, radius: 20 },
+  topping_choco: { x: 1767, y: 810, width: 158, height: 158, radius: 20 },
+  topping_glazing: { x: 1767, y: 960, width: 158, height: 158, radius: 20 }
 };
 
 /**
@@ -319,11 +323,20 @@ export default class TutorialManager {
     const dynamicTarget = resolveTargetBounds({ targetKey, targetCoords: fallbackCoords }, this.scene);
     const target = dynamicTarget || fallbackCoords || step.target;
 
+    const showNextBtn = step.showNextBtn !== undefined
+      ? Boolean(step.showNextBtn)
+      : step.allowedAction === 'DIALOG_ACK';
+
+    const showPointer = step.showPointer !== undefined
+      ? Boolean(step.showPointer)
+      : (!showNextBtn && step.allowedAction !== 'DIALOG_ACK');
+
     // Si solo es un cambio de fase dinámica (arrastrando/soltando) del mismo paso y el overlay ya tiene diálogo montado:
     if (this.overlay.currentStepConfig?.id === step.id && typeof this.overlay.setTarget === 'function') {
       this.overlay.setTarget(target, {
         pointerDirection: step.pointerDirection,
-        pointerOffset: step.pointerOffset
+        pointerOffset: step.pointerOffset,
+        showPointer
       });
       return;
     }
@@ -337,6 +350,7 @@ export default class TutorialManager {
         'LOAD_OVEN',
         'DRAG_DOUGH',
         'DRAG_SHAPE',
+        'DRAG_TOPPING',
         'DRAG_COOKIE_TRAY',
         'DRAG_DRINK_TRAY',
         'DRAG_TRASH',
@@ -356,7 +370,8 @@ export default class TutorialManager {
       ...step,
       target,
       targetCoords: target,
-      showNextBtn: step.allowedAction === 'DIALOG_ACK' || Boolean(step.showNextBtn),
+      showNextBtn,
+      showPointer,
       bubblePosition: bubblePos
     };
 
@@ -457,6 +472,65 @@ export default class TutorialManager {
   }
 
   /**
+   * Determina si el payload emitido en game:drag_start corresponde al origen del paso activo.
+   * @param {Object} [payload]
+   * @param {Object} step
+   * @returns {boolean}
+   * @private
+   */
+  _isDragPayloadMatchingStep(payload, step) {
+    if (!step) return false;
+    if (!payload || (typeof payload === 'object' && Object.keys(payload).length === 0)) {
+      return true;
+    }
+
+    const sourceKey = step.sourceTargetKey || step.targetKey;
+    if (!sourceKey) return false;
+
+    // Coincidencia directa con clave
+    if (payload.item === sourceKey || payload.targetKey === sourceKey || payload.key === sourceKey) {
+      return true;
+    }
+
+    // Masa (dough_classic, dough_chocolate, dough_oat)
+    if (payload.item === 'dough') {
+      const doughKey = `dough_${payload.base || payload.id || ''}`;
+      return sourceKey === doughKey || sourceKey === 'dough';
+    }
+
+    // Cortadores / Moldes (shape_star, shape_heart, shape_cat, shape_fish)
+    if (payload.item === 'shape') {
+      const shapeKey = `shape_${payload.shape || payload.id || ''}`;
+      return sourceKey === shapeKey || sourceKey === 'shape';
+    }
+
+    // Toppings (topping_sprinkles, topping_choco, topping_glazing)
+    if (payload.item === 'topping') {
+      const toppingKey = `topping_${payload.topping || payload.id || ''}`;
+      return sourceKey === toppingKey || sourceKey === 'topping';
+    }
+
+    // Galleta en mesa / Bandeja de preparación
+    const tableCookieKeys = ['table_cookie', 'prep_cookie', 'prep_table', 'prep_tray'];
+    if ((payload.item === 'table_cookie' || payload.item === 'prep_tray' || payload.item === 'prep_cookie') && tableCookieKeys.includes(sourceKey)) {
+      return true;
+    }
+
+    // Vaso en cafetera / Dispensador
+    const drinkCupKeys = ['drink_cup', 'drink_machine', 'cup_stack'];
+    if ((payload.item === 'drink_cup' || payload.item === 'cup_stack') && drinkCupKeys.includes(sourceKey)) {
+      return true;
+    }
+
+    // Bandeja de entrega
+    if (payload.item === 'delivery_tray' && sourceKey === 'delivery_tray') {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
    * Maneja el inicio de arrastre de un objeto interactivo (Fase 2: Origen -> Destino).
    * @param {Object} [payload]
    */
@@ -465,6 +539,10 @@ export default class TutorialManager {
 
     const step = this.getCurrentStep();
     if (!step || !step.destinationTargetKey) return;
+
+    if (!this._isDragPayloadMatchingStep(payload, step)) {
+      return;
+    }
 
     this.isDragging = true;
     this._syncOverlayStep(step, 'destination');
@@ -518,6 +596,87 @@ export default class TutorialManager {
   }
 
   /**
+   * Valida si una acción y sus parámetros están autorizados en el micropaso activo.
+   * Si el tutorial está inactivo o completado, retorna true de inmediato.
+   * 
+   * @param {string} action - Identificador de la acción intentada
+   * @param {Object} [payload] - Datos contextuales de la acción
+   * @returns {boolean}
+   */
+  isActionAllowed(action, payload = {}) {
+    if (!this.isActive || this.isCompleted) return true;
+
+    const currentStep = this.getCurrentStep();
+    if (!currentStep || !currentStep.allowedAction) return true;
+
+    // 1. Verificación del tipo de acción
+    if (currentStep.allowedAction !== action) {
+      return false;
+    }
+
+    // 2. Validación de parámetros contextuales
+    if (currentStep.validation && typeof currentStep.validation === 'function') {
+      return Boolean(currentStep.validation(payload));
+    }
+
+    return true;
+  }
+
+  /**
+   * Helper no punitivo ante intento de acción denegada/bloqueada durante el tutorial.
+   * Reproduce sonido UiDenied, sacudida sutil (shake) con retorno elástico a posición original
+   * y pulso de atención en el foco/diálogo de Kiwii.
+   * 
+   * @param {Phaser.Scene|Phaser.GameObjects.GameObject} sceneOrTarget - Escena o GameObject interactuado
+   * @param {Phaser.GameObjects.GameObject|string} [sourceObject] - GameObject interactuado si el primer parámetro fue scene
+   * @param {string} [reason] - Razón opcional o mensaje de feedback
+   */
+  denyAction(sceneOrTarget, sourceObject = null, reason = null) {
+    let scene = this.scene;
+    let target = sourceObject;
+
+    if (sceneOrTarget) {
+      if (sceneOrTarget.tweens || sceneOrTarget.add) {
+        scene = sceneOrTarget;
+        target = sourceObject;
+      } else {
+        target = sceneOrTarget;
+      }
+    }
+
+    // 1. Sonido suave de denegación
+    try {
+      SoundManager.getInstance().playUiDenied();
+    } catch {
+      // Fallback seguro si no hay SoundManager instanciado
+    }
+
+    // 2. Micro-animación de sacudida (shake) con retorno elástico
+    if (target && scene?.tweens?.add) {
+      const origX = target.getData?.('origX') ?? target.x;
+      if (typeof origX === 'number') {
+        scene.tweens.killTweensOf(target);
+        scene.tweens.add({
+          targets: target,
+          x: origX + 8,
+          duration: 50,
+          yoyo: true,
+          repeat: 2,
+          ease: 'Sine.easeInOut',
+          onComplete: () => {
+            target.x = origX;
+          }
+        });
+      }
+    }
+
+    // 3. Destacar el objetivo activo mediante pulso en overlay
+    if (this.overlay && typeof this.overlay.pulseAttention === 'function') {
+      this.overlay.pulseAttention();
+    }
+  }
+
+  /**
    * Determina si la paciencia del cliente debe protegerse contra timeout letal.
    * @returns {boolean}
    */
@@ -545,6 +704,19 @@ export default class TutorialManager {
     if (!this.scene.stock.drink) this.scene.stock.drink = {};
     if ((this.scene.stock.drink.coffee_beans ?? 0) <= 0) {
       this.scene.stock.drink.coffee_beans = Math.max(3, (this.scene.stock.drink.coffee_beans || 0) + 3);
+      restocked = true;
+    }
+
+    // Asegurar stock mínimo de chispas (sprinkles)
+    if (!this.scene.stock.topping) this.scene.stock.topping = {};
+    if ((this.scene.stock.topping.sprinkles ?? 0) <= 1) {
+      this.scene.stock.topping.sprinkles = Math.max(5, (this.scene.stock.topping.sprinkles || 0) + 5);
+      restocked = true;
+    }
+
+    // Asegurar stock mínimo de leche (milk)
+    if ((this.scene.stock.drink.milk ?? 0) <= 1) {
+      this.scene.stock.drink.milk = Math.max(3, (this.scene.stock.drink.milk || 0) + 3);
       restocked = true;
     }
 

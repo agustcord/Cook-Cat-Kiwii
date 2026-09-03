@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import Cookie from '../game/Cookie.js';
 import Customer from '../game/Customer.js';
-import UI_CONFIG from '../../ui-config.json';
+import UI_CONFIG from '../../ui-config.json' with { type: 'json' };
 import SoundManager from '../game/SoundManager.js';
 import CrazyGamesSDK from '../game/services/CrazyGamesSDK.js';
 import I18nManager from '../game/services/I18nManager.js';
@@ -29,7 +29,10 @@ export default class GameScene extends Phaser.Scene {
       drink: { coffee_beans: 2, milk: 2 }
     };
     if (this.day === 1) {
+      if (!this.stock.topping) this.stock.topping = { sprinkles: 2, choco: 0, glazing: 0 };
       this.stock.topping.sprinkles = Math.max(2, (this.stock.topping.sprinkles || 0));
+      if (!this.stock.drink) this.stock.drink = { coffee_beans: 2, milk: 2 };
+      this.stock.drink.milk = Math.max(2, (this.stock.drink.milk || 0));
     }
     this.stock.drink = this.stock.drink || { coffee_beans: 2, milk: 2 };
 
@@ -50,6 +53,12 @@ export default class GameScene extends Phaser.Scene {
     let availablePool = [1, 2, 3, 4, 5];
     if (this.day === 1) {
       // Day 1: Exclude customer 5 (Gamer) to keep it introductory
+      availablePool = [1, 2, 3, 4];
+    } else if (this.day === 2) {
+      // Day 2 (Muy Fácil): Solo clientes dóciles, sin Oficinista (2) ni Gamer (5)
+      availablePool = [1, 3, 4];
+    } else if (this.day === 3) {
+      // Day 3 (Fácil): Incorpora Oficinista (2), sin Gamer (5)
       availablePool = [1, 2, 3, 4];
     }
     
@@ -485,6 +494,11 @@ export default class GameScene extends Phaser.Scene {
       });
 
       dragZone.on('dragstart', () => {
+        if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_DOUGH', { base: b.id })) {
+          this.tutorialManager.denyAction(this, doughImg);
+          return;
+        }
+
         const currentStock = this.stock.dough[b.id] || 0;
         const i18n = I18nManager.getInstance();
         if (currentStock <= 0) {
@@ -520,15 +534,41 @@ export default class GameScene extends Phaser.Scene {
           return;
         }
 
-        const dist = Phaser.Math.Distance.Between(
+        const distDelivery = Phaser.Math.Distance.Between(
+          portionSprite.x, portionSprite.y,
+          this.deliveryTrayX, this.deliveryTrayY
+        );
+
+        const distTable = Phaser.Math.Distance.Between(
           portionSprite.x, portionSprite.y,
           this.trayX, this.trayY
         );
 
         const i18n = I18nManager.getInstance();
 
-        if (dist < 225) {
-          if (this.prepTrayCookies.length < 3) {
+        if (distDelivery < 188) {
+          if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_DOUGH', { base: b.id, destination: 'delivery_tray' })) {
+            this.tutorialManager.denyAction(this, doughImg);
+          } else if (this.deliveryTrayCookies.length < 3) {
+            // Consume stock!
+            this.stock.dough[b.id]--;
+            this.updateStockTexts();
+
+            const newCookie = new Cookie();
+            newCookie.base = b.id;
+            this.deliveryTrayCookies.push(newCookie);
+            this.drawDeliveryTray();
+            SoundManager.getInstance().playDoughPlace();
+            this.showFeedbackText(i18n.t('game.feedback.cookieReadyDelivery'), this.deliveryTrayX, 375, '#38b000');
+            this.events.emit('game:cookie_to_tray', { cookie: newCookie, base: b.id });
+          } else {
+            SoundManager.getInstance().playUiDenied();
+            this.showFeedbackText(i18n.t('game.feedback.tableFull'), this.deliveryTrayX, 375, '#d90429');
+          }
+        } else if (distTable < 225) {
+          if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_DOUGH', { base: b.id, destination: 'prep_table' })) {
+            this.tutorialManager.denyAction(this, doughImg);
+          } else if (this.prepTrayCookies.length < 3) {
             // Consume stock!
             this.stock.dough[b.id]--;
             this.updateStockTexts();
@@ -613,6 +653,10 @@ export default class GameScene extends Phaser.Scene {
 
         // Drag handlers
         dragZone.on('dragstart', () => {
+          if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_SHAPE', { shape: s.id })) {
+            this.tutorialManager.denyAction(this, container);
+            return;
+          }
           this.isHoldingItem = true;
           this.events.emit('game:drag_start', { item: 'shape', shape: s.id, id: s.id });
           SoundManager.getInstance().playUiTap();
@@ -650,12 +694,16 @@ export default class GameScene extends Phaser.Scene {
           const i18n = I18nManager.getInstance();
 
           if (closestCookie) {
-            closestCookie.shape = s.id;
-            this.updateCookieVisuals();
-            SoundManager.getInstance().playDoughCut();
-            const shapeName = i18n.t(`recipes.shapes.${s.id}`);
-            this.showFeedbackText(i18n.t('game.feedback.shapeSelected', { name: shapeName }), this.trayX, 375, '#38b000');
-            this.events.emit('game:shape_applied', { shape: s.id });
+            if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_SHAPE', { shape: s.id, target: 'table_cookie' })) {
+              this.tutorialManager.denyAction(this, container);
+            } else {
+              closestCookie.shape = s.id;
+              this.updateCookieVisuals();
+              SoundManager.getInstance().playDoughCut();
+              const shapeName = i18n.t(`recipes.shapes.${s.id}`);
+              this.showFeedbackText(i18n.t('game.feedback.shapeSelected', { name: shapeName }), this.trayX, 375, '#38b000');
+              this.events.emit('game:shape_applied', { shape: s.id });
+            }
           } else {
             const distToTrayCenter = Phaser.Math.Distance.Between(dragZone.x, dragZone.y, this.trayX, this.trayY);
             if (distToTrayCenter < 225) {
@@ -903,6 +951,11 @@ export default class GameScene extends Phaser.Scene {
       this.beansStockText.setScale(1.0);
     });
     beansDragZone.on('pointerdown', () => {
+      if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('CLICK_COFFEE', { drink: 'coffee', type: 'coffee_beans' })) {
+        this.tutorialManager.denyAction(this, this.btnCoffeeImage);
+        return;
+      }
+
       const stock = this.stock.drink.coffee_beans || 0;
       const i18n = I18nManager.getInstance();
       if (stock <= 0) {
@@ -936,6 +989,11 @@ export default class GameScene extends Phaser.Scene {
       this.milkStockText.setScale(1.0);
     });
     milkDragZone.on('pointerdown', () => {
+      if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('CLICK_MILK', { drink: 'coffee_milk', type: 'milk' })) {
+        this.tutorialManager.denyAction(this, this.btnMilkImage);
+        return;
+      }
+
       const stock = this.stock.drink.milk || 0;
       const i18n = I18nManager.getInstance();
       if (stock <= 0) {
@@ -991,6 +1049,12 @@ export default class GameScene extends Phaser.Scene {
     let dragBlocked = false;
 
     this.cupStackZone.on('dragstart', () => {
+      if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_CUP', { destination: 'drink_machine' })) {
+        this.tutorialManager.denyAction(this, this.cupStackImage);
+        dragBlocked = true;
+        return;
+      }
+
       const i18n = I18nManager.getInstance();
       if (this.machineState !== 'no_cup') {
         SoundManager.getInstance().playUiDenied();
@@ -1027,6 +1091,14 @@ export default class GameScene extends Phaser.Scene {
       const dist = Phaser.Math.Distance.Between(tempDragCup.x, tempDragCup.y, destX, destY);
 
       if (dist < 75) {
+        if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_CUP', { destination: 'drink_machine' })) {
+          this.tutorialManager.denyAction(this, this.cupStackImage);
+          tempDragCup.destroy();
+          tempDragCup = null;
+          this.events.emit('game:drag_end', { item: 'cup_stack' });
+          return;
+        }
+
         tempDragCup.destroy();
         tempDragCup = null;
 
@@ -1262,6 +1334,11 @@ export default class GameScene extends Phaser.Scene {
     const baseScaleY = this.machineCupSprite.scaleY;
 
     this.machineCupSprite.on('dragstart', () => {
+      if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_DRINK_TRAY', { destination: 'delivery_tray' })) {
+        this.tutorialManager.denyAction(this, this.machineCupSprite);
+        return;
+      }
+
       this.isHoldingItem = true;
       this.events.emit('game:drag_start', { item: 'drink_cup' });
       SoundManager.getInstance().playUiTap();
@@ -1289,6 +1366,26 @@ export default class GameScene extends Phaser.Scene {
                        Math.abs(this.machineCupSprite.y - this.deliveryTrayY) <= halfH;
 
       if (dist < 188 || inBounds) {
+        if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_DRINK_TRAY', { destination: 'delivery_tray' })) {
+          this.tutorialManager.denyAction(this, this.machineCupSprite);
+          this.tweens.add({
+            targets: this.machineCupSprite,
+            x: this.machineCupSprite.getData('origX'),
+            y: this.machineCupSprite.getData('origY'),
+            scaleX: baseScaleX,
+            scaleY: baseScaleY,
+            duration: 250,
+            ease: 'Cubic.out',
+            onComplete: () => {
+              if (this.machineCupSprite) {
+                this.machineCupSprite.setDepth(4);
+              }
+            }
+          });
+          this.events.emit('game:drag_end', { item: 'drink_cup' });
+          return;
+        }
+
         this.pickupDrink();
       } else {
         this.tweens.add({
@@ -1345,6 +1442,14 @@ export default class GameScene extends Phaser.Scene {
   }
 
   handleOvenPowerClick() {
+    if (this.tutorialManager?.isActive) {
+      const targetState = !this.isOvenPreheated;
+      if (!this.tutorialManager.isActionAllowed('CLICK_POWER', { isPreheated: targetState })) {
+        this.tutorialManager.denyAction(this, this.ovenBtnPowerSprite);
+        return;
+      }
+    }
+
     SoundManager.getInstance().playOvenClick();
     const i18n = I18nManager.getInstance();
     if (!this.isOvenPreheated) {
@@ -1385,6 +1490,11 @@ export default class GameScene extends Phaser.Scene {
   }
 
   handleOvenBakeClick() {
+    if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('CLICK_BAKE')) {
+      this.tutorialManager.denyAction(this, this.ovenBtnBakeSprite);
+      return;
+    }
+
     const i18n = I18nManager.getInstance();
     if (!this.isOvenPreheated) {
       SoundManager.getInstance().playUiDenied();
@@ -1506,6 +1616,7 @@ export default class GameScene extends Phaser.Scene {
     const jarHoverSize = 173;
 
     this.toppingButtons = {};
+    this.toppingDragZones = {};
     this.toppingStockTexts = {};
 
     toppings.forEach((t, index) => {
@@ -1530,6 +1641,7 @@ export default class GameScene extends Phaser.Scene {
       const dragZone = this.add.rectangle(x, y, jarSize, jarSize, 0x000000, 0);
       dragZone.setInteractive({ useHandCursor: true });
       this.input.setDraggable(dragZone);
+      this.toppingDragZones[t.id] = dragZone;
 
       let jarClone = null;
       let initialDist = 0;
@@ -1546,6 +1658,11 @@ export default class GameScene extends Phaser.Scene {
       });
 
       dragZone.on('dragstart', () => {
+        if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_TOPPING', { topping: t.id })) {
+          this.tutorialManager.denyAction(this, jarSource);
+          return;
+        }
+
         const currentStock = this.stock.topping[t.id] || 0;
         const i18n = I18nManager.getInstance();
         if (currentStock <= 0) {
@@ -1607,27 +1724,31 @@ export default class GameScene extends Phaser.Scene {
           const i18n = I18nManager.getInstance();
 
           if (closestCookie) {
-            // Consume stock!
-            this.stock.topping[t.id]--;
-            this.updateStockTexts();
-
-            closestCookie.toppings = [t.id];
-            this.updateCookieVisuals();
-
-            // Specialized ASMR topping sound
-            if (t.id === 'sprinkles') {
-              SoundManager.getInstance().playToppingSprinkles();
-            } else if (t.id === 'choco') {
-              SoundManager.getInstance().playToppingChoco();
-            } else if (t.id === 'glazing') {
-              SoundManager.getInstance().playToppingGlazing();
+            if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_TOPPING', { topping: t.id, target: 'table_cookie' })) {
+              this.tutorialManager.denyAction(this, jarSource);
             } else {
-              SoundManager.getInstance().playUiTap();
-            }
+              // Consume stock!
+              this.stock.topping[t.id]--;
+              this.updateStockTexts();
 
-            const toppingName = i18n.t(`recipes.toppings.${t.id}`);
-            this.showFeedbackText(i18n.t('game.feedback.toppingAdded', { name: toppingName }), this.trayX, 375, '#38b000');
-            this.events.emit('game:topping_applied', { topping: t.id });
+              closestCookie.toppings = [t.id];
+              this.updateCookieVisuals();
+
+              // Specialized ASMR topping sound
+              if (t.id === 'sprinkles') {
+                SoundManager.getInstance().playToppingSprinkles();
+              } else if (t.id === 'choco') {
+                SoundManager.getInstance().playToppingChoco();
+              } else if (t.id === 'glazing') {
+                SoundManager.getInstance().playToppingGlazing();
+              } else {
+                SoundManager.getInstance().playUiTap();
+              }
+
+              const toppingName = i18n.t(`recipes.toppings.${t.id}`);
+              this.showFeedbackText(i18n.t('game.feedback.toppingAdded', { name: toppingName }), this.trayX, 375, '#38b000');
+              this.events.emit('game:topping_applied', { topping: t.id });
+            }
           } else {
             const distToTrayCenter = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, this.trayX, this.trayY);
             if (distToTrayCenter < 225) {
@@ -1714,9 +1835,231 @@ export default class GameScene extends Phaser.Scene {
     trayBg.strokeRoundedRect(trayX - 188, trayY - 84, 375, 169, 19);
 
     this.prepTrayBg = trayBg;
-    this.prepTrayZone = this.add.rectangle(trayX, trayY, 375, 169, 0x000000, 0);
+    this.prepTrayZone = this.add.rectangle(trayX, trayY, 375, 169, 0x000000, 0)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(2.5);
+    this.input.setDraggable(this.prepTrayZone);
 
     this.prepTraySprites = [];
+
+    this.prepTrayZone.on('pointerdown', () => {
+      if (this.isEditorMode) return;
+      this.isHoldingItem = true;
+    });
+
+    this.prepTrayZone.on('dragstart', () => {
+      if (this.isEditorMode) return;
+      if (this.tutorialManager?.isActive) {
+        const allowedActions = ['LOAD_OVEN', 'DRAG_COOKIE_TRAY', 'DRAG_TRASH'];
+        const curAction = this.tutorialManager.getCurrentStep()?.allowedAction;
+        if (!allowedActions.includes(curAction)) {
+          this.tutorialManager.denyAction(this, this.prepTrayZone);
+          return;
+        }
+      }
+      this.isHoldingItem = true;
+      this.events.emit('game:drag_start', { item: 'prep_tray' });
+      SoundManager.getInstance().playUiTap();
+      this.prepTrayZone.setDepth(30000);
+      if (this.prepTrayBg) this.prepTrayBg.setDepth(29999);
+      if (this.prepTraySprites) {
+        this.prepTraySprites.forEach(s => {
+          if (s && s.setDepth) s.setDepth(30001);
+        });
+      }
+    });
+
+    this.prepTrayZone.on('drag', (pointer, dragX, dragY) => {
+      if (this.isEditorMode) return;
+      const clampedY = Math.max(300, Math.min(1000, dragY));
+      this.prepTrayZone.x = dragX;
+      this.prepTrayZone.y = clampedY;
+
+      if (this.prepTrayBg) {
+        this.prepTrayBg.x = dragX - this.trayX;
+        this.prepTrayBg.y = clampedY - this.trayY;
+      }
+
+      const count = this.prepTrayCookies ? this.prepTrayCookies.length : 0;
+      if (count > 0 && this.prepTraySprites) {
+        const spacing = 84;
+        const startX = dragX - ((count - 1) * spacing) / 2;
+        this.prepTraySprites.forEach((sprite, index) => {
+          if (sprite) {
+            sprite.x = startX + index * spacing;
+            sprite.y = clampedY;
+          }
+        });
+      }
+
+      // Check distance to trash bin
+      const distToTrash = Phaser.Math.Distance.Between(dragX, clampedY, this.trashBinX, this.trashBinY);
+      if (distToTrash < 95) {
+        if (!this.trashHighlighted) {
+          this.trashHighlighted = true;
+          this.tweens.add({
+            targets: this.trashContainer,
+            scale: 1.15,
+            duration: 100
+          });
+          if (this.trashBinSprite) this.trashBinSprite.setTint(0xff8888);
+        }
+      } else {
+        if (this.trashHighlighted) {
+          this.trashHighlighted = false;
+          this.tweens.add({
+            targets: this.trashContainer,
+            scale: 1.0,
+            duration: 100
+          });
+          if (this.trashBinSprite) this.trashBinSprite.clearTint();
+        }
+      }
+
+      // Check distance to oven
+      const distToOven = Phaser.Math.Distance.Between(dragX, clampedY, this.ovenX, this.ovenY);
+      if (distToOven < 225) {
+        if (!this.ovenHighlighted) {
+          this.ovenHighlighted = true;
+          if (this.ovenBaseSprite) this.ovenBaseSprite.setTint(0xfffaed);
+        }
+      } else {
+        if (this.ovenHighlighted) {
+          this.ovenHighlighted = false;
+          if (this.ovenBaseSprite) this.ovenBaseSprite.clearTint();
+        }
+      }
+    });
+
+    this.prepTrayZone.on('dragend', () => {
+      this.isHoldingItem = false;
+      if (this.isEditorMode) return;
+      this.prepTrayZone.setScale(1.0);
+      this.prepTrayZone.setDepth(2.5);
+      if (this.prepTrayBg) this.prepTrayBg.setDepth(2);
+      if (this.prepTraySprites) {
+        this.prepTraySprites.forEach(s => {
+          if (s && s.setDepth) s.setDepth(4);
+        });
+      }
+
+      if (this.trashHighlighted) {
+        this.trashHighlighted = false;
+        if (this.trashContainer) this.trashContainer.setScale(1.0);
+        if (this.trashBinSprite) this.trashBinSprite.clearTint();
+      }
+
+      if (this.ovenHighlighted) {
+        this.ovenHighlighted = false;
+        if (this.ovenBaseSprite) this.ovenBaseSprite.clearTint();
+      }
+
+      const distOven = Phaser.Math.Distance.Between(this.prepTrayZone.x, this.prepTrayZone.y, this.ovenX, this.ovenY);
+      const distDelivery = Phaser.Math.Distance.Between(this.prepTrayZone.x, this.prepTrayZone.y, this.deliveryTrayX, this.deliveryTrayY);
+      const distTrash = Phaser.Math.Distance.Between(this.prepTrayZone.x, this.prepTrayZone.y, this.trashBinX, this.trashBinY);
+      const i18n = I18nManager.getInstance();
+
+      // 1. Drop on Trash
+      if (distTrash < 95) {
+        if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_TRASH', { item: 'prep_tray', destination: 'trash' })) {
+          this.tutorialManager.denyAction(this, this.prepTrayZone);
+        } else if (this.prepTrayCookies && this.prepTrayCookies.length > 0) {
+          SoundManager.getInstance().playTrash();
+          const trashedCookies = [...this.prepTrayCookies];
+          this.prepTrayCookies = [];
+          this.updateCookieVisuals();
+          this.showFeedbackText(i18n.t('game.feedback.trayEmptied'), this.trashBinX, this.trashBinY - 50, '#d90429');
+          this.events.emit('game:cookie_trashed', { item: 'prep_tray', cookies: trashedCookies, destination: 'trash' });
+        }
+      }
+      // 2. Drop on Delivery Tray
+      else if (distDelivery < 188) {
+        if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_COOKIE_TRAY', { item: 'prep_tray', destination: 'delivery_tray' })) {
+          this.tutorialManager.denyAction(this, this.prepTrayZone);
+        } else if (this.prepTrayCookies && this.prepTrayCookies.length > 0) {
+          this.prepTrayCookies.forEach(c => this.deliveryTrayCookies.push(c));
+          this.prepTrayCookies = [];
+          this.drawDeliveryTray();
+          this.updateCookieVisuals();
+          SoundManager.getInstance().playUiTap();
+          this.showFeedbackText(i18n.t('game.feedback.cookieReadyDelivery'), this.deliveryTrayX, 375, '#38b000');
+          this.events.emit('game:cookie_to_tray', { item: 'prep_tray' });
+        }
+      }
+      // 3. Drop on Oven
+      else if (distOven < 225) {
+        if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('LOAD_OVEN', { item: 'prep_tray', destination: 'oven' })) {
+          this.tutorialManager.denyAction(this, this.prepTrayZone);
+        } else if (this.isBaking) {
+          SoundManager.getInstance().playUiDenied();
+          this.showFeedbackText(i18n.t('game.feedback.ovenAlreadyOn'), this.trayX, 375, '#d90429');
+        } else if (this.cookiesInOven.length >= 3) {
+          SoundManager.getInstance().playUiDenied();
+          this.showFeedbackText(i18n.t('game.feedback.ovenFull'), this.trayX, 375, '#d90429');
+        } else if (!this.prepTrayCookies || this.prepTrayCookies.length === 0) {
+          SoundManager.getInstance().playUiDenied();
+          this.showFeedbackText(i18n.t('game.feedback.ovenEmpty'), this.trayX, 375, '#d90429');
+        } else {
+          const shapedCookies = this.prepTrayCookies.filter(c => !!c.shape);
+          if (shapedCookies.length === 0) {
+            SoundManager.getInstance().playUiDenied();
+            this.showFeedbackText(i18n.t('game.feedback.cutShapeFirst'), this.trayX, 375, '#d90429');
+          } else {
+            const availableSpace = 3 - this.cookiesInOven.length;
+            const cookiesToLoad = shapedCookies.slice(0, availableSpace);
+            cookiesToLoad.forEach(cookieInstance => {
+              this.cookiesInOven.push(cookieInstance);
+              const idx = this.prepTrayCookies.indexOf(cookieInstance);
+              if (idx !== -1) {
+                this.prepTrayCookies.splice(idx, 1);
+              }
+            });
+            this.updateExtractButtonState();
+            SoundManager.getInstance().playOvenDoor();
+            this.showFeedbackText(i18n.t('game.feedback.cookieInserted', { count: this.cookiesInOven.length, total: 3 }), this.trayX, 375, '#38b000');
+            this.events.emit('game:cookie_loaded_oven', { item: 'prep_tray', cookies: cookiesToLoad, count: this.cookiesInOven.length, destination: 'oven' });
+            this.updateCookieVisuals();
+          }
+        }
+      }
+
+      this.events.emit('game:drag_end', { item: 'prep_tray' });
+
+      // Elastic return tween for prep tray
+      this.tweens.add({
+        targets: this.prepTrayZone,
+        x: this.trayX,
+        y: this.trayY,
+        duration: 250,
+        ease: 'Cubic.out',
+        onUpdate: () => {
+          if (this.prepTrayBg) {
+            this.prepTrayBg.x = this.prepTrayZone.x - this.trayX;
+            this.prepTrayBg.y = this.prepTrayZone.y - this.trayY;
+          }
+          const count = this.prepTrayCookies ? this.prepTrayCookies.length : 0;
+          if (count > 0 && this.prepTraySprites) {
+            const spacing = 84;
+            const startX = this.prepTrayZone.x - ((count - 1) * spacing) / 2;
+            this.prepTraySprites.forEach((sprite, index) => {
+              if (sprite) {
+                sprite.x = startX + index * spacing;
+                sprite.y = this.prepTrayZone.y;
+              }
+            });
+          }
+        },
+        onComplete: () => {
+          if (this.prepTrayBg) {
+            this.prepTrayBg.x = 0;
+            this.prepTrayBg.y = 0;
+          }
+          this.prepTrayZone.x = this.trayX;
+          this.prepTrayZone.y = this.trayY;
+          this.updateCookieVisuals();
+        }
+      });
+    });
   }
 
   drawCookie() {
@@ -1754,18 +2097,29 @@ export default class GameScene extends Phaser.Scene {
         const y = this.trayY;
 
         const size = isShaped ? 103 : 84;
-        const sprite = this.add.image(x, y, key).setDisplaySize(size, size).setDepth(3);
+        const sprite = this.add.image(x, y, key).setDisplaySize(size, size).setDepth(4);
         sprite.setInteractive({ useHandCursor: true });
         this.input.setDraggable(sprite);
 
         sprite.setData('cookieIndex', index);
+        sprite.setData('cookieInstance', cookie);
         sprite.setData('origX', x);
         sprite.setData('origY', y);
 
         sprite.on('dragstart', () => {
+          const cookieInstance = sprite.getData('cookieInstance') || cookie;
+          const cookieIdx = this.prepTrayCookies.indexOf(cookieInstance);
+
+          if (this.tutorialManager?.isActive) {
+            const allowedActions = ['LOAD_OVEN', 'DRAG_COOKIE_TRAY', 'DRAG_TRASH'];
+            const curAction = this.tutorialManager.getCurrentStep()?.allowedAction;
+            if (!allowedActions.includes(curAction)) {
+              this.tutorialManager.denyAction(this, sprite);
+              return;
+            }
+          }
+
           this.isHoldingItem = true;
-          const cookieIdx = sprite.getData('cookieIndex');
-          const cookieInstance = this.prepTrayCookies[cookieIdx] || cookie;
           this.events.emit('game:drag_start', { item: 'table_cookie', cookie: cookieInstance, index: cookieIdx });
           SoundManager.getInstance().playUiTap();
           sprite.setDepth(30000);
@@ -1777,7 +2131,7 @@ export default class GameScene extends Phaser.Scene {
 
           // Check if hovering over trash bin
           const distToTrash = Phaser.Math.Distance.Between(dragX, Math.max(338, dragY), this.trashBinX, this.trashBinY);
-          if (distToTrash < 131) {
+          if (distToTrash < 95) {
             if (!this.trashHighlighted) {
               this.trashHighlighted = true;
               this.tweens.add({
@@ -1798,6 +2152,20 @@ export default class GameScene extends Phaser.Scene {
               if (this.trashBinSprite) this.trashBinSprite.clearTint();
             }
           }
+
+          // Check if hovering over oven
+          const distToOven = Phaser.Math.Distance.Between(dragX, Math.max(338, dragY), this.ovenX, this.ovenY);
+          if (distToOven < 225) {
+            if (!this.ovenHighlighted) {
+              this.ovenHighlighted = true;
+              if (this.ovenBaseSprite) this.ovenBaseSprite.setTint(0xfffaed);
+            }
+          } else {
+            if (this.ovenHighlighted) {
+              this.ovenHighlighted = false;
+              if (this.ovenBaseSprite) this.ovenBaseSprite.clearTint();
+            }
+          }
         });
 
         sprite.on('dragend', () => {
@@ -1808,22 +2176,45 @@ export default class GameScene extends Phaser.Scene {
             if (this.trashContainer) this.trashContainer.setScale(1.0);
             if (this.trashBinSprite) this.trashBinSprite.clearTint();
           }
+          if (this.ovenHighlighted) {
+            this.ovenHighlighted = false;
+            if (this.ovenBaseSprite) this.ovenBaseSprite.clearTint();
+          }
 
           const distOven = Phaser.Math.Distance.Between(sprite.x, sprite.y, this.ovenX, this.ovenY);
           const distDelivery = Phaser.Math.Distance.Between(sprite.x, sprite.y, this.deliveryTrayX, this.deliveryTrayY);
           const distTrash = Phaser.Math.Distance.Between(sprite.x, sprite.y, this.trashBinX, this.trashBinY);
 
-          const cookieIdx = sprite.getData('cookieIndex');
-          const cookieInstance = this.prepTrayCookies[cookieIdx] || cookie;
+          const cookieInstance = sprite.getData('cookieInstance') || cookie;
+          const cookieIdx = this.prepTrayCookies.indexOf(cookieInstance);
           const i18n = I18nManager.getInstance();
 
           // 1. Drop on Trash Bin
-          if (distTrash < 131) {
+          if (distTrash < 95) {
+            if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_TRASH', { item: 'table_cookie', destination: 'trash', cookie: cookieInstance })) {
+              this.tutorialManager.denyAction(this, sprite);
+              this.tweens.add({
+                targets: sprite,
+                x: sprite.getData('origX'),
+                y: sprite.getData('origY'),
+                duration: 250,
+                ease: 'Back.out',
+                onComplete: () => {
+                  sprite.setDepth(4);
+                }
+              });
+              this.events.emit('game:drag_end', { item: 'table_cookie', cookie: cookieInstance, index: cookieIdx });
+              return;
+            }
+
             SoundManager.getInstance().playTrash();
-            this.prepTrayCookies.splice(cookieIdx, 1);
+            const realIdx = this.prepTrayCookies.indexOf(cookieInstance);
+            if (realIdx !== -1) {
+              this.prepTrayCookies.splice(realIdx, 1);
+            }
             this.updateCookieVisuals();
             this.showFeedbackText(i18n.t('game.feedback.discarded'), this.trashBinX, this.trashBinY - 50, '#d90429');
-            this.events.emit('game:cookie_trashed', { item: cookieInstance });
+            this.events.emit('game:cookie_trashed', { item: 'table_cookie', cookie: cookieInstance, destination: 'trash' });
             this.events.emit('game:drag_end', { item: 'table_cookie', cookie: cookieInstance, index: cookieIdx });
 
             // Play vacuum fade/shrink animation
@@ -1842,26 +2233,56 @@ export default class GameScene extends Phaser.Scene {
             return;
           }
 
-          // 2. Drop on Delivery Tray
+          // 2. Drop on Delivery Tray (allows raw unshaped dough as well)
           if (distDelivery < 188) {
-            if (!cookieInstance.shape) {
-              SoundManager.getInstance().playUiDenied();
-              this.showFeedbackText(i18n.t('game.feedback.cutShapeFirst'), this.trayX, 375, '#d90429');
-            } else {
-              this.deliveryTrayCookies.push(cookieInstance);
-              this.prepTrayCookies.splice(cookieIdx, 1);
-              this.drawDeliveryTray();
-              this.updateCookieVisuals();
-              SoundManager.getInstance().playUiTap();
-              this.showFeedbackText(i18n.t('game.feedback.cookieReadyDelivery'), this.deliveryTrayX, 375, '#38b000');
-              this.events.emit('game:cookie_to_tray', { cookie: cookieInstance });
+            if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_COOKIE_TRAY', { destination: 'delivery_tray', cookie: cookieInstance })) {
+              this.tutorialManager.denyAction(this, sprite);
+              this.tweens.add({
+                targets: sprite,
+                x: sprite.getData('origX'),
+                y: sprite.getData('origY'),
+                duration: 250,
+                ease: 'Back.out',
+                onComplete: () => {
+                  sprite.setDepth(3);
+                }
+              });
               this.events.emit('game:drag_end', { item: 'table_cookie', cookie: cookieInstance, index: cookieIdx });
               return;
             }
+
+            this.deliveryTrayCookies.push(cookieInstance);
+            const realIdx = this.prepTrayCookies.indexOf(cookieInstance);
+            if (realIdx !== -1) {
+              this.prepTrayCookies.splice(realIdx, 1);
+            }
+            this.drawDeliveryTray();
+            this.updateCookieVisuals();
+            SoundManager.getInstance().playUiTap();
+            this.showFeedbackText(i18n.t('game.feedback.cookieReadyDelivery'), this.deliveryTrayX, 375, '#38b000');
+            this.events.emit('game:cookie_to_tray', { cookie: cookieInstance });
+            this.events.emit('game:drag_end', { item: 'table_cookie', cookie: cookieInstance, index: cookieIdx });
+            return;
           }
 
           // 3. Drop on Oven (only if shaped, oven has space, and not baking)
           if (distOven < 225) {
+            if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('LOAD_OVEN', { destination: 'oven', cookie: cookieInstance })) {
+              this.tutorialManager.denyAction(this, sprite);
+              this.tweens.add({
+                targets: sprite,
+                x: sprite.getData('origX'),
+                y: sprite.getData('origY'),
+                duration: 250,
+                ease: 'Back.out',
+                onComplete: () => {
+                  sprite.setDepth(3);
+                }
+              });
+              this.events.emit('game:drag_end', { item: 'table_cookie', cookie: cookieInstance, index: cookieIdx });
+              return;
+            }
+
             if (this.isBaking) {
               SoundManager.getInstance().playUiDenied();
               this.showFeedbackText(i18n.t('game.feedback.ovenAlreadyOn'), this.trayX, 375, '#d90429');
@@ -1874,12 +2295,20 @@ export default class GameScene extends Phaser.Scene {
             } else {
               // Valid drop in oven!
               this.cookiesInOven.push(cookieInstance);
-              this.prepTrayCookies.splice(cookieIdx, 1);
+              const realIdx = this.prepTrayCookies.indexOf(cookieInstance);
+              if (realIdx !== -1) {
+                this.prepTrayCookies.splice(realIdx, 1);
+              }
               this.updateExtractButtonState();
               SoundManager.getInstance().playOvenDoor();
               this.showFeedbackText(i18n.t('game.feedback.cookieInserted', { count: this.cookiesInOven.length, total: 3 }), this.trayX, 375, '#38b000');
               this.events.emit('game:cookie_loaded_oven', { cookie: cookieInstance, count: this.cookiesInOven.length });
               this.events.emit('game:drag_end', { item: 'table_cookie', cookie: cookieInstance, index: cookieIdx });
+
+              const spriteIdx = this.prepTraySprites.indexOf(sprite);
+              if (spriteIdx !== -1) {
+                this.prepTraySprites.splice(spriteIdx, 1);
+              }
 
               // Play shrink and fade animation into the oven door window
               this.tweens.add({
@@ -1964,12 +2393,12 @@ export default class GameScene extends Phaser.Scene {
         qty = 1;
         requestedDrink = 'coffee';
       } else if (customerIndex === 1) {
-        // Customer 2: 1 Vanilla Cookie with Sprinkles + Milk
+        // Customer 2: 1 Vanilla Cookie with Sprinkles + Coffee with Milk
         selectedRecipe = { name: `${i18n.t('recipes.bases.classic')} ${i18n.t('recipes.shapes.star')} ${i18n.t('recipes.toppings.sprinkles')}`, base: 'classic', shape: 'star', toppings: ['sprinkles'] };
         qty = 1;
-        requestedDrink = 'milk';
+        requestedDrink = 'coffee_milk';
       } else {
-        // Customer 3: 1 Vanilla Cookie with Sprinkles + Coffee with Milk
+        // Customer 3+: 1 Vanilla Cookie with Sprinkles + Coffee with Milk
         selectedRecipe = { name: `${i18n.t('recipes.bases.classic')} ${i18n.t('recipes.shapes.star')} ${i18n.t('recipes.toppings.sprinkles')}`, base: 'classic', shape: 'star', toppings: ['sprinkles'] };
         qty = 1;
         requestedDrink = 'coffee_milk';
@@ -2022,8 +2451,20 @@ export default class GameScene extends Phaser.Scene {
         });
       }
 
-      if (availableRecipes.length > 0) {
-        selectedRecipe = Phaser.Utils.Array.GetRandom(availableRecipes);
+      // Filter strictly for recipes with stock available right now
+      const validRecipes = availableRecipes.filter(recipe => {
+        const baseStock = Number(this.stock.dough[recipe.base]) || 0;
+        if (baseStock <= 0) return false;
+        if (recipe.toppings && recipe.toppings.length > 0) {
+          for (const t of recipe.toppings) {
+            if ((Number(this.stock.topping[t]) || 0) <= 0) return false;
+          }
+        }
+        return true;
+      });
+
+      if (validRecipes.length > 0) {
+        selectedRecipe = Phaser.Utils.Array.GetRandom(validRecipes);
 
         const QUANTITY_RANGES = {
           1: { min: 1, max: 3 },
@@ -2033,21 +2474,36 @@ export default class GameScene extends Phaser.Scene {
           5: { min: 2, max: 5 }
         };
         const range = QUANTITY_RANGES[customerId] || { min: 1, max: 2 };
-        const capD = Math.min(5, 1 + this.day);
+        
+        let capD;
+        if (this.day === 2) {
+          capD = 1;
+        } else if (this.day === 3) {
+          capD = 2;
+        } else if (this.day === 4) {
+          capD = 3;
+        } else {
+          capD = Math.min(5, Math.max(1, this.day - 1));
+        }
+
         let rawQty = Phaser.Math.Between(range.min, range.max);
         rawQty = Math.max(1, Math.min(rawQty, capD));
 
-        let stockLimit = this.stock.dough[selectedRecipe.base] || 0;
+        let stockLimit = Number(this.stock.dough[selectedRecipe.base]) || 0;
         if (selectedRecipe.toppings && selectedRecipe.toppings.length > 0) {
           selectedRecipe.toppings.forEach(topping => {
-            stockLimit = Math.min(stockLimit, this.stock.topping[topping] || 0);
+            stockLimit = Math.min(stockLimit, Number(this.stock.topping[topping]) || 0);
           });
         }
-        qty = Math.min(rawQty, stockLimit);
-        qty = Math.max(1, qty);
+        if (stockLimit > 0) {
+          qty = Math.max(1, Math.min(rawQty, stockLimit));
+        } else {
+          selectedRecipe = null;
+          qty = 0;
+        }
       } else {
-        const hasBeans = (this.stock.drink.coffee_beans || 0) > 0;
-        const hasMilk = (this.stock.drink.milk || 0) > 0;
+        const hasBeans = (Number(this.stock.drink?.coffee_beans) || 0) > 0;
+        const hasMilk = (Number(this.stock.drink?.milk) || 0) > 0;
         if (this.day >= 2 && (hasBeans || hasMilk)) {
           selectedRecipe = null;
           qty = 0;
@@ -2057,15 +2513,24 @@ export default class GameScene extends Phaser.Scene {
         }
       }
 
-      const forceDrink = (qty === 0);
-      if (this.day >= 2 && (forceDrink || Math.random() < 0.45)) {
-        const hasBeans = (this.stock.drink.coffee_beans || 0) > 0;
-        const hasMilk = (this.stock.drink.milk || 0) > 0;
+      const hasBeans = (Number(this.stock.drink?.coffee_beans) || 0) > 0;
+      const hasMilk = (Number(this.stock.drink?.milk) || 0) > 0;
+      if (qty === 0 && !selectedRecipe && !hasBeans && !hasMilk) {
+        selectedRecipe = { name: `${i18n.t('recipes.bases.classic')} ${i18n.t('recipes.shapes.star')}`, base: 'classic', shape: 'star', toppings: [] };
+        qty = 1;
+      }
 
+      const forceDrink = (qty === 0);
+      let drinkChance = 0.50;
+      if (this.day === 2) drinkChance = 0.20;
+      else if (this.day === 3) drinkChance = 0.35;
+      else if (this.day === 4) drinkChance = 0.45;
+
+      if (this.day >= 2 && (forceDrink || Math.random() < drinkChance)) {
         const drinkOptions = [];
         if (hasBeans) drinkOptions.push('coffee');
         if (hasMilk) drinkOptions.push('milk');
-        if (hasBeans && hasMilk) drinkOptions.push('coffee_milk');
+        if (this.day >= 3 && hasBeans && hasMilk) drinkOptions.push('coffee_milk');
 
         if (drinkOptions.length > 0) {
           requestedDrink = Phaser.Utils.Array.GetRandom(drinkOptions);
@@ -2113,12 +2578,123 @@ export default class GameScene extends Phaser.Scene {
   deliverCookie() {
     if (!this.currentCustomer) return;
 
-    // Check if the customer requested a drink, and if it's on the tray
+    const i18n = I18nManager.getInstance();
+    const cookiesCount = this.deliveryTrayCookies.length;
+    const drinksCount = this.deliveryTrayDrinks ? this.deliveryTrayDrinks.length : 0;
+
+    if (cookiesCount === 0 && drinksCount === 0) {
+      this.showFeedbackText(i18n.t('customer.feedback.emptyTray'), this.trayX, 375, '#d90429');
+      return;
+    }
+
+    const requested = this.currentCustomer.requestedQuantity;
     const requestedDrink = this.currentCustomer.requestedDrink;
+
+    if (requested === 0) {
+      // Customer only requested a drink!
+      let drinkReward = 0;
+      const drinkIndex = this.deliveryTrayDrinks.indexOf(requestedDrink);
+      if (drinkIndex !== -1) {
+        this.deliveryTrayDrinks.splice(drinkIndex, 1);
+        if (requestedDrink === 'coffee') drinkReward = 25;
+        else if (requestedDrink === 'milk') drinkReward = 15;
+        else if (requestedDrink === 'coffee_milk') drinkReward = 35;
+      }
+
+      // Penalty for any excess cookies on the tray
+      const excessCount = this.deliveryTrayCookies.length;
+      const wastePenalty = excessCount * 15;
+
+      this.coins = Math.max(0, this.coins + drinkReward - wastePenalty);
+      this.coinsText.setText(`${this.coins}`);
+
+      if (excessCount > 0) {
+        this.showFeedbackText(i18n.t('customer.feedback.orderExcess', { reward: drinkReward, penalty: wastePenalty }), this.trayX, 375, '#ffb703');
+      } else {
+        this.showFeedbackText(i18n.t('customer.feedback.perfectDrink', { reward: drinkReward }), this.trayX, 375, '#38b000');
+        this.triggerConfetti();
+        CrazyGamesSDK.getInstance().happytime();
+      }
+
+      this.events.emit('game:tray_delivered', { rejected: false, success: true });
+      this.events.emit('game:order_delivered', { requestedDrink });
+
+      // Clean up and spawn next
+      this.deliveryTrayCookies = [];
+      this.deliveryTrayDrinks = [];
+      this.drawDeliveryTray();
+      this.currentCustomer.destroy();
+      this.currentCustomer = null;
+
+      this.time.delayedCall(1500, () => {
+        this.spawnCustomer();
+      });
+      return;
+    }
+
+    if (cookiesCount === 0) {
+      this.showFeedbackText(i18n.t('customer.feedback.emptyTray'), this.trayX, 375, '#d90429');
+      return;
+    }
+
+    const recipe = this.currentCustomer.recipe;
+    const threshold = this.currentCustomer.toleranceThreshold || 80;
+    const newDelivered = this.deliveryTrayCookies;
+
+    // Check if any of the delivered cookies are below the customer's tolerance threshold
+    let rejected = false;
+    let rejectReason = i18n.t('customer.feedback.wrongOrder');
+
+    for (const cookie of newDelivered) {
+      const sim = cookie.getSimilarityPercentage(recipe);
+      if (sim < threshold) {
+        rejected = true;
+        if (cookie.bakedState === 'raw') {
+          rejectReason = i18n.t('customer.feedback.rawCookie');
+        } else if (cookie.bakedState === 'burnt') {
+          rejectReason = i18n.t('customer.feedback.burntCookie');
+        } else if (recipe && recipe.toppings && recipe.toppings.length > 0 && (!cookie.toppings || !cookie.toppings.includes(recipe.toppings[0]))) {
+          rejectReason = i18n.t('customer.feedback.missingTopping');
+        } else if (recipe && cookie.shape !== recipe.shape) {
+          rejectReason = i18n.t('customer.feedback.wrongShape');
+        } else if (recipe && cookie.base !== recipe.base) {
+          rejectReason = i18n.t('customer.feedback.wrongBase');
+        }
+        break;
+      }
+    }
+
+    if (rejected) {
+      this.showFeedbackText(rejectReason, this.trayX, 375, '#d90429');
+
+      // Angry customer feedback shake
+      SoundManager.getInstance().playCustomerAngry();
+      if (!this.tutorialManager?.isPatienceProtected()) {
+        const patienceLoss = this.currentCustomer.maxPatience * 0.25;
+        this.currentCustomer.patience = Math.max(0, this.currentCustomer.patience - patienceLoss);
+        this.currentCustomer.updatePatienceBar();
+      }
+      this.events.emit('game:tray_delivered', { rejected: true, success: false, reason: rejectReason });
+
+      this.tweens.add({
+        targets: this.currentCustomer.container,
+        x: { from: 960 - 19, to: 960 + 19 },
+        duration: 50,
+        yoyo: true,
+        repeat: 5,
+        onComplete: () => {
+          if (this.currentCustomer && this.currentCustomer.container) {
+            this.currentCustomer.container.x = 960;
+          }
+        }
+      });
+      return;
+    }
+
+    // Check if the customer requested a drink, and if it's on the tray
     if (requestedDrink) {
       const drinkIndex = this.deliveryTrayDrinks.indexOf(requestedDrink);
       if (drinkIndex === -1) {
-        const i18n = I18nManager.getInstance();
         const drinkName = i18n.t(`recipes.drinks.${requestedDrink}`);
         
         this.showFeedbackText(i18n.t('game.feedback.missingDrink', { drink: drinkName }), this.trayX, 375, '#d90429');
@@ -2146,105 +2722,6 @@ export default class GameScene extends Phaser.Scene {
         });
         return;
       }
-    }
-
-    const requested = this.currentCustomer.requestedQuantity;
-    if (requested === 0) {
-      // Customer only requested a drink!
-      let drinkReward = 0;
-      const drinkIndex = this.deliveryTrayDrinks.indexOf(requestedDrink);
-      if (drinkIndex !== -1) {
-        this.deliveryTrayDrinks.splice(drinkIndex, 1);
-        if (requestedDrink === 'coffee') drinkReward = 25;
-        else if (requestedDrink === 'milk') drinkReward = 15;
-        else if (requestedDrink === 'coffee_milk') drinkReward = 35;
-      }
-
-      // Penalty for any excess cookies on the tray
-      const excessCount = this.deliveryTrayCookies.length;
-      const wastePenalty = excessCount * 15;
-
-      this.coins = Math.max(0, this.coins + drinkReward - wastePenalty);
-      this.coinsText.setText(`${this.coins}`);
-
-      const i18n = I18nManager.getInstance();
-      if (excessCount > 0) {
-        this.showFeedbackText(i18n.t('customer.feedback.orderExcess', { reward: drinkReward, penalty: wastePenalty }), this.trayX, 375, '#ffb703');
-      } else {
-        this.showFeedbackText(i18n.t('customer.feedback.perfectDrink', { reward: drinkReward }), this.trayX, 375, '#38b000');
-        this.triggerConfetti();
-        CrazyGamesSDK.getInstance().happytime();
-      }
-
-      this.events.emit('game:tray_delivered', { rejected: false, success: true });
-      this.events.emit('game:order_delivered', { requestedDrink });
-
-      // Clean up and spawn next
-      this.deliveryTrayCookies = [];
-      this.deliveryTrayDrinks = [];
-      this.drawDeliveryTray();
-      this.currentCustomer.destroy();
-      this.currentCustomer = null;
-
-      this.time.delayedCall(1500, () => {
-        this.spawnCustomer();
-      });
-      return;
-    }
-
-    const i18n = I18nManager.getInstance();
-    if (this.deliveryTrayCookies.length === 0) {
-      this.showFeedbackText(i18n.t('customer.feedback.emptyTray'), this.trayX, 375, '#d90429');
-      return;
-    }
-
-    const recipe = this.currentCustomer.recipe;
-    const threshold = this.currentCustomer.toleranceThreshold || 80;
-    const newDelivered = this.deliveryTrayCookies;
-
-    // Check if any of the delivered cookies are below the customer's tolerance threshold
-    let rejected = false;
-    let rejectReason = i18n.t('customer.feedback.wrongOrder');
-
-    for (const cookie of newDelivered) {
-      const sim = cookie.getSimilarityPercentage(recipe);
-      if (sim < threshold) {
-        rejected = true;
-        if (cookie.bakedState === 'raw') {
-          rejectReason = i18n.t('customer.feedback.rawCookie');
-        } else if (cookie.bakedState === 'burnt') {
-          rejectReason = i18n.t('customer.feedback.burntCookie');
-        } else if (recipe.toppings && recipe.toppings.length > 0 && (!cookie.toppings || !cookie.toppings.includes(recipe.toppings[0]))) {
-          rejectReason = i18n.t('customer.feedback.missingTopping');
-        } else if (cookie.shape !== recipe.shape) {
-          rejectReason = i18n.t('customer.feedback.wrongShape');
-        } else if (cookie.base !== recipe.base) {
-          rejectReason = i18n.t('customer.feedback.wrongBase');
-        }
-        break;
-      }
-    }
-
-    if (rejected) {
-      this.showFeedbackText(rejectReason, this.trayX, 375, '#d90429');
-
-      // Angry customer feedback shake (no patience penalty)
-      SoundManager.getInstance().playCustomerAngry();
-      this.events.emit('game:tray_delivered', { rejected: true, success: false, reason: rejectReason });
-
-      this.tweens.add({
-        targets: this.currentCustomer.container,
-        x: { from: 960 - 19, to: 960 + 19 },
-        duration: 50,
-        yoyo: true,
-        repeat: 5,
-        onComplete: () => {
-          if (this.currentCustomer && this.currentCustomer.container) {
-            this.currentCustomer.container.x = 960;
-          }
-        }
-      });
-      return;
     }
 
     const accumulated = this.currentCustomer.acceptedCookies || [];
@@ -2425,6 +2902,53 @@ export default class GameScene extends Phaser.Scene {
 
   scratchCustomer() {
     if (!this.currentCustomer || !this.currentCustomer.isActive) return;
+
+    if (this.tutorialManager?.isActive) {
+      this.scratchBlockedUntilPointerUp = true;
+
+      SoundManager.getInstance().playScratch();
+      SoundManager.getInstance().playCatMeow('curious');
+
+      const cx = this.currentCustomer.container.x;
+      const cy = this.currentCustomer.container.y + 75;
+
+      const i18n = I18nManager.getInstance();
+      this.showFeedbackText(i18n.t('customer.scratchWarningTutorial'), cx, cy - 244, '#ffb703');
+
+      const scratchGraphics = this.add.graphics().setDepth(20);
+      scratchGraphics.lineStyle(8, 0xd90429, 1);
+
+      scratchGraphics.lineBetween(cx - 56, cy - 56, cx - 19, cy + 56);
+      scratchGraphics.lineBetween(cx - 19, cy - 66, cx + 19, cy + 47);
+      scratchGraphics.lineBetween(cx + 19, cy - 56, cx + 56, cy + 56);
+
+      this.tweens.add({
+        targets: scratchGraphics,
+        alpha: 0,
+        duration: 350,
+        onComplete: () => {
+          scratchGraphics.destroy();
+        }
+      });
+
+      const originalX = this.currentCustomer.container.x;
+      const originalY = this.currentCustomer.container.y;
+      this.tweens.add({
+        targets: this.currentCustomer.container,
+        x: originalX + Phaser.Math.Between(-8, 8),
+        y: originalY + Phaser.Math.Between(-6, 6),
+        duration: 50,
+        yoyo: true,
+        repeat: 2,
+        onComplete: () => {
+          if (this.currentCustomer && this.currentCustomer.container) {
+            this.currentCustomer.container.setPosition(originalX, originalY);
+          }
+        }
+      });
+
+      return;
+    }
 
     this.currentCustomer.isActive = false;
 
@@ -2878,19 +3402,44 @@ export default class GameScene extends Phaser.Scene {
     this.customerHighlighted = false;
     this.trashHighlighted = false;
 
+    let isDraggingTray = false;
+
     this.deliveryDragZone.on('pointerdown', () => {
       if (this.isEditorMode) return;
       this.isHoldingItem = true;
+      isDraggingTray = false;
     });
 
     this.deliveryDragZone.on('dragstart', () => {
       if (this.isEditorMode) return;
+      if (this.tutorialManager?.isActive) {
+        const allowedTrayActions = ['DELIVER_ORDER', 'DRAG_TRASH'];
+        const curAction = this.tutorialManager.getCurrentStep()?.allowedAction;
+        if (!allowedTrayActions.includes(curAction)) {
+          this.tutorialManager.denyAction(this, this.deliveryDragZone);
+          return;
+        }
+      }
+      isDraggingTray = true;
       this.isHoldingItem = true;
       this.events.emit('game:drag_start', { item: 'delivery_tray' });
       SoundManager.getInstance().playUiTap();
       this.deliveryDragZone.setDepth(30000);
       this.deliveryTrayLabel.setDepth(30001);
       this.deliveryTraySprites.forEach(s => s.setDepth(30002));
+    });
+
+    this.deliveryDragZone.on('pointerup', () => {
+      if (this.isEditorMode) return;
+      if (!isDraggingTray) {
+        if (this.deliveryTrayCookies.length > 0 || (this.deliveryTrayDrinks && this.deliveryTrayDrinks.length > 0)) {
+          if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DELIVER_ORDER', { destination: 'customer' })) {
+            this.tutorialManager.denyAction(this, this.deliveryDragZone);
+            return;
+          }
+          this.deliverCookie();
+        }
+      }
     });
 
     this.deliveryDragZone.on('drag', (pointer, dragX, dragY) => {
@@ -2937,7 +3486,7 @@ export default class GameScene extends Phaser.Scene {
 
       // Check distance to trash bin
       const distToTrash = Phaser.Math.Distance.Between(dragX, clampedY, this.trashBinX, this.trashBinY);
-      if (distToTrash < 131) {
+      if (distToTrash < 95) {
         if (!this.trashHighlighted) {
           this.trashHighlighted = true;
           this.tweens.add({
@@ -3029,6 +3578,7 @@ export default class GameScene extends Phaser.Scene {
     this.deliveryDragZone.on('dragend', () => {
       this.isHoldingItem = false;
       if (this.isEditorMode) return;
+      setTimeout(() => { isDraggingTray = false; }, 50);
       this.deliveryDragZone.setScale(1.0);
       this.deliveryDragZone.setDepth(15);
       this.deliveryTrayLabel.setDepth(2);
@@ -3048,23 +3598,30 @@ export default class GameScene extends Phaser.Scene {
         if (this.trashContainer) this.trashContainer.setScale(1.0);
         if (this.trashBinSprite) this.trashBinSprite.clearTint();
 
-        const count = this.deliveryTrayCookies.length;
-        const drinksCount = this.deliveryTrayDrinks ? this.deliveryTrayDrinks.length : 0;
-        if (count > 0 || drinksCount > 0) {
-          SoundManager.getInstance().playTrash();
-          this.deliveryTrayCookies = [];
-          this.deliveryTrayDrinks = [];
-          this.drawDeliveryTray();
-          this.showFeedbackText(I18nManager.getInstance().t('game.feedback.trayEmptied'), this.trashBinX, this.trashBinY - 50, '#d90429');
-          this.events.emit('game:tray_trashed');
+        if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_TRASH', { item: 'delivery_tray', destination: 'trash' })) {
+          this.tutorialManager.denyAction(this, this.deliveryDragZone);
+        } else {
+          const count = this.deliveryTrayCookies.length;
+          const drinksCount = this.deliveryTrayDrinks ? this.deliveryTrayDrinks.length : 0;
+          if (count > 0 || drinksCount > 0) {
+            SoundManager.getInstance().playTrash();
+            this.deliveryTrayCookies = [];
+            this.deliveryTrayDrinks = [];
+            this.drawDeliveryTray();
+            this.showFeedbackText(I18nManager.getInstance().t('game.feedback.trayEmptied'), this.trashBinX, this.trashBinY - 50, '#d90429');
+            this.events.emit('game:tray_trashed');
+          }
         }
       }
 
       if (this.customerHighlighted) {
         this.customerHighlighted = false;
-        
-        // Deliver!
-        this.deliverCookie();
+        if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DELIVER_ORDER', { destination: 'customer' })) {
+          this.tutorialManager.denyAction(this, this.deliveryDragZone);
+        } else {
+          // Deliver!
+          this.deliverCookie();
+        }
       }
 
       this.events.emit('game:drag_end', { item: 'delivery_tray' });
@@ -3140,15 +3697,26 @@ export default class GameScene extends Phaser.Scene {
 
     // Draw cookies
     this.deliveryTrayCookies.forEach((cookie, index) => {
-      let key = `cookie_${cookie.shape}_${cookie.base}_${cookie.bakedState}`;
-      if (cookie.toppings && cookie.toppings[0]) {
-        key += `_${cookie.toppings[0]}`;
+      let key = '';
+      const isShaped = Boolean(cookie.shape);
+      if (isShaped) {
+        key = `cookie_${cookie.shape}_${cookie.base}_${cookie.bakedState}`;
+        if (cookie.toppings && cookie.toppings[0]) {
+          key += `_${cookie.toppings[0]}`;
+        }
+      } else {
+        key = `dough_${cookie.base || 'classic'}`;
+      }
+
+      if (this.textures && typeof this.textures.exists === 'function' && !this.textures.exists(key)) {
+        key = `dough_${cookie.base || 'classic'}`;
       }
 
       const x = startX + index * spacing;
       const y = trayY;
 
-      const sprite = this.add.image(x, y, key).setDisplaySize(75, 75).setDepth(14);
+      const size = isShaped ? 75 : 65;
+      const sprite = this.add.image(x, y, key).setDisplaySize(size, size).setDepth(14);
       this.deliveryTraySprites.push(sprite);
     });
 
@@ -3170,6 +3738,13 @@ export default class GameScene extends Phaser.Scene {
 
 
   handleOvenImageClick() {
+    if (this.tutorialManager?.isActive) {
+      if (!this.tutorialManager.isActionAllowed('CLICK_EXTRACT', { cookies: this.cookiesInOven })) {
+        this.tutorialManager.denyAction(this, this.ovenExtractZone || this.ovenGlassSprite);
+        return;
+      }
+    }
+
     if (!this.cookiesInOven || this.cookiesInOven.length === 0) {
       SoundManager.getInstance().playUiDenied();
       this.showFeedbackText(I18nManager.getInstance().t('game.feedback.ovenEmpty'), this.ovenX, 375, '#d90429');

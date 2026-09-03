@@ -16,15 +16,21 @@ export default class Customer {
     // Roll for mood (bad day / rush) based on current day
     const day = this.scene.day || 1;
     const badDayChance = day <= 4
-      ? ({ 1: 0.10, 2: 0.30, 3: 0.45, 4: 0.65 }[day] || 0.10)
-      : Math.min(0.85, 0.65 + (day - 4) * 0.05);
+      ? ({ 1: 0.10, 2: 0.05, 3: 0.15, 4: 0.25 }[day] || 0.10)
+      : Math.min(0.70, 0.30 + (day - 4) * 0.08);
     this.isBadDay = Math.random() < badDayChance;
 
     // Set requested quantity
     if (forcedQuantity !== undefined) {
       this.requestedQuantity = forcedQuantity;
     } else {
-      const capD = Math.min(5, 1 + day);
+      let capD;
+      if (day === 1) capD = 1;
+      else if (day === 2) capD = 1;
+      else if (day === 3) capD = 2;
+      else if (day === 4) capD = 3;
+      else capD = Math.min(5, Math.max(1, day - 1));
+
       const QUANTITY_RANGES = {
         1: { min: 1, max: 3 }, // Dormilón
         2: { min: 2, max: 4 }, // Oficinista
@@ -43,10 +49,10 @@ export default class Customer {
     // Patience multipliers based on customerId (Personalities)
     const MULTIPLIERS = {
       1: 1.20,  // Dormilón (Muy Paciente)
-      2: 0.75,  // Oficinista (Impaciente)
+      2: 0.80,  // Oficinista (Impaciente)
       3: 1.40,  // Abuelita (Súper Paciente)
       4: 1.00,  // Estudiante (Estándar)
-      5: 0.60   // Gamer (Muy Impaciente / Apurado)
+      5: 0.70   // Gamer (Apurado)
     };
     let multiplier = MULTIPLIERS[this.customerId] || 1.00;
     if (this.isBadDay) {
@@ -57,10 +63,10 @@ export default class Customer {
     let basePatience = (dayConfig.patienceTime || 30) * multiplier;
     
     // Scale patience by quantity (more cookies = more patience) and add a bonus if they ordered a drink!
-    const quantityMultipliers = { 1: 1.0, 2: 1.2, 3: 1.4, 4: 1.8, 5: 2.0 };
+    const quantityMultipliers = { 1: 1.0, 2: 1.4, 3: 1.8, 4: 2.3, 5: 2.8 };
     let qtyMult = quantityMultipliers[this.requestedQuantity] || 1.0;
     if (this.requestedDrink) {
-      qtyMult += 0.3; // Give 30% more time to prepare the drink as well!
+      qtyMult += 0.35; // Give 35% more time to prepare the drink as well!
     }
     
     this.maxPatience = basePatience * qtyMult;
@@ -79,7 +85,7 @@ export default class Customer {
       2: 90,  // Oficinista (90% de similitud mínima)
       3: 50,  // Abuelita (50% de similitud mínima)
       4: 80,  // Estudiante (80% de similitud mínima)
-      5: 100  // Gamer (100% de similitud mínima)
+      5: 95   // Gamer (95% de similitud mínima)
     };
     let threshold = TOLERANCE_THRESHOLDS[this.customerId] || 80;
     if (this.isBadDay && this.customerId !== 5) {
@@ -99,6 +105,14 @@ export default class Customer {
     // 1. Draw customer character (uses the preloaded PNG sprite)
     this.sprite = this.scene.add.image(0, 75, 'customer_' + this.customerId);
     this.sprite.setDisplaySize(338, 338);
+    if (typeof this.sprite.setInteractive === 'function') {
+      this.sprite.setInteractive({ useHandCursor: true });
+      this.sprite.on('pointerdown', () => {
+        if (this.scene && typeof this.scene.deliverCookie === 'function') {
+          this.scene.deliverCookie();
+        }
+      });
+    }
     this.container.add(this.sprite);
 
     // 2. Patience Bar (Background)

@@ -39,7 +39,7 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
       i18n = I18nManager.getInstance({ reset: true, storage: mockStorage, language: 'en' });
     });
 
-    test('English dictionary contains all required tutorial keys for all 5 blocks', () => {
+    test('English dictionary contains all required tutorial keys for all 6 blocks', () => {
       assert.ok(en.tutorial, 'en.tutorial must exist');
       assert.equal(en.tutorial.mentorName, 'Kiwii');
       assert.ok(en.tutorial.skipButton, 'Skip button text must exist');
@@ -55,7 +55,8 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
       assert.ok(en.tutorial.steps.ovenPower, 'Canonical ovenPower');
       assert.ok(en.tutorial.steps.cookieToOven, 'Canonical cookieToOven');
       assert.ok(en.tutorial.steps.ovenBake, 'Canonical ovenBake');
-      assert.ok(en.tutorial.steps.burnWait, 'Canonical burnWait');
+      assert.ok(en.tutorial.steps.ovenBaking, 'Canonical ovenBaking');
+      assert.ok(en.tutorial.steps.ovenBell, 'Canonical ovenBell');
       assert.ok(en.tutorial.steps.burntExtract, 'Canonical burntExtract');
       assert.ok(en.tutorial.steps.burntTrash, 'Canonical burntTrash');
       assert.ok(en.tutorial.steps.stockExplanation, 'Canonical stockExplanation');
@@ -73,10 +74,24 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
       assert.ok(en.tutorial.steps.perfectOvenExtract, 'Canonical perfectOvenExtract');
       assert.ok(en.tutorial.steps.perfectCookieToTray, 'Canonical perfectCookieToTray');
       assert.ok(en.tutorial.steps.patienceDelivery, 'Canonical patienceDelivery');
+      assert.ok(en.tutorial.steps.client1Farewell, 'Canonical client1Farewell');
+      assert.ok(en.tutorial.steps.client2Intro, 'Canonical client2Intro');
+      assert.ok(en.tutorial.steps.client2Dough, 'Canonical client2Dough');
+      assert.ok(en.tutorial.steps.client2Shape, 'Canonical client2Shape');
+      assert.ok(en.tutorial.steps.client2OvenLoad, 'Canonical client2OvenLoad');
+      assert.ok(en.tutorial.steps.client2OvenBake, 'Canonical client2OvenBake');
+      assert.ok(en.tutorial.steps.client2OvenExtract, 'Canonical client2OvenExtract');
+      assert.ok(en.tutorial.steps.toppingSprinkles, 'Canonical toppingSprinkles');
+      assert.ok(en.tutorial.steps.client2CookieToTray, 'Canonical client2CookieToTray');
+      assert.ok(en.tutorial.steps.client2Cup, 'Canonical client2Cup');
+      assert.ok(en.tutorial.steps.client2Coffee, 'Canonical client2Coffee');
+      assert.ok(en.tutorial.steps.client2MilkMix, 'Canonical client2MilkMix');
+      assert.ok(en.tutorial.steps.client2DrinkToTray, 'Canonical client2DrinkToTray');
+      assert.ok(en.tutorial.steps.client2Delivery, 'Canonical client2Delivery');
       assert.ok(en.tutorial.steps.complete, 'Canonical complete');
     });
 
-    test('Spanish dictionary contains all matching tutorial keys for all 5 blocks', () => {
+    test('Spanish dictionary contains all matching tutorial keys for all 6 blocks', () => {
       assert.ok(es.tutorial, 'es.tutorial must exist');
       assert.equal(es.tutorial.mentorName, 'Kiwii');
       assert.ok(es.tutorial.skipButton, 'Skip button text must exist');
@@ -92,7 +107,8 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
       assert.ok(es.tutorial.steps.ovenPower, 'Canonical ovenPower');
       assert.ok(es.tutorial.steps.cookieToOven, 'Canonical cookieToOven');
       assert.ok(es.tutorial.steps.ovenBake, 'Canonical ovenBake');
-      assert.ok(es.tutorial.steps.burnWait, 'Canonical burnWait');
+      assert.ok(es.tutorial.steps.ovenBaking, 'Canonical ovenBaking');
+      assert.ok(es.tutorial.steps.ovenBell, 'Canonical ovenBell');
       assert.ok(es.tutorial.steps.burntExtract, 'Canonical burntExtract');
       assert.ok(es.tutorial.steps.burntTrash, 'Canonical burntTrash');
       assert.ok(es.tutorial.steps.stockExplanation, 'Canonical stockExplanation');
@@ -110,6 +126,20 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
       assert.ok(es.tutorial.steps.perfectOvenExtract, 'Canonical perfectOvenExtract');
       assert.ok(es.tutorial.steps.perfectCookieToTray, 'Canonical perfectCookieToTray');
       assert.ok(es.tutorial.steps.patienceDelivery, 'Canonical patienceDelivery');
+      assert.ok(es.tutorial.steps.client1Farewell, 'Canonical client1Farewell');
+      assert.ok(es.tutorial.steps.client2Intro, 'Canonical client2Intro');
+      assert.ok(es.tutorial.steps.client2Dough, 'Canonical client2Dough');
+      assert.ok(es.tutorial.steps.client2Shape, 'Canonical client2Shape');
+      assert.ok(es.tutorial.steps.client2OvenLoad, 'Canonical client2OvenLoad');
+      assert.ok(es.tutorial.steps.client2OvenBake, 'Canonical client2OvenBake');
+      assert.ok(es.tutorial.steps.client2OvenExtract, 'Canonical client2OvenExtract');
+      assert.ok(es.tutorial.steps.toppingSprinkles, 'Canonical toppingSprinkles');
+      assert.ok(es.tutorial.steps.client2CookieToTray, 'Canonical client2CookieToTray');
+      assert.ok(es.tutorial.steps.client2Cup, 'Canonical client2Cup');
+      assert.ok(es.tutorial.steps.client2Coffee, 'Canonical client2Coffee');
+      assert.ok(es.tutorial.steps.client2MilkMix, 'Canonical client2MilkMix');
+      assert.ok(es.tutorial.steps.client2DrinkToTray, 'Canonical client2DrinkToTray');
+      assert.ok(es.tutorial.steps.client2Delivery, 'Canonical client2Delivery');
       assert.ok(es.tutorial.steps.complete, 'Canonical complete');
     });
 
@@ -135,7 +165,7 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
 
     test('100% of TUTORIAL_STEPS declarative array keys exist and translate in EN and ES', () => {
       assert.ok(Array.isArray(TUTORIAL_STEPS), 'TUTORIAL_STEPS array must exist');
-      assert.equal(TUTORIAL_STEPS.length, 25, 'TUTORIAL_STEPS must define exactly 25 micro-steps');
+      assert.equal(TUTORIAL_STEPS.length, 40, 'TUTORIAL_STEPS must define exactly 40 micro-steps');
 
       ['en', 'es'].forEach(lang => {
         i18n.setLanguage(lang);
@@ -453,7 +483,7 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
       assert.equal(overlay.pointerContainer.visible, true);
     });
 
-    test('setStep supports targetCoords polimorphically and enables Next button on DIALOG_ACK', () => {
+    test('setStep supports targetCoords polimorphically, enables Next button on DIALOG_ACK, and suppresses pointer arrow', () => {
       const overlay = new TutorialOverlay(mockScene);
 
       // 1. DIALOG_ACK step with targetCoords (e.g. step_welcome)
@@ -469,6 +499,7 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
       assert.equal(overlay.currentSpotlight.x, 960);
       assert.equal(overlay.currentSpotlight.y, 431);
       assert.equal(overlay.actionBtnContainer.visible, true, 'Next button must be visible for DIALOG_ACK');
+      assert.equal(overlay.pointerContainer.visible, false, 'Pointer arrow must NEVER be visible on DIALOG_ACK step');
 
       // 2. Interactive step (e.g. DRAG_DOUGH)
       overlay.setStep({
@@ -479,6 +510,7 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
       });
 
       assert.equal(overlay.actionBtnContainer.visible, false, 'Next button must NOT be visible for interactive DRAG_DOUGH');
+      assert.equal(overlay.pointerContainer.visible, true, 'Pointer arrow MUST be visible for interactive DRAG_DOUGH');
       assert.equal(overlay.currentSpotlight.x, 148);
     });
 

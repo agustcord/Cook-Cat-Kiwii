@@ -19,9 +19,9 @@ describe('EconomyManager - Pure Logic & TDD Matrix', () => {
 
   test('calculateExpenses returns correct fixed amounts per day', () => {
     assert.deepEqual(calculateExpenses(1), { rent: 20, maintenance: 15, loanPayment: 20, total: 55 });
-    assert.deepEqual(calculateExpenses(2), { rent: 20, maintenance: 20, loanPayment: 35, total: 75 });
-    assert.deepEqual(calculateExpenses(3), { rent: 20, maintenance: 25, loanPayment: 60, total: 105 });
-    assert.deepEqual(calculateExpenses(4), { rent: 20, maintenance: 30, loanPayment: 85, total: 135 });
+    assert.deepEqual(calculateExpenses(2), { rent: 20, maintenance: 15, loanPayment: 25, total: 60 });
+    assert.deepEqual(calculateExpenses(3), { rent: 20, maintenance: 20, loanPayment: 35, total: 75 });
+    assert.deepEqual(calculateExpenses(4), { rent: 20, maintenance: 25, loanPayment: 50, total: 95 });
   });
 
   test('calculateDayEarnings calculates only net sales from today', () => {

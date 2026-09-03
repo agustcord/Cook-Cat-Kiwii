@@ -72,7 +72,7 @@ describe('TrashBin Asset & Configuration Integration', () => {
     );
   });
 
-  test('La zona y distancia de detección del basurero (131px) se preservan para el descarte', () => {
+  test('La zona y distancia de detección del basurero (calibrada a 95px) se preservan para el descarte', () => {
     const gameContent = fs.readFileSync(gameScenePath, 'utf8');
     assert.ok(
       gameContent.includes('const distToTrash = Phaser.Math.Distance.Between(dragX, Math.max(338, dragY), this.trashBinX, this.trashBinY);'),
@@ -83,8 +83,8 @@ describe('TrashBin Asset & Configuration Integration', () => {
       'El cálculo de distancia en drop sobre el basurero debe mantenerse'
     );
     assert.ok(
-      gameContent.includes('if (distTrash < 131)'),
-      'El umbral de descarte de 131px debe mantenerse'
+      gameContent.includes('if (distTrash < 95)'),
+      'El umbral de descarte calibrado a 95px debe mantenerse'
     );
   });
 });

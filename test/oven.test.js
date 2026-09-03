@@ -355,4 +355,256 @@ describe('Oven Station & Cookie Baking Integration & Logic Matrix', () => {
       assert.ok(sim.audioEvents.includes('playOvenBurnAlert'), 'Debe sonar alerta de quemado');
     });
   });
+
+  describe('Dual Drag Support & Oven Batch Loading Matrix (Day 2 Fix)', () => {
+    test('GameScene.js hace interactiva y arrastrable prepTrayZone con dragstart, drag y dragend', () => {
+      const gameContent = fs.readFileSync(gameScenePath, 'utf8');
+      const createTrayIdx = gameContent.indexOf('createCookieTray(');
+      assert.ok(createTrayIdx !== -1, 'createCookieTray debe existir');
+      const createTrayFn = gameContent.slice(createTrayIdx, gameContent.indexOf('drawCookie()', createTrayIdx));
+      
+      assert.ok(createTrayFn.includes('this.prepTrayZone = this.add.rectangle('), 'Debe crear prepTrayZone');
+      assert.ok(createTrayFn.includes('.setInteractive('), 'prepTrayZone debe ser interactivo');
+      assert.ok(createTrayFn.includes('this.input.setDraggable(this.prepTrayZone)'), 'prepTrayZone debe ser arrastrable con setDraggable');
+      assert.ok(createTrayFn.includes(".on('dragstart'"), 'prepTrayZone debe tener handler dragstart');
+      assert.ok(createTrayFn.includes(".on('drag'"), 'prepTrayZone debe tener handler drag');
+      assert.ok(createTrayFn.includes(".on('dragend'"), 'prepTrayZone debe tener handler dragend');
+      assert.ok(createTrayFn.includes("item: 'prep_tray'"), 'prepTrayZone debe emitir item: prep_tray');
+      assert.ok(createTrayFn.includes('this.prepTrayBg.x ='), 'prepTrayZone debe trasladar prepTrayBg');
+      assert.ok(createTrayFn.includes('this.prepTraySprites.forEach('), 'prepTrayZone debe trasladar los sprites de galletas');
+    });
+
+    test('GameScene.js robustece arrastre individual eliminando por referencia (indexOf)', () => {
+      const gameContent = fs.readFileSync(gameScenePath, 'utf8');
+      const drawCookieIdx = gameContent.indexOf('drawCookie()');
+      assert.ok(drawCookieIdx !== -1, 'drawCookie debe existir');
+      const drawCookieFn = gameContent.slice(drawCookieIdx, gameContent.indexOf('spawnCustomer()', drawCookieIdx));
+
+      assert.ok(drawCookieFn.includes("sprite.setData('cookieInstance', cookie)"), 'drawCookie debe asociar la instancia de galleta al sprite');
+      assert.ok(drawCookieFn.includes('this.prepTrayCookies.indexOf(cookieInstance)'), 'drawCookie debe buscar cookieInstance por referencia con indexOf');
+      assert.ok(drawCookieFn.includes('this.cookiesInOven.push(cookieInstance)'), 'drawCookie debe insertar cookieInstance al horno');
+    });
+
+    class DualDragOvenMockScene {
+      constructor() {
+        this.cookiesInOven = [];
+        this.prepTrayCookies = [];
+        this.deliveryTrayCookies = [];
+        this.isBaking = false;
+        this.isOvenPreheated = true;
+        this.events = [];
+        this.feedbacks = [];
+        this.sounds = [];
+      }
+
+      handlePrepTrayDropOven() {
+        if (this.isBaking) {
+          this.sounds.push('playUiDenied');
+          this.feedbacks.push('ovenAlreadyOn');
+          return false;
+        }
+        if (this.cookiesInOven.length >= 3) {
+          this.sounds.push('playUiDenied');
+          this.feedbacks.push('ovenFull');
+          return false;
+        }
+        if (!this.prepTrayCookies || this.prepTrayCookies.length === 0) {
+          this.sounds.push('playUiDenied');
+          this.feedbacks.push('ovenEmpty');
+          return false;
+        }
+
+        const shapedCookies = this.prepTrayCookies.filter(c => !!c.shape);
+        if (shapedCookies.length === 0) {
+          this.sounds.push('playUiDenied');
+          this.feedbacks.push('cutShapeFirst');
+          return false;
+        }
+
+        const availableSpace = 3 - this.cookiesInOven.length;
+        const cookiesToLoad = shapedCookies.slice(0, availableSpace);
+        cookiesToLoad.forEach(cookieInstance => {
+          this.cookiesInOven.push(cookieInstance);
+          const idx = this.prepTrayCookies.indexOf(cookieInstance);
+          if (idx !== -1) {
+            this.prepTrayCookies.splice(idx, 1);
+          }
+        });
+
+        this.sounds.push('playOvenDoor');
+        this.feedbacks.push('cookieInserted');
+        this.events.push({
+          name: 'game:cookie_loaded_oven',
+          item: 'prep_tray',
+          cookies: cookiesToLoad,
+          count: this.cookiesInOven.length,
+          destination: 'oven'
+        });
+        return true;
+      }
+
+      handleSingleCookieDropOven(cookieInstance) {
+        if (this.isBaking) {
+          this.sounds.push('playUiDenied');
+          this.feedbacks.push('ovenAlreadyOn');
+          return false;
+        }
+        if (this.cookiesInOven.length >= 3) {
+          this.sounds.push('playUiDenied');
+          this.feedbacks.push('ovenFull');
+          return false;
+        }
+        if (!cookieInstance.shape) {
+          this.sounds.push('playUiDenied');
+          this.feedbacks.push('cutShapeFirst');
+          return false;
+        }
+
+        this.cookiesInOven.push(cookieInstance);
+        const realIdx = this.prepTrayCookies.indexOf(cookieInstance);
+        if (realIdx !== -1) {
+          this.prepTrayCookies.splice(realIdx, 1);
+        }
+
+        this.sounds.push('playOvenDoor');
+        this.feedbacks.push('cookieInserted');
+        this.events.push({
+          name: 'game:cookie_loaded_oven',
+          cookie: cookieInstance,
+          count: this.cookiesInOven.length
+        });
+        return true;
+      }
+    }
+
+    test('Arrastre de bandeja completa con 3 galletas con forma en Día 2 carga todas al horno simultáneamente', () => {
+      const scene = new DualDragOvenMockScene();
+      const c1 = new Cookie(); c1.base = 'chocolate'; c1.shape = 'star';
+      const c2 = new Cookie(); c2.base = 'chocolate'; c2.shape = 'star';
+      const c3 = new Cookie(); c3.base = 'chocolate'; c3.shape = 'star';
+      scene.prepTrayCookies = [c1, c2, c3];
+
+      const success = scene.handlePrepTrayDropOven();
+      assert.equal(success, true, 'Drop de bandeja debe ser exitoso');
+      assert.equal(scene.cookiesInOven.length, 3, 'El horno debe tener las 3 galletas');
+      assert.equal(scene.prepTrayCookies.length, 0, 'La bandeja de preparación debe quedar vacía');
+      assert.ok(scene.sounds.includes('playOvenDoor'), 'Debe sonar puerta de horno');
+      assert.equal(scene.events[0].count, 3, 'Evento debe reportar 3 galletas cargadas');
+    });
+
+    test('Arrastre de bandeja con galletas mixtas carga solo las que tienen forma', () => {
+      const scene = new DualDragOvenMockScene();
+      const shaped1 = new Cookie(); shaped1.base = 'chocolate'; shaped1.shape = 'star';
+      const unshaped = new Cookie(); unshaped.base = 'classic'; unshaped.shape = null;
+      const shaped2 = new Cookie(); shaped2.base = 'oat'; shaped2.shape = 'heart';
+      scene.prepTrayCookies = [shaped1, unshaped, shaped2];
+
+      const success = scene.handlePrepTrayDropOven();
+      assert.equal(success, true);
+      assert.equal(scene.cookiesInOven.length, 2, 'Solo 2 galletas con forma deben cargarse');
+      assert.equal(scene.prepTrayCookies.length, 1, 'La galleta sin forma debe permanecer en la bandeja');
+      assert.equal(scene.prepTrayCookies[0], unshaped, 'La galleta restante debe ser la sin forma');
+    });
+
+    test('Arrastre de bandeja con capacidad parcial respeta el límite de 3 galletas en el horno', () => {
+      const scene = new DualDragOvenMockScene();
+      const alreadyInOven = new Cookie(); alreadyInOven.base = 'classic'; alreadyInOven.shape = 'star';
+      scene.cookiesInOven = [alreadyInOven];
+
+      const c1 = new Cookie(); c1.base = 'chocolate'; c1.shape = 'heart';
+      const c2 = new Cookie(); c2.base = 'chocolate'; c2.shape = 'star';
+      const c3 = new Cookie(); c3.base = 'chocolate'; c3.shape = 'cat';
+      scene.prepTrayCookies = [c1, c2, c3];
+
+      const success = scene.handlePrepTrayDropOven();
+      assert.equal(success, true);
+      assert.equal(scene.cookiesInOven.length, 3, 'El horno debe alcanzar su tope de 3 galletas');
+      assert.equal(scene.prepTrayCookies.length, 1, '1 galleta debe quedar en la bandeja');
+      assert.equal(scene.prepTrayCookies[0], c3, 'La tercera galleta permanece en la bandeja');
+    });
+
+    test('Arrastre de bandeja con galletas sin forma o bandeja vacía rechaza la carga', () => {
+      const scene = new DualDragOvenMockScene();
+      
+      // Bandeja vacía
+      scene.prepTrayCookies = [];
+      let res = scene.handlePrepTrayDropOven();
+      assert.equal(res, false);
+      assert.equal(scene.feedbacks[0], 'ovenEmpty');
+
+      // Galletas sin forma
+      const rawDough = new Cookie(); rawDough.base = 'classic'; rawDough.shape = null;
+      scene.prepTrayCookies = [rawDough];
+      res = scene.handlePrepTrayDropOven();
+      assert.equal(res, false);
+      assert.equal(scene.feedbacks[1], 'cutShapeFirst');
+    });
+
+    test('Arrastre de bandeja cuando el horno ya hornea o está lleno rechaza la acción', () => {
+      const scene = new DualDragOvenMockScene();
+      const cookie = new Cookie(); cookie.base = 'chocolate'; cookie.shape = 'star';
+      scene.prepTrayCookies = [cookie];
+
+      // Horno ya horneando
+      scene.isBaking = true;
+      let res = scene.handlePrepTrayDropOven();
+      assert.equal(res, false);
+      assert.equal(scene.feedbacks[0], 'ovenAlreadyOn');
+
+      // Horno lleno
+      scene.isBaking = false;
+      scene.cookiesInOven = [new Cookie(), new Cookie(), new Cookie()];
+      res = scene.handlePrepTrayDropOven();
+      assert.equal(res, false);
+      assert.equal(scene.feedbacks[1], 'ovenFull');
+    });
+
+    test('Arrastre individual secuencial rápido de galleta 0 y galleta 1 no sufre desincronización de índices', () => {
+      const scene = new DualDragOvenMockScene();
+      const c0 = new Cookie(); c0.base = 'chocolate'; c0.shape = 'star';
+      const c1 = new Cookie(); c1.base = 'chocolate'; c1.shape = 'star';
+      const c2 = new Cookie(); c2.base = 'chocolate'; c2.shape = 'star';
+      scene.prepTrayCookies = [c0, c1, c2];
+
+      // Arrastra c0 al horno
+      const res0 = scene.handleSingleCookieDropOven(c0);
+      assert.equal(res0, true);
+      assert.equal(scene.cookiesInOven.length, 1);
+      assert.equal(scene.prepTrayCookies.length, 2);
+
+      // Inmediatamente arrastra c1 por referencia de objeto
+      const res1 = scene.handleSingleCookieDropOven(c1);
+      assert.equal(res1, true);
+      assert.equal(scene.cookiesInOven.length, 2);
+      assert.equal(scene.prepTrayCookies.length, 1);
+      assert.equal(scene.prepTrayCookies[0], c2, 'c2 debe ser la galleta restante');
+    });
+
+    test('TutorialManager y TutorialSteps aceptan prep_tray en pasos de LOAD_OVEN', async () => {
+      const { TUTORIAL_STEPS } = await import('../src/game/tutorial/TutorialSteps.js');
+      const loadOvenSteps = TUTORIAL_STEPS.filter(s => s.allowedAction === 'LOAD_OVEN');
+      assert.ok(loadOvenSteps.length >= 3, 'Debe haber al menos 3 pasos de LOAD_OVEN');
+
+      loadOvenSteps.forEach(step => {
+        // Individual cookie payload
+        assert.equal(
+          step.validation({ destination: 'oven', cookie: new Cookie() }),
+          true,
+          `${step.id} debe validar drop individual`
+        );
+        // Prep tray batch payload
+        assert.equal(
+          step.validation({ item: 'prep_tray', destination: 'oven' }),
+          true,
+          `${step.id} debe validar drop de bandeja completa`
+        );
+        // Table cookie item payload
+        assert.equal(
+          step.validation({ item: 'table_cookie', destination: 'oven' }),
+          true,
+          `${step.id} debe validar table_cookie item`
+        );
+      });
+    });
+  });
 });

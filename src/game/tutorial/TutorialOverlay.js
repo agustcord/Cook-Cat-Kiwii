@@ -920,18 +920,38 @@ export default class TutorialOverlay {
 
   /**
    * Actualiza el spotlight y el puntero hacia un nuevo target sin reiniciar el diálogo de Kiwii.
+   * Regla pedagógica estricta: Jamás coexisten la flecha animada sobre objetos del juego y el botón SIGUIENTE.
    * @param {Object} target - { x, y, width, height, radius, isErrorHighlight }
-   * @param {Object} [options] - { pointerDirection, pointerOffset }
+   * @param {Object} [options] - { pointerDirection, pointerOffset, showPointer }
    */
   setTarget(target, options = {}) {
     if (target && target.x !== undefined && target.y !== undefined) {
       this.setSpotlight(target);
-      this.setPointer(
-        target.x,
-        target.y,
-        options.pointerDirection || this.currentStepConfig?.pointerDirection || 'auto',
-        options.pointerOffset || this.currentStepConfig?.pointerOffset || (Math.max(target.width || 140, target.height || 140) / 2 + 35)
-      );
+
+      const showNextBtn = this.currentStepConfig?.showNextBtn !== undefined
+        ? Boolean(this.currentStepConfig.showNextBtn)
+        : this.currentStepConfig?.allowedAction === 'DIALOG_ACK';
+
+      let shouldShowPointer = true;
+      if (options.showPointer !== undefined) {
+        shouldShowPointer = Boolean(options.showPointer);
+      } else if (this.currentStepConfig?.showPointer !== undefined) {
+        shouldShowPointer = Boolean(this.currentStepConfig.showPointer);
+      } else if (showNextBtn || this.currentStepConfig?.allowedAction === 'DIALOG_ACK') {
+        shouldShowPointer = false;
+      }
+
+      // Si hay botón Siguiente o showPointer es false, solo se ilumina el spotlight sin flecha interactiva
+      if (shouldShowPointer && !showNextBtn) {
+        this.setPointer(
+          target.x,
+          target.y,
+          options.pointerDirection || this.currentStepConfig?.pointerDirection || 'auto',
+          options.pointerOffset || this.currentStepConfig?.pointerOffset || (Math.max(target.width || 140, target.height || 140) / 2 + 35)
+        );
+      } else {
+        this.clearPointer();
+      }
     } else {
       this.clearSpotlight();
       this.clearPointer();
@@ -958,6 +978,10 @@ export default class TutorialOverlay {
       ? Boolean(stepConfig.showNextBtn)
       : stepConfig.allowedAction === 'DIALOG_ACK';
 
+    const showPointer = stepConfig.showPointer !== undefined
+      ? Boolean(stepConfig.showPointer)
+      : (!showNextBtn && stepConfig.allowedAction !== 'DIALOG_ACK');
+
     const nextBtnText = stepConfig.nextBtnText || (stepConfig.id === 'step_tutorial_complete' ? (i18n.t('tutorial.continueButton') || 'CONTINUE 🐾') : undefined);
 
     this.setDialogue(message, {
@@ -969,7 +993,8 @@ export default class TutorialOverlay {
     const target = stepConfig.targetCoords || stepConfig.target;
     this.setTarget(target, {
       pointerDirection: stepConfig.pointerDirection,
-      pointerOffset: stepConfig.pointerOffset
+      pointerOffset: stepConfig.pointerOffset,
+      showPointer
     });
 
     this.show();
@@ -1120,6 +1145,46 @@ export default class TutorialOverlay {
       }
       const showNext = Boolean(this.currentStepConfig.showNextBtn || this.currentStepConfig.allowedAction === 'DIALOG_ACK');
       this._updateBubbleLayout(showNext);
+    }
+  }
+
+  /**
+   * Micro-animación de atención no punitiva en la burbuja de Kiwii y en el spotlight glow.
+   * Se dispara cuando una acción es bloqueada para reorientar suavemente la atención del jugador.
+   */
+  pulseAttention() {
+    if (!this.isVisible || !this.scene?.tweens?.add) return;
+
+    // 1. Pulso en la burbuja de diálogo de Kiwii
+    if (this.bubbleContainer && typeof this.bubbleContainer.setScale === 'function') {
+      this.scene.tweens.killTweensOf(this.bubbleContainer);
+      this.scene.tweens.add({
+        targets: this.bubbleContainer,
+        scaleX: 1.04,
+        scaleY: 1.04,
+        duration: 120,
+        yoyo: true,
+        repeat: 1,
+        ease: 'Quad.easeInOut',
+        onComplete: () => {
+          if (this.bubbleContainer) {
+            this.bubbleContainer.setScale(1.0);
+          }
+        }
+      });
+    }
+
+    // 2. Pulso en el glow del spotlight
+    if (this.spotlightGlow && this.spotlightGlow.visible) {
+      this.scene.tweens.killTweensOf(this.spotlightGlow);
+      this.scene.tweens.add({
+        targets: this.spotlightGlow,
+        alpha: 1.0,
+        duration: 100,
+        yoyo: true,
+        repeat: 2,
+        ease: 'Sine.easeInOut'
+      });
     }
   }
 
