@@ -11,9 +11,9 @@ describe('Dough Assets & GameScene Integration (Masa Grande vs Bolitas de Masa)'
   const gameScenePath = path.join(projectRoot, 'src', 'scenes', 'GameScene.js');
 
   const expectedLargeDoughs = [
-    { filename: 'masa_vainilla.png', width: 168, height: 116, centerX: 148, centerY: 684, id: 'classic' },
-    { filename: 'masa_chocolate.png', width: 168, height: 109, centerX: 142, centerY: 829.5, id: 'chocolate' },
-    { filename: 'masa_avena.png', width: 177, height: 115, centerX: 135.5, centerY: 958.5, id: 'oat' }
+    { filename: 'masa_vainilla.png', width: 177, height: 116, centerX: 148, centerY: 684, id: 'classic' },
+    { filename: 'masa_chocolate.png', width: 170, height: 114, centerX: 142, centerY: 829.5, id: 'chocolate' },
+    { filename: 'masa_avena.png', width: 187, height: 117, centerX: 135.5, centerY: 958.5, id: 'oat' }
   ];
 
   const expectedSmallDoughBalls = [

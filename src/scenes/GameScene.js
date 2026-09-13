@@ -452,7 +452,7 @@ export default class GameScene extends Phaser.Scene {
         key: 'masa_vainilla',
         x: 148,
         y: 684,
-        width: 168,
+        width: 177,
         height: 116
       },
       {
@@ -461,8 +461,8 @@ export default class GameScene extends Phaser.Scene {
         key: 'masa_chocolate',
         x: 142,
         y: 829.5,
-        width: 168,
-        height: 109
+        width: 170,
+        height: 114
       },
       {
         id: 'oat',
@@ -470,16 +470,25 @@ export default class GameScene extends Phaser.Scene {
         key: 'masa_avena',
         x: 135.5,
         y: 958.5,
-        width: 177,
-        height: 115
+        width: 187,
+        height: 117
       }
     ];
 
     this.doughButtons = {};
     this.doughStockTexts = {};
     this.doughDragZones = {};
+    this.doughShadows = {};
 
     bases.forEach((b) => {
+      // Sombra sutil de masa en reposo (luz cenital central: proyección hacia abajo-izquierda)
+      const doughShadow = this.add.image(b.x - 5, b.y + 6, b.key)
+        .setOrigin(0.5, 0.5)
+        .setTint(0x3a1f04)
+        .setAlpha(0.22)
+        .setDepth(1.9);
+      this.doughShadows[b.id] = doughShadow;
+
       // Dough source image at native 1:1 scale (exact Krita illustration layer composition)
       const doughImg = this.add.image(b.x, b.y, b.key)
         .setOrigin(0.5, 0.5)
@@ -505,16 +514,19 @@ export default class GameScene extends Phaser.Scene {
       this.doughDragZones[b.id] = dragZone;
 
       let portionSprite = null;
+      let portionShadowSprite = null;
 
       dragZone.on('pointerover', () => {
         const currentStock = this.stock.dough[b.id] || 0;
         if (currentStock > 0) {
           doughImg.setScale(1.08);
+          doughShadow.setScale(1.08);
         }
       });
       
       dragZone.on('pointerout', () => {
         doughImg.setScale(1.0);
+        doughShadow.setScale(1.0);
       });
 
       dragZone.on('dragstart', () => {
@@ -534,24 +546,42 @@ export default class GameScene extends Phaser.Scene {
         this.isHoldingItem = true;
         this.events.emit('game:drag_start', { item: 'dough', base: b.id, id: b.id });
         SoundManager.getInstance().playDoughSelect();
+
+        portionShadowSprite = this.add.image(dragZone.x - 8, dragZone.y + 18, `dough_${b.id}`);
+        portionShadowSprite.setDisplaySize(84, 84);
+        portionShadowSprite.setTint(0x3a1f04);
+        portionShadowSprite.setAlpha(0.18);
+        portionShadowSprite.setDepth(29989);
+
         portionSprite = this.add.image(dragZone.x, dragZone.y, `dough_${b.id}`);
         portionSprite.setDisplaySize(84, 84);
-        portionSprite.setDepth(30000);
+        portionSprite.setDepth(29990);
         portionSprite.setAlpha(0.9);
         doughImg.setScale(0.95);
+        doughShadow.setScale(0.95);
       });
 
       dragZone.on('drag', (pointer, dragX, dragY) => {
+        const clampedY = Math.max(338, dragY);
         if (portionSprite) {
           portionSprite.x = dragX;
-          portionSprite.y = Math.max(338, dragY);
+          portionSprite.y = clampedY;
+        }
+        if (portionShadowSprite) {
+          portionShadowSprite.x = dragX - 8;
+          portionShadowSprite.y = clampedY + 18;
         }
       });
 
       dragZone.on('dragend', () => {
         this.isHoldingItem = false;
+        if (portionShadowSprite) {
+          portionShadowSprite.destroy();
+          portionShadowSprite = null;
+        }
         if (!portionSprite) {
           doughImg.setScale(1.0);
+          doughShadow.setScale(1.0);
           dragZone.x = b.x;
           dragZone.y = b.y;
           this.events.emit('game:drag_end', { item: 'dough', base: b.id, id: b.id });
@@ -619,6 +649,7 @@ export default class GameScene extends Phaser.Scene {
         }
 
         doughImg.setScale(1.0);
+        doughShadow.setScale(1.0);
         dragZone.x = b.x;
         dragZone.y = b.y;
         this.events.emit('game:drag_end', { item: 'dough', base: b.id, id: b.id });
@@ -652,6 +683,14 @@ export default class GameScene extends Phaser.Scene {
       container.setData('origY', y);
       this.shapeContainers.push(container);
 
+      // Sombra dinámica sutil (hijo 0 del contenedor, z-index inferior al cortador)
+      const shadowSprite = this.add.image(51, 58, 'shape_' + s.id)
+        .setDisplaySize(109, 109)
+        .setTint(0x3a1f04)
+        .setAlpha(isUnlocked ? 0.24 : 0.12);
+      container.add(shadowSprite);
+      container.shadowSprite = shadowSprite;
+
       // Cutter Image (displayed at 109x109)
       const shapeSprite = this.add.image(54, 54, 'shape_' + s.id).setDisplaySize(109, 109);
       if (!isUnlocked) {
@@ -670,9 +709,11 @@ export default class GameScene extends Phaser.Scene {
 
         dragZone.on('pointerover', () => {
           shapeSprite.setDisplaySize(120, 120);
+          shadowSprite.setDisplaySize(120, 120);
         });
         dragZone.on('pointerout', () => {
           shapeSprite.setDisplaySize(109, 109);
+          shadowSprite.setDisplaySize(109, 109);
         });
 
         // Drag handlers
@@ -684,8 +725,20 @@ export default class GameScene extends Phaser.Scene {
           this.isHoldingItem = true;
           this.events.emit('game:drag_start', { item: 'shape', shape: s.id, id: s.id });
           SoundManager.getInstance().playUiTap();
-          container.setDepth(30000);
-          dragZone.setDepth(30000);
+          container.setDepth(29990);
+          dragZone.setDepth(29990);
+
+          this.tweens.killTweensOf(shadowSprite);
+          this.tweens.add({
+            targets: shadowSprite,
+            x: 44,
+            y: 76,
+            alpha: 0.16,
+            displayWidth: 115.54,
+            displayHeight: 115.54,
+            duration: 120,
+            ease: 'Quad.out'
+          });
         });
 
         dragZone.on('drag', (pointer, dragX, dragY) => {
@@ -739,6 +792,18 @@ export default class GameScene extends Phaser.Scene {
           }
 
           this.events.emit('game:drag_end', { item: 'shape', shape: s.id, id: s.id });
+
+          this.tweens.killTweensOf(shadowSprite);
+          this.tweens.add({
+            targets: shadowSprite,
+            x: 51,
+            y: 58,
+            alpha: 0.24,
+            displayWidth: 109,
+            displayHeight: 109,
+            duration: 250,
+            ease: 'Back.out'
+          });
 
           // Return transition for both the interactive dragZone and the visual container
           this.tweens.add({
@@ -1642,10 +1707,19 @@ export default class GameScene extends Phaser.Scene {
     this.toppingButtons = {};
     this.toppingDragZones = {};
     this.toppingStockTexts = {};
+    this.toppingShadows = {};
 
     toppings.forEach((t, index) => {
       const x = startX + 19 + 79; // center of jar
       const y = startY + index * 150 + 79;
+
+      // Sombra sutil de frasco en reposo (luz cenital central: proyección hacia abajo-derecha)
+      const jarShadow = this.add.image(x + 5, y + 5, 'topping_' + t.id)
+        .setDisplaySize(jarSize, jarSize)
+        .setTint(0x3a1f04)
+        .setAlpha((this.stock.topping[t.id] || 0) > 0 ? 0.22 : 0.11)
+        .setDepth(1.9);
+      this.toppingShadows[t.id] = jarShadow;
 
       // Topping Jar sprite
       const jarSource = this.add.image(x, y, 'topping_' + t.id).setDisplaySize(jarSize, jarSize).setDepth(2);
@@ -1668,17 +1742,20 @@ export default class GameScene extends Phaser.Scene {
       this.toppingDragZones[t.id] = dragZone;
 
       let jarClone = null;
+      let jarShadowClone = null;
       let initialDist = 0;
 
       dragZone.on('pointerover', () => {
         const currentStock = this.stock.topping[t.id] || 0;
         if (currentStock > 0) {
           jarSource.setDisplaySize(jarHoverSize, jarHoverSize);
+          jarShadow.setDisplaySize(jarHoverSize, jarHoverSize);
         }
       });
       
       dragZone.on('pointerout', () => {
         jarSource.setDisplaySize(jarSize, jarSize);
+        jarShadow.setDisplaySize(jarSize, jarSize);
       });
 
       dragZone.on('dragstart', () => {
@@ -1697,9 +1774,16 @@ export default class GameScene extends Phaser.Scene {
 
         this.events.emit('game:drag_start', { item: 'topping', topping: t.id, id: t.id });
         SoundManager.getInstance().playUiTap();
+
+        jarShadowClone = this.add.image(x + 10, y + 20, 'topping_' + t.id);
+        jarShadowClone.setDisplaySize(jarSize, jarSize);
+        jarShadowClone.setTint(0x3a1f04);
+        jarShadowClone.setAlpha(0.16);
+        jarShadowClone.setDepth(29989);
+
         jarClone = this.add.image(x, y, 'topping_' + t.id);
         jarClone.setDisplaySize(jarSize, jarSize);
-        jarClone.setDepth(30000);
+        jarClone.setDepth(29990);
         jarSource.setAlpha(0.35);
         initialDist = Phaser.Math.Distance.Between(x, y, this.trayX, this.trayY);
       });
@@ -1713,12 +1797,25 @@ export default class GameScene extends Phaser.Scene {
         const currentDist = Phaser.Math.Distance.Between(dragX, clampedY, this.trayX, this.trayY);
         const ratio = Phaser.Math.Clamp(1 - (currentDist / initialDist), 0, 1);
         const direction = (dragX >= this.trayX) ? -1 : 1;
-        jarClone.setRotation(direction * ratio * Math.PI);
+        const rot = direction * ratio * Math.PI;
+        jarClone.setRotation(rot);
+
+        if (jarShadowClone) {
+          jarShadowClone.x = dragX + 10;
+          jarShadowClone.y = clampedY + 20;
+          jarShadowClone.setRotation(rot);
+        }
       });
 
       dragZone.on('dragend', () => {
+        if (jarShadowClone) {
+          jarShadowClone.destroy();
+          jarShadowClone = null;
+        }
+
         if (!jarClone) {
           jarSource.setDisplaySize(jarSize, jarSize);
+          jarShadow.setDisplaySize(jarSize, jarSize);
           dragZone.x = x;
           dragZone.y = y;
           this.events.emit('game:drag_end', { item: 'topping', topping: t.id, id: t.id });
@@ -1790,6 +1887,7 @@ export default class GameScene extends Phaser.Scene {
         jarClone = null;
         jarSource.setAlpha(1);
         jarSource.setDisplaySize(jarSize, jarSize);
+        jarShadow.setDisplaySize(jarSize, jarSize);
         dragZone.x = x;
         dragZone.y = y;
         this.events.emit('game:drag_end', { item: 'topping', topping: t.id, id: t.id });
@@ -1812,9 +1910,15 @@ export default class GameScene extends Phaser.Scene {
             if (qty <= 0) {
               imgObj.setTint(0x777777);
               imgObj.setAlpha(0.5);
+              if (this.doughShadows && this.doughShadows[id]) {
+                this.doughShadows[id].setAlpha(0.11);
+              }
             } else {
               imgObj.clearTint();
               imgObj.setAlpha(1);
+              if (this.doughShadows && this.doughShadows[id]) {
+                this.doughShadows[id].setAlpha(0.22);
+              }
             }
           }
         }
@@ -1834,9 +1938,15 @@ export default class GameScene extends Phaser.Scene {
             if (qty <= 0) {
               imgObj.setTint(0x777777);
               imgObj.setAlpha(0.5);
+              if (this.toppingShadows && this.toppingShadows[id]) {
+                this.toppingShadows[id].setAlpha(0.11);
+              }
             } else {
               imgObj.clearTint();
               imgObj.setAlpha(1);
+              if (this.toppingShadows && this.toppingShadows[id]) {
+                this.toppingShadows[id].setAlpha(0.22);
+              }
             }
           }
         }
@@ -1865,6 +1975,7 @@ export default class GameScene extends Phaser.Scene {
     this.input.setDraggable(this.prepTrayZone);
 
     this.prepTraySprites = [];
+    this.prepTrayShadowSprites = [];
 
     this.prepTrayZone.on('pointerdown', () => {
       if (this.isEditorMode) return;
@@ -1884,11 +1995,16 @@ export default class GameScene extends Phaser.Scene {
       this.isHoldingItem = true;
       this.events.emit('game:drag_start', { item: 'prep_tray' });
       SoundManager.getInstance().playUiTap();
-      this.prepTrayZone.setDepth(30000);
-      if (this.prepTrayBg) this.prepTrayBg.setDepth(29999);
+      this.prepTrayZone.setDepth(29990);
+      if (this.prepTrayBg) this.prepTrayBg.setDepth(29988);
       if (this.prepTraySprites) {
         this.prepTraySprites.forEach(s => {
-          if (s && s.setDepth) s.setDepth(30001);
+          if (s && s.setDepth) s.setDepth(29990);
+        });
+      }
+      if (this.prepTrayShadowSprites) {
+        this.prepTrayShadowSprites.forEach(s => {
+          if (s && s.setDepth) s.setDepth(29989);
         });
       }
     });
@@ -1905,15 +2021,27 @@ export default class GameScene extends Phaser.Scene {
       }
 
       const count = this.prepTrayCookies ? this.prepTrayCookies.length : 0;
-      if (count > 0 && this.prepTraySprites) {
+      if (count > 0) {
         const spacing = 84;
         const startX = dragX - ((count - 1) * spacing) / 2;
-        this.prepTraySprites.forEach((sprite, index) => {
-          if (sprite) {
-            sprite.x = startX + index * spacing;
-            sprite.y = clampedY;
-          }
-        });
+        if (this.prepTraySprites) {
+          this.prepTraySprites.forEach((sprite, index) => {
+            if (sprite) {
+              sprite.x = startX + index * spacing;
+              sprite.y = clampedY;
+            }
+          });
+        }
+        if (this.prepTrayShadowSprites) {
+          this.prepTrayShadowSprites.forEach((shadow, index) => {
+            if (shadow) {
+              const cookieX = startX + index * spacing;
+              const shadowOffsetX = Math.round((cookieX - 960) * 0.02);
+              shadow.x = cookieX + shadowOffsetX;
+              shadow.y = clampedY + 4;
+            }
+          });
+        }
       }
 
       // Check distance to trash bin
@@ -1964,6 +2092,11 @@ export default class GameScene extends Phaser.Scene {
       if (this.prepTraySprites) {
         this.prepTraySprites.forEach(s => {
           if (s && s.setDepth) s.setDepth(4);
+        });
+      }
+      if (this.prepTrayShadowSprites) {
+        this.prepTrayShadowSprites.forEach(s => {
+          if (s && s.setDepth) s.setDepth(3.9);
         });
       }
 
@@ -2062,15 +2195,27 @@ export default class GameScene extends Phaser.Scene {
             this.prepTrayBg.y = this.prepTrayZone.y - this.trayY;
           }
           const count = this.prepTrayCookies ? this.prepTrayCookies.length : 0;
-          if (count > 0 && this.prepTraySprites) {
+          if (count > 0) {
             const spacing = 84;
             const startX = this.prepTrayZone.x - ((count - 1) * spacing) / 2;
-            this.prepTraySprites.forEach((sprite, index) => {
-              if (sprite) {
-                sprite.x = startX + index * spacing;
-                sprite.y = this.prepTrayZone.y;
-              }
-            });
+            if (this.prepTraySprites) {
+              this.prepTraySprites.forEach((sprite, index) => {
+                if (sprite) {
+                  sprite.x = startX + index * spacing;
+                  sprite.y = this.prepTrayZone.y;
+                }
+              });
+            }
+            if (this.prepTrayShadowSprites) {
+              this.prepTrayShadowSprites.forEach((shadow, index) => {
+                if (shadow) {
+                  const cookieX = startX + index * spacing;
+                  const shadowOffsetX = Math.round((cookieX - 960) * 0.02);
+                  shadow.x = cookieX + shadowOffsetX;
+                  shadow.y = this.prepTrayZone.y + 4;
+                }
+              });
+            }
           }
         },
         onComplete: () => {
@@ -2092,6 +2237,11 @@ export default class GameScene extends Phaser.Scene {
       this.prepTraySprites.forEach(s => s.destroy());
     }
     this.prepTraySprites = [];
+
+    if (this.prepTrayShadowSprites) {
+      this.prepTrayShadowSprites.forEach(s => s.destroy());
+    }
+    this.prepTrayShadowSprites = [];
 
     // If we have cookies in prepTrayCookies, draw them in a row
     if (this.prepTrayCookies && this.prepTrayCookies.length > 0) {
@@ -2121,9 +2271,20 @@ export default class GameScene extends Phaser.Scene {
         const y = this.trayY;
 
         const size = isShaped ? 103 : 84;
+        const shadowOffsetX = Math.round((x - 960) * 0.02);
+
+        // Sombra de contacto de galleta sobre bandeja (luz cenital central)
+        const cookieShadow = this.add.image(x + shadowOffsetX, y + 4, key)
+          .setDisplaySize(size, size)
+          .setTint(0x3a1f04)
+          .setAlpha(0.20)
+          .setDepth(3.9);
+        this.prepTrayShadowSprites.push(cookieShadow);
+
         const sprite = this.add.image(x, y, key).setDisplaySize(size, size).setDepth(4);
         sprite.setInteractive({ useHandCursor: true });
         this.input.setDraggable(sprite);
+        sprite.shadowSprite = cookieShadow;
 
         sprite.setData('cookieIndex', index);
         sprite.setData('cookieInstance', cookie);
@@ -2146,12 +2307,24 @@ export default class GameScene extends Phaser.Scene {
           this.isHoldingItem = true;
           this.events.emit('game:drag_start', { item: 'table_cookie', cookie: cookieInstance, index: cookieIdx });
           SoundManager.getInstance().playUiTap();
-          sprite.setDepth(30000);
+          sprite.setDepth(29990);
+          if (cookieShadow) {
+            cookieShadow.setDepth(29989);
+            cookieShadow.setAlpha(0.14);
+            cookieShadow.setScale(1.05);
+          }
         });
 
         sprite.on('drag', (pointer, dragX, dragY) => {
+          const clampedY = Math.max(338, dragY);
           sprite.x = dragX;
-          sprite.y = Math.max(338, dragY);
+          sprite.y = clampedY;
+
+          if (cookieShadow) {
+            const curShadowOffsetX = Math.round((dragX - 960) * 0.02);
+            cookieShadow.x = dragX + curShadowOffsetX;
+            cookieShadow.y = clampedY + 16;
+          }
 
           // Check if hovering over trash bin
           const distToTrash = Phaser.Math.Distance.Between(dragX, Math.max(338, dragY), this.trashBinX, this.trashBinY);
@@ -2217,6 +2390,20 @@ export default class GameScene extends Phaser.Scene {
           if (distTrash < 95) {
             if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_TRASH', { item: 'table_cookie', destination: 'trash', cookie: cookieInstance })) {
               this.tutorialManager.denyAction(this, sprite);
+              if (cookieShadow) {
+                this.tweens.add({
+                  targets: cookieShadow,
+                  x: sprite.getData('origX') + Math.round((sprite.getData('origX') - 960) * 0.02),
+                  y: sprite.getData('origY') + 4,
+                  scale: 1.0,
+                  alpha: 0.20,
+                  duration: 250,
+                  ease: 'Back.out',
+                  onComplete: () => {
+                    cookieShadow.setDepth(3.9);
+                  }
+                });
+              }
               this.tweens.add({
                 targets: sprite,
                 x: sprite.getData('origX'),
@@ -2229,6 +2416,10 @@ export default class GameScene extends Phaser.Scene {
               });
               this.events.emit('game:drag_end', { item: 'table_cookie', cookie: cookieInstance, index: cookieIdx });
               return;
+            }
+
+            if (cookieShadow) {
+              cookieShadow.destroy();
             }
 
             SoundManager.getInstance().playTrash();
@@ -2261,6 +2452,20 @@ export default class GameScene extends Phaser.Scene {
           if (distDelivery < 188) {
             if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('DRAG_COOKIE_TRAY', { destination: 'delivery_tray', cookie: cookieInstance })) {
               this.tutorialManager.denyAction(this, sprite);
+              if (cookieShadow) {
+                this.tweens.add({
+                  targets: cookieShadow,
+                  x: sprite.getData('origX') + Math.round((sprite.getData('origX') - 960) * 0.02),
+                  y: sprite.getData('origY') + 4,
+                  scale: 1.0,
+                  alpha: 0.20,
+                  duration: 250,
+                  ease: 'Back.out',
+                  onComplete: () => {
+                    cookieShadow.setDepth(3.9);
+                  }
+                });
+              }
               this.tweens.add({
                 targets: sprite,
                 x: sprite.getData('origX'),
@@ -2268,11 +2473,15 @@ export default class GameScene extends Phaser.Scene {
                 duration: 250,
                 ease: 'Back.out',
                 onComplete: () => {
-                  sprite.setDepth(3);
+                  sprite.setDepth(4);
                 }
               });
               this.events.emit('game:drag_end', { item: 'table_cookie', cookie: cookieInstance, index: cookieIdx });
               return;
+            }
+
+            if (cookieShadow) {
+              cookieShadow.destroy();
             }
 
             this.deliveryTrayCookies.push(cookieInstance);
@@ -2293,6 +2502,20 @@ export default class GameScene extends Phaser.Scene {
           if (distOven < 225) {
             if (this.tutorialManager?.isActive && !this.tutorialManager.isActionAllowed('LOAD_OVEN', { destination: 'oven', cookie: cookieInstance })) {
               this.tutorialManager.denyAction(this, sprite);
+              if (cookieShadow) {
+                this.tweens.add({
+                  targets: cookieShadow,
+                  x: sprite.getData('origX') + Math.round((sprite.getData('origX') - 960) * 0.02),
+                  y: sprite.getData('origY') + 4,
+                  scale: 1.0,
+                  alpha: 0.20,
+                  duration: 250,
+                  ease: 'Back.out',
+                  onComplete: () => {
+                    cookieShadow.setDepth(3.9);
+                  }
+                });
+              }
               this.tweens.add({
                 targets: sprite,
                 x: sprite.getData('origX'),
@@ -2300,7 +2523,7 @@ export default class GameScene extends Phaser.Scene {
                 duration: 250,
                 ease: 'Back.out',
                 onComplete: () => {
-                  sprite.setDepth(3);
+                  sprite.setDepth(4);
                 }
               });
               this.events.emit('game:drag_end', { item: 'table_cookie', cookie: cookieInstance, index: cookieIdx });
@@ -2318,6 +2541,9 @@ export default class GameScene extends Phaser.Scene {
               this.showFeedbackText(i18n.t('game.feedback.cutShapeFirst'), this.trayX, 375, '#d90429');
             } else {
               // Valid drop in oven!
+              if (cookieShadow) {
+                cookieShadow.destroy();
+              }
               this.cookiesInOven.push(cookieInstance);
               const realIdx = this.prepTrayCookies.indexOf(cookieInstance);
               if (realIdx !== -1) {
@@ -2354,6 +2580,20 @@ export default class GameScene extends Phaser.Scene {
           this.events.emit('game:drag_end', { item: 'table_cookie', cookie: cookieInstance, index: cookieIdx });
 
           // Failed or non-target drop: tween back to home
+          if (cookieShadow) {
+            this.tweens.add({
+              targets: cookieShadow,
+              x: sprite.getData('origX') + Math.round((sprite.getData('origX') - 960) * 0.02),
+              y: sprite.getData('origY') + 4,
+              scale: 1.0,
+              alpha: 0.20,
+              duration: 200,
+              ease: 'Power2',
+              onComplete: () => {
+                cookieShadow.setDepth(3.9);
+              }
+            });
+          }
           this.tweens.add({
             targets: sprite,
             x: sprite.getData('origX'),
@@ -2361,7 +2601,7 @@ export default class GameScene extends Phaser.Scene {
             duration: 200,
             ease: 'Power2',
             onComplete: () => {
-              sprite.setDepth(3);
+              sprite.setDepth(4);
               this.updateCookieVisuals();
             }
           });

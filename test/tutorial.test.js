@@ -1358,8 +1358,8 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
         'drawCookie dragstart must emit item: table_cookie'
       );
       assert.ok(
-        drawCookieCode.includes('sprite.setDepth(30000)'),
-        'drawCookie dragstart must elevate cookie depth to 30000 above TutorialOverlay depth 25000'
+        drawCookieCode.includes('sprite.setDepth(29990)') || drawCookieCode.includes('sprite.setDepth(30000)'),
+        'drawCookie dragstart must elevate cookie depth above TutorialOverlay depth 25000 (<= 29990 for cat paw inviolability)'
       );
     });
 

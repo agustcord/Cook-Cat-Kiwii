@@ -3,7 +3,7 @@ import SoundManager from '../game/SoundManager.js';
 import CrazyGamesSDK from '../game/services/CrazyGamesSDK.js';
 import I18nManager from '../game/services/I18nManager.js';
 
-const ASSET_VERSION = '16';
+const ASSET_VERSION = '17';
 const assetUrl = (path) => `${path}?v=${ASSET_VERSION}`;
 
 export default class BootScene extends Phaser.Scene {
