@@ -133,7 +133,7 @@ export default class SummaryScene extends Phaser.Scene {
     const titleText = this.isBankrupt
       ? i18n.t('summary.bankruptcyClosure')
       : i18n.t('summary.dayCompleted', { day: this.day });
-    const titleColor = this.isBankrupt ? '#d90429' : '#38b000';
+    const titleColor = this.isBankrupt ? '#d90429' : '#6d597a';
 
     const titleObj = this.add.text(width / 2, 58, titleText, {
       font: '60px "Outfit", sans-serif',
@@ -466,8 +466,8 @@ export default class SummaryScene extends Phaser.Scene {
       };
     } else if (this.updatedLoanRemaining <= 0) {
       btnTextString = i18n.t('summary.buttons.victory');
-      btnColor = 0x38b000;
-      btnHoverColor = 0x4cc9f0;
+      btnColor = 0x6d597a;
+      btnHoverColor = 0x856d94;
       nextSceneCallback = () => {
         this.scene.start('VictoryScene', { coins: this.netCoins });
       };

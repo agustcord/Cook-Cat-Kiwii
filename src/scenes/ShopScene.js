@@ -749,7 +749,7 @@ export default class ShopScene extends Phaser.Scene {
     this.doughWarningContainer.add(this.warnText);
 
     const startBtnBg = this.add.graphics();
-    startBtnBg.fillStyle(0x38b000, 1); // Lush green
+    startBtnBg.fillStyle(0x6d597a, 1); // Lavender accent
     startBtnBg.fillRoundedRect(startBtnX, startBtnY, startBtnW, startBtnH, 14);
 
     this.startBtnText = this.add.text(width / 2, startBtnY + startBtnH / 2, i18n.t('shop.startNextDay'), {
@@ -794,14 +794,14 @@ export default class ShopScene extends Phaser.Scene {
     startZone.on('pointerover', () => {
       SoundManager.getInstance().playUiHover();
       startBtnBg.clear();
-      startBtnBg.fillStyle(0x4ad611, 1);
+      startBtnBg.fillStyle(0x856d94, 1);
       startBtnBg.fillRoundedRect(startBtnX - 3, startBtnY - 2, startBtnW + 6, startBtnH + 4, 16);
       this.startBtnText.setScale(1.04);
     });
 
     startZone.on('pointerout', () => {
       startBtnBg.clear();
-      startBtnBg.fillStyle(0x38b000, 1);
+      startBtnBg.fillStyle(0x6d597a, 1);
       startBtnBg.fillRoundedRect(startBtnX, startBtnY, startBtnW, startBtnH, 14);
       this.startBtnText.setScale(1);
     });

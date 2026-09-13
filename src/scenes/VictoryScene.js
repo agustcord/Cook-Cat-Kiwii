@@ -50,7 +50,7 @@ export default class VictoryScene extends Phaser.Scene {
     // Title
     this.add.text(width / 2, height / 4 - 56, i18n.t('victory.title'), {
       font: '83px "Outfit", sans-serif',
-      fill: '#38b000',
+      fill: '#6d597a',
       fontWeight: '800',
       stroke: '#ffffff',
       strokeThickness: 11

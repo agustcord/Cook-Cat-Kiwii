@@ -273,11 +273,11 @@ export default {
   tutorial: {
     mentorName: 'Kiwii',
     mentorRole: 'Chef Mentor',
-    skipButton: 'SALTAR ⏭️',
+    skipButton: 'SALTAR',
     skipTutorial: 'Saltar Tutorial',
-    nextButton: 'SIGUIENTE ➡️',
-    gotItButton: '¡ENTENDIDO! 👍',
-    continueButton: 'CONTINUAR 🐾',
+    nextButton: 'SIGUIENTE',
+    gotItButton: '¡ENTENDIDO!',
+    continueButton: 'CONTINUAR',
     skipModal: {
       title: '¿Saltar Tutorial?',
       description: '¿Estás seguro de que deseas saltar el tutorial? Comenzarás directamente a atender la pastelería sin asistencia.',

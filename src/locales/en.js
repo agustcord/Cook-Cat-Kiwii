@@ -273,11 +273,11 @@ export default {
   tutorial: {
     mentorName: 'Kiwii',
     mentorRole: 'Mentor Chef',
-    skipButton: 'SKIP ⏭️',
+    skipButton: 'SKIP',
     skipTutorial: 'Skip Tutorial',
-    nextButton: 'NEXT ➡️',
-    gotItButton: 'GOT IT! 👍',
-    continueButton: 'CONTINUE 🐾',
+    nextButton: 'NEXT',
+    gotItButton: 'GOT IT!',
+    continueButton: 'CONTINUE',
     skipModal: {
       title: 'Skip Tutorial?',
       description: 'Are you sure you want to skip the tutorial? You will jump straight to the bakery rush without guidance.',

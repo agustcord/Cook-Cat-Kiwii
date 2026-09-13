@@ -272,8 +272,8 @@ export default class PillSwitcher {
     this.badgeEsGfx.clear();
 
     if (lang === 'en') {
-      // EN Activo (Badge Verde Kiwipaw con borde interior blanco de 3px)
-      this.badgeEnGfx.fillStyle(0x38b000, 1);
+      // EN Activo (Badge Lavanda Acento con borde interior blanco de 3px)
+      this.badgeEnGfx.fillStyle(0x6d597a, 1);
       this.badgeEnGfx.fillRoundedRect(offsetEnX - segW / 2, -segH / 2, segW, segH, segRadius);
       this.badgeEnGfx.lineStyle(3, 0xffffff, 0.95);
       this.badgeEnGfx.strokeRoundedRect(offsetEnX - segW / 2, -segH / 2, segW, segH, segRadius);
@@ -289,8 +289,8 @@ export default class PillSwitcher {
       this.textEs.setColor('#eed7c5');
       this.textEs.setScale(1.0);
     } else {
-      // ES Activo (Badge Verde Kiwipaw con borde interior blanco de 3px)
-      this.badgeEsGfx.fillStyle(0x38b000, 1);
+      // ES Activo (Badge Lavanda Acento con borde interior blanco de 3px)
+      this.badgeEsGfx.fillStyle(0x6d597a, 1);
       this.badgeEsGfx.fillRoundedRect(offsetEsX - segW / 2, -segH / 2, segW, segH, segRadius);
       this.badgeEsGfx.lineStyle(3, 0xffffff, 0.95);
       this.badgeEsGfx.strokeRoundedRect(offsetEsX - segW / 2, -segH / 2, segW, segH, segRadius);

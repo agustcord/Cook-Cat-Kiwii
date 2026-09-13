@@ -207,7 +207,7 @@ describe('I18nManager - Localization Engine & English Default Matrix', () => {
     assert.ok(pillSwitcherContent.includes('320'), 'PillSwitcher.js default width must be 320');
     assert.ok(pillSwitcherContent.includes('82'), 'PillSwitcher.js default height must be 82');
     assert.ok(pillSwitcherContent.includes('0x432818'), 'PillSwitcher.js base fill must be cacao 0x432818');
-    assert.ok(pillSwitcherContent.includes('0x38b000'), 'PillSwitcher.js active badge fill must be Kiwipaw 0x38b000');
+    assert.ok(pillSwitcherContent.includes('0x6d597a'), 'PillSwitcher.js active badge fill must be lavender accent 0x6d597a');
     assert.ok(pillSwitcherContent.includes('drawFlag'), 'PillSwitcher.js must define drawFlag for procedural flag graphics');
     assert.ok(pillSwitcherContent.includes('0xB22234'), 'PillSwitcher.js must render US red stripes 0xB22234');
     assert.ok(pillSwitcherContent.includes('0x3C3B6E'), 'PillSwitcher.js must render US navy canton 0x3C3B6E');

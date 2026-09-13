@@ -77,8 +77,8 @@ export default class MainMenuScene extends Phaser.Scene {
         width: btnW,
         height: btnH,
         text: `${i18n.t('mainMenu.continue')} (D${savedState.day})`,
-        color: 0x38b000,
-        hoverColor: 0x4cc9f0,
+        color: 0x6d597a,
+        hoverColor: 0x856d94,
         onClick: () => {
           sound.playUiTap();
           this.scene.start('GameScene', savedState);

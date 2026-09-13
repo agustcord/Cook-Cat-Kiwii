@@ -315,10 +315,11 @@ export default class TutorialOverlay {
     this.bubbleContainer.add(this.dialogueText);
 
     // 6. Botón de Acción / Siguiente
-    const btnX = halfW - 100;
-    const btnY = 0;
-    const btnW = 160;
+    const btnW = 200;
     const btnH = 58;
+    const rightMargin = 24;
+    const btnX = halfW - rightMargin - (btnW / 2);
+    const btnY = 0;
 
     this.actionBtnContainer = this.scene.add.container(btnX, btnY);
 
@@ -329,7 +330,7 @@ export default class TutorialOverlay {
     this.actionBtnBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 16);
     this.actionBtnContainer.add(this.actionBtnBg);
 
-    const nextBtnLabel = i18n.t('tutorial.nextButton') || 'NEXT ➡️';
+    const nextBtnLabel = i18n.t('tutorial.nextButton') || 'NEXT';
     this.actionBtnText = this.scene.add.text(0, 0, nextBtnLabel, {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '22px',
@@ -394,7 +395,7 @@ export default class TutorialOverlay {
     if (!this.bubbleContainer) return;
 
     const availableTextWidth = showNextBtn
-      ? (this.bubbleW - 340)  // 700px con botón Siguiente visible
+      ? (this.bubbleW - 410)  // 630px con botón Siguiente visible
       : (this.bubbleW - 200); // 840px con ancho holgado cuando no hay botón
 
     if (this.dialogueText) {
@@ -474,7 +475,9 @@ export default class TutorialOverlay {
     }
 
     // 6. Posicionar botón de acción
-    const btnX = halfW - 100;
+    const btnW = 200;
+    const rightMargin = 24;
+    const btnX = halfW - rightMargin - (btnW / 2);
     const btnY = 0;
     if (this.actionBtnContainer && typeof this.actionBtnContainer.setPosition === 'function') {
       this.actionBtnContainer.setPosition(btnX, btnY);
@@ -506,7 +509,7 @@ export default class TutorialOverlay {
     this.skipBtnContainer.add(this.skipBtnBg);
 
     const i18n = I18nManager.getInstance();
-    this.skipBtnText = this.scene.add.text(0, 0, i18n.t('tutorial.skipButton') || 'SKIP ⏭️', {
+    this.skipBtnText = this.scene.add.text(0, 0, i18n.t('tutorial.skipButton') || 'SKIP', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '22px',
       fontStyle: 'bold',
@@ -982,7 +985,7 @@ export default class TutorialOverlay {
       ? Boolean(stepConfig.showPointer)
       : (!showNextBtn && stepConfig.allowedAction !== 'DIALOG_ACK');
 
-    const nextBtnText = stepConfig.nextBtnText || (stepConfig.id === 'step_tutorial_complete' ? (i18n.t('tutorial.continueButton') || 'CONTINUE 🐾') : undefined);
+    const nextBtnText = stepConfig.nextBtnText || (stepConfig.id === 'step_tutorial_complete' ? (i18n.t('tutorial.continueButton') || 'CONTINUE') : undefined);
 
     this.setDialogue(message, {
       showNextBtn,
@@ -1016,7 +1019,7 @@ export default class TutorialOverlay {
     }
 
     if (showNext && this.actionBtnText && typeof this.actionBtnText.setText === 'function') {
-      const btnLabel = options.nextBtnText || i18n.t('tutorial.nextButton') || 'NEXT ➡️';
+      const btnLabel = options.nextBtnText || i18n.t('tutorial.nextButton') || 'NEXT';
       this.actionBtnText.setText(btnLabel);
     }
 
@@ -1117,7 +1120,7 @@ export default class TutorialOverlay {
     }
 
     if (this.skipBtnText && typeof this.skipBtnText.setText === 'function') {
-      this.skipBtnText.setText(i18n.t('tutorial.skipButton') || 'SKIP ⏭️');
+      this.skipBtnText.setText(i18n.t('tutorial.skipButton') || 'SKIP');
     }
 
     if (this.skipModalTitle && typeof this.skipModalTitle.setText === 'function') {
@@ -1140,10 +1143,14 @@ export default class TutorialOverlay {
       if (this.currentStepConfig.i18nKey && this.dialogueText && typeof this.dialogueText.setText === 'function') {
         this.dialogueText.setText(i18n.t(this.currentStepConfig.i18nKey, this.currentStepConfig.textParams || {}));
       }
-      if (this.currentStepConfig.showNextBtn && this.actionBtnText && typeof this.actionBtnText.setText === 'function') {
-        this.actionBtnText.setText(this.currentStepConfig.nextBtnText || i18n.t('tutorial.nextButton') || 'NEXT ➡️');
-      }
       const showNext = Boolean(this.currentStepConfig.showNextBtn || this.currentStepConfig.allowedAction === 'DIALOG_ACK');
+      if (showNext && this.actionBtnText && typeof this.actionBtnText.setText === 'function') {
+        const nextLabel = this.currentStepConfig.nextBtnText
+          || (this.currentStepConfig.id === 'step_tutorial_complete' ? (i18n.t('tutorial.continueButton') || 'CONTINUE') : undefined)
+          || i18n.t('tutorial.nextButton')
+          || 'NEXT';
+        this.actionBtnText.setText(nextLabel);
+      }
       this._updateBubbleLayout(showNext);
     }
   }

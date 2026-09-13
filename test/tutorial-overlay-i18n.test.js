@@ -202,6 +202,24 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
       const skipConfirmEs = i18n.t('tutorial.skipModal.confirm');
       assert.equal(skipConfirmEs, 'SÍ, SALTAR');
     });
+
+    test('tutorial button keys contain no emojis in both English and Spanish', () => {
+      const buttonKeys = ['nextButton', 'skipButton', 'continueButton', 'gotItButton'];
+      const emojiRegex = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}\u{23E9}-\u{23EF}➡️⏭️🐾👍]/u;
+
+      ['en', 'es'].forEach(lang => {
+        const dict = lang === 'en' ? en : es;
+        buttonKeys.forEach(key => {
+          const value = dict.tutorial[key];
+          assert.ok(value, `tutorial.${key} must exist in ${lang}`);
+          assert.equal(
+            emojiRegex.test(value),
+            false,
+            `tutorial.${key} in "${lang}" ("${value}") must not contain any emoji characters (➡️, ⏭️, 🐾, 👍)`
+          );
+        });
+      });
+    });
   });
 
   describe('2. TutorialOverlay Component Architecture & Depth Matrix', () => {
@@ -562,7 +580,7 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
       overlay.refreshI18n();
 
       assert.ok(overlay.dialogueText.text.includes('Masa Clásica'));
-      assert.equal(overlay.skipBtnText.text, 'SALTAR ⏭️');
+      assert.equal(overlay.skipBtnText.text, 'SALTAR');
     });
 
     test('setStep positions dialogue bubble at y = 140 when bubblePosition is top and y = 860 when bottom', () => {
@@ -647,14 +665,118 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
       assert.ok(contrastRatio >= 7.0, `Contrast ratio ${contrastRatio.toFixed(2)} must be >= 7:1 for AAA compliance`);
     });
 
-    test('interactive buttons meet minimum accessible touch size of 44x44px', () => {
+    test('interactive buttons meet minimum accessible touch size of 44x44px and action button has 200px width', () => {
       const skipButtonWidth = 175;
       const skipButtonHeight = 50;
-      const actionButtonWidth = 160;
+      const actionButtonWidth = 200;
       const actionButtonHeight = 58;
 
       assert.ok(skipButtonWidth >= 44 && skipButtonHeight >= 44, 'Skip button must meet 44x44 minimum');
       assert.ok(actionButtonWidth >= 44 && actionButtonHeight >= 44, 'Action button must meet 44x44 minimum');
+      assert.equal(actionButtonWidth, 200, 'Action button width must be calibrated to 200px');
+    });
+
+    test('action button has 200px width with generous lateral padding (>35px) for "CONTINUAR" without overflowing', () => {
+      const mockScene = {
+        cameras: { main: { width: 1920, height: 1080 } },
+        add: {
+          container: (x, y) => ({
+            x, y, depth: 0, visible: true, scaleX: 1, scaleY: 1, alpha: 1,
+            setDepth: function() { return this; },
+            setVisible: function() { return this; },
+            setScale: function() { return this; },
+            setAlpha: function() { return this; },
+            setPosition: function(nx, ny) { this.x = nx; this.y = ny; return this; },
+            add: function() { return this; },
+            destroy: function() { this.destroyed = true; }
+          }),
+          graphics: () => ({
+            clear: function() { return this; },
+            fillStyle: function() { return this; },
+            fillRect: function() { return this; },
+            fillRoundedRect: function() { return this; },
+            fillCircle: function() { return this; },
+            fillPoints: function() { return this; },
+            lineStyle: function() { return this; },
+            strokeRect: function() { return this; },
+            strokeRoundedRect: function() { return this; },
+            strokeCircle: function() { return this; },
+            strokePoints: function() { return this; },
+            setPosition: function() { return this; },
+            setVisible: function() { return this; },
+            setDepth: function() { return this; }
+          }),
+          rectangle: (x, y, w, h) => ({
+            x, y, width: w, height: h, interactive: false, visible: true, input: null,
+            setInteractive: function() { this.interactive = true; return this; },
+            disableInteractive: function() { this.interactive = false; return this; },
+            setPosition: function(nx, ny) { this.x = nx; this.y = ny; return this; },
+            setSize: function(nw, nh) { this.width = nw; this.height = nh; return this; },
+            setOrigin: function() { return this; },
+            setVisible: function() { return this; },
+            on: function() { return this; }
+          }),
+          text: (x, y, text, style) => ({
+            x, y, text, style: JSON.parse(JSON.stringify(style || {})),
+            setText: function(nt) { this.text = nt; return this; },
+            setOrigin: function() { return this; },
+            setVisible: function() { return this; },
+            setColor: function() { return this; },
+            setFontSize: function() { return this; },
+            setFontStyle: function() { return this; },
+            setPosition: function(nx, ny) { this.x = nx; this.y = ny; return this; },
+            setWordWrapWidth: function(w) {
+              if (this.style) {
+                if (!this.style.wordWrap) this.style.wordWrap = {};
+                this.style.wordWrap.width = w;
+              }
+              return this;
+            }
+          }),
+          image: (x, y, key) => ({
+            x, y, key,
+            setDisplaySize: function() { return this; },
+            setOrigin: function() { return this; },
+            setVisible: function() { return this; }
+          })
+        },
+        tweens: { add: () => ({ remove: () => {} }) },
+        events: { on: () => {}, emit: () => {}, off: () => {}, removeAllListeners: () => {} },
+        textures: { exists: () => true }
+      };
+
+      const overlay = new TutorialOverlay(mockScene);
+
+      // 1. Verificar dimensiones físicas de la zona interactiva del botón de acción
+      assert.equal(overlay.actionBtnZone.width, 200, 'Action button interactive zone width must be exactly 200px');
+      assert.equal(overlay.actionBtnZone.height, 58, 'Action button interactive zone height must be 58px');
+
+      // 2. Verificar posición en X dentro del globo de diálogo (1040px de ancho)
+      // halfW = 520, rightMargin = 24, btnW = 200 -> btnX = 520 - 24 - 100 = 396
+      assert.equal(overlay.actionBtnContainer.x, 396, 'Action button center X must be at 396px');
+
+      // 3. Verificar que "CONTINUAR" cabe holgadamente dentro de los 200px sin desbordar
+      const continueText = es.tutorial.continueButton; // 'CONTINUAR'
+      assert.equal(continueText, 'CONTINUAR');
+
+      // Tipografía Outfit Bold 22px (~12.5px a 13px por carácter)
+      const estimatedCharWidth = 13;
+      const estimatedTextWidth = continueText.length * estimatedCharWidth; // ~117px
+      const totalLateralMargin = 200 - estimatedTextWidth; // ~83px
+      const lateralPaddingPerSide = totalLateralMargin / 2; // ~41.5px
+
+      assert.ok(
+        lateralPaddingPerSide >= 35,
+        `Lateral padding per side (${lateralPaddingPerSide}px) must be >= 35px, leaving ample room around the 16px corner radius`
+      );
+
+      // 4. Verificar que el botón y el texto del diálogo (wordWrap: 630px) no colisionan
+      const textStartX = -520 + 160; // -360
+      const textEndX = textStartX + 630; // 270
+      const btnLeftX = 396 - (200 / 2); // 296
+      const gap = btnLeftX - textEndX;
+
+      assert.ok(gap >= 25, `Lateral clearance gap between text and action button (${gap}px) must be >= 25px`);
     });
   });
 
@@ -775,11 +897,11 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
       assert.equal(overlay.dialogueText.style.wordWrap.width, 840, 'Available wordWrap width should be 840px without next button');
     });
 
-    test('wordWrap width adapts to 700px when next button is visible to maintain 20px lateral clearance', () => {
+    test('wordWrap width adapts to 630px when next button is visible to maintain 20px lateral clearance', () => {
       const overlay = new TutorialOverlay(mockScene);
       overlay.setDialogue('¡Bienvenido al tutorial!', { showNextBtn: true });
 
-      assert.equal(overlay.dialogueText.style.wordWrap.width, 700, 'Available wordWrap width should be 700px with next button');
+      assert.equal(overlay.dialogueText.style.wordWrap.width, 630, 'Available wordWrap width should be 630px with next button');
     });
 
     test('short text (1-2 lines) stays at clean default height of 175px with generous margin to bottom border', () => {
@@ -789,7 +911,7 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
       assert.equal(overlay.bubbleH, 175, 'Short dialogue should remain at 175px');
       const halfH = overlay.bubbleH / 2;
       const textTop = overlay.dialogueText.y;
-      const estimatedTextH = overlay._estimateTextHeight('¡Bienvenido a Kiwipaw Bakehouse!', 700);
+      const estimatedTextH = overlay._estimateTextHeight('¡Bienvenido a Kiwipaw Bakehouse!', 630);
       const textBottom = textTop + estimatedTextH;
       const bottomClearance = halfH - textBottom;
 
@@ -806,7 +928,7 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
 
       const halfH = overlay.bubbleH / 2;
       const textTop = overlay.dialogueText.y;
-      const estimatedTextH = overlay._estimateTextHeight(longText, 700);
+      const estimatedTextH = overlay._estimateTextHeight(longText, 630);
       const textBottom = textTop + estimatedTextH;
       const bottomClearance = halfH - textBottom;
 
@@ -847,7 +969,7 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
           const textTop = overlay.dialogueText.y;
           const text = overlay.dialogueText.text;
           const showNext = Boolean(step.showNextBtn !== undefined ? step.showNextBtn : step.allowedAction === 'DIALOG_ACK');
-          const wrapWidth = showNext ? 700 : 840;
+          const wrapWidth = showNext ? 630 : 840;
           const estimatedTextH = overlay._estimateTextHeight(text, wrapWidth);
           const textBottom = textTop + estimatedTextH;
           const bottomClearance = halfH - textBottom;
@@ -876,7 +998,7 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
       assert.ok(overlay.bubbleH >= 175, 'Bubble height must be at least 175px');
       const enHalfH = overlay.bubbleH / 2;
       const enTextTop = overlay.dialogueText.y;
-      const enTextBottom = enTextTop + overlay._estimateTextHeight(overlay.dialogueText.text, 700);
+      const enTextBottom = enTextTop + overlay._estimateTextHeight(overlay.dialogueText.text, 630);
       const enClearance = enHalfH - enTextBottom;
       assert.ok(enClearance >= 20, `EN bottom clearance (${enClearance}px) must be >= 20px`);
 
@@ -886,7 +1008,7 @@ describe('Tutorial Overlay & Localization (I18n) UI Matrix - Ani Frontend', () =
       assert.ok(overlay.bubbleH >= 175, 'Bubble height must be at least 175px');
       const esHalfH = overlay.bubbleH / 2;
       const esTextTop = overlay.dialogueText.y;
-      const esTextBottom = esTextTop + overlay._estimateTextHeight(overlay.dialogueText.text, 700);
+      const esTextBottom = esTextTop + overlay._estimateTextHeight(overlay.dialogueText.text, 630);
       const esClearance = esHalfH - esTextBottom;
       assert.ok(esClearance >= 20, `ES bottom clearance (${esClearance}px) must be >= 20px`);
     });
