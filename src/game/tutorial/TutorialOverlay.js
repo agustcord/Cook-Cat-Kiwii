@@ -275,8 +275,8 @@ export default class TutorialOverlay {
 
     // Sprite de chef_cat si existe
     if (this.scene.textures && typeof this.scene.textures.exists === 'function' && this.scene.textures.exists('chef_cat')) {
-      this.avatarSprite = this.scene.add.image(avatarX, avatarY - 4, 'chef_cat')
-        .setDisplaySize(96, 96)
+      this.avatarSprite = this.scene.add.image(avatarX, avatarY, 'chef_cat')
+        .setDisplaySize(100, 100)
         .setOrigin(0.5);
       this.bubbleContainer.add(this.avatarSprite);
     }
@@ -451,7 +451,7 @@ export default class TutorialOverlay {
       this.avatarGfx.strokeCircle(avatarX, avatarY, 52);
     }
     if (this.avatarSprite && typeof this.avatarSprite.setPosition === 'function') {
-      this.avatarSprite.setPosition(avatarX, avatarY - 4);
+      this.avatarSprite.setPosition(avatarX, avatarY);
     }
 
     // 4. Etiqueta / Nombre del Mentor
