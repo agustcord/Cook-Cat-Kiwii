@@ -1,24 +1,24 @@
 {
   "daySign": {
-    "width": 338,
-    "height": 225,
-    "x": -28,
+    "width": 243,
+    "height": 171,
+    "x": 15,
     "y": 131,
     "textFontSize": 45,
     "textOffsetY": 0
   },
   "coinsSign": {
-    "width": 525,
-    "height": 281,
+    "width": 243,
+    "height": 125,
     "x": 1359,
     "y": 131,
     "textFontSize": 34,
     "textOffsetY": 15
   },
   "metaSign": {
-    "width": 525,
-    "height": 281,
-    "x": 1920,
+    "width": 243,
+    "height": 125,
+    "x": 1905,
     "y": 131,
     "textFontSize": 41,
     "textOffsetY": 19
@@ -48,10 +48,36 @@
     "y": 675
   },
   "cupStack": {
-    "width": 64,
-    "height": 51,
-    "x": 431,
-    "y": 347
+    "width": 54,
+    "height": 41,
+    "x": 450,
+    "y": 298
+  },
+  "drinkMachine": {
+    "x": 351,
+    "y": 488,
+    "width": 314,
+    "height": 359,
+    "cupOffsetY": 101
+  },
+  "drinkButtons": {
+    "coffee": {
+      "x": 275,
+      "y": 386,
+      "width": 82,
+      "height": 65
+    },
+    "milk": {
+      "x": 380,
+      "y": 386,
+      "width": 82,
+      "height": 65
+    },
+    "stockOffsetY": -18,
+    "fontSize": 15,
+    "fontColor": "#ffffff",
+    "stroke": "#000000",
+    "strokeThickness": 1
   },
   "musicButton": {
     "width": 71,

@@ -37,15 +37,43 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('bakery_background', assetUrl('assets/backgrounds/fondo_pared.png'));
     this.load.audio('bg_music', assetUrl("assets/audio/Kiwi's Simple Bakehouse Loop.mp3"));
     this.load.image('drink_machine', assetUrl('assets/cafeteteria_base.png'));
+    
+    // Botones de máquina de bebidas bilingües y aliases de compatibilidad
+    this.load.image('btn_coffee_es', assetUrl('assets/boton_cafe.png'));
+    this.load.image('btn_coffee_en', assetUrl('assets/boton_coffee.png'));
+    this.load.image('btn_milk_es', assetUrl('assets/boton_leche.png'));
+    this.load.image('btn_milk_en', assetUrl('assets/boton_milk.png'));
     this.load.image('btn_coffee_asset', assetUrl('assets/boton_cafe.png'));
     this.load.image('btn_milk_asset', assetUrl('assets/boton_leche.png'));
-    this.load.image('taza_base', assetUrl('assets/taza.png'));
-    this.load.image('beverage_empty_cup', assetUrl('assets/taza.png'));
-    this.load.image('beverage_coffee', assetUrl('assets/taza.png'));
-    this.load.image('beverage_milk', assetUrl('assets/taza.png'));
-    this.load.image('beverage_coffee_milk', assetUrl('assets/taza.png'));
+
+    // Taza base sin texto (pila limpia y máquina vacía)
+    this.load.image('taza_sin_texto', assetUrl('assets/taza_sin_texto.png'));
+    this.load.image('taza_base', assetUrl('assets/taza_sin_texto.png'));
+    this.load.image('beverage_empty_cup', assetUrl('assets/taza_sin_texto.png'));
+    this.load.image('taza', assetUrl('assets/taza_sin_texto.png'));
+
+    // Tazas bilingües para preparación y órdenes (ES y EN)
+    this.load.image('beverage_coffee_es', assetUrl('assets/taza_cafe.png'));
+    this.load.image('order_beverage_coffee_es', assetUrl('assets/taza_cafe.png'));
+    this.load.image('beverage_coffee_en', assetUrl('assets/taza_coffee.png'));
+    this.load.image('order_beverage_coffee_en', assetUrl('assets/taza_coffee.png'));
+
+    this.load.image('beverage_milk_es', assetUrl('assets/taza_leche.png'));
+    this.load.image('order_beverage_milk_es', assetUrl('assets/taza_leche.png'));
+    this.load.image('beverage_milk_en', assetUrl('assets/taza_milk.png'));
+    this.load.image('order_beverage_milk_en', assetUrl('assets/taza_milk.png'));
+
+    this.load.image('beverage_coffee_milk_es', assetUrl('assets/taza_cafe_leche.png'));
+    this.load.image('order_beverage_coffee_milk_es', assetUrl('assets/taza_cafe_leche.png'));
+    this.load.image('beverage_coffee_milk_en', assetUrl('assets/taza_coffee_milk.png'));
+    this.load.image('order_beverage_coffee_milk_en', assetUrl('assets/taza_coffee_milk.png'));
+
+    // Fallbacks retrocompatibles sin sufijo
+    this.load.image('beverage_coffee', assetUrl('assets/taza_cafe.png'));
     this.load.image('order_beverage_coffee', assetUrl('assets/taza_cafe.png'));
+    this.load.image('beverage_milk', assetUrl('assets/taza_leche.png'));
     this.load.image('order_beverage_milk', assetUrl('assets/taza_leche.png'));
+    this.load.image('beverage_coffee_milk', assetUrl('assets/taza_cafe_leche.png'));
     this.load.image('order_beverage_coffee_milk', assetUrl('assets/taza_cafe_leche.png'));
     this.load.image('bakery_counter', assetUrl('assets/mesa_illustracion.png'));
     this.load.image('basurero', assetUrl('assets/basurero.png'));

@@ -1,6 +1,12 @@
-import Phaser from 'phaser';
 import SoundManager from './SoundManager.js';
 import I18nManager from './services/I18nManager.js';
+
+const randomBetween = (min, max) => {
+  if (typeof Phaser !== 'undefined' && Phaser?.Math?.Between) {
+    return Phaser.Math.Between(min, max);
+  }
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
 
 export default class Customer {
   constructor(scene, x, y, dayConfig, onTimeoutCallback, customerId, assignedRecipe, forcedQuantity, requestedDrink) {
@@ -10,7 +16,7 @@ export default class Customer {
     this.customerId = customerId || 1;
     
     // Use pre-assigned recipe from the shuffled sequence (allows null for drink-only orders)
-    this.recipe = assignedRecipe !== undefined ? assignedRecipe : (dayConfig.recipes ? dayConfig.recipes[Math.floor(Math.random() * dayConfig.recipes.length)] : null);
+    this.recipe = assignedRecipe !== undefined ? assignedRecipe : (dayConfig?.recipes ? dayConfig.recipes[Math.floor(Math.random() * dayConfig.recipes.length)] : null);
     this.requestedDrink = requestedDrink || null;
     
     // Roll for mood (bad day / rush) based on current day
@@ -39,7 +45,7 @@ export default class Customer {
         5: { min: 2, max: 5 }  // Gamer
       };
       const range = QUANTITY_RANGES[this.customerId] || { min: 1, max: 2 };
-      const rawQuantity = Phaser.Math.Between(range.min, range.max);
+      const rawQuantity = randomBetween(range.min, range.max);
       this.requestedQuantity = Math.max(1, Math.min(rawQuantity, capD));
     }
     
@@ -193,19 +199,50 @@ export default class Customer {
     this.container.add(this.progressText);
   }
 
+  getDrinkTexture(drinkType = this.requestedDrink) {
+    const i18n = I18nManager.getInstance();
+    const lang = (i18n && typeof i18n.getLanguage === 'function') ? i18n.getLanguage() : 'es';
+    let base = 'order_beverage_coffee';
+    if (drinkType === 'milk') base = 'order_beverage_milk';
+    else if (drinkType === 'coffee_milk') base = 'order_beverage_coffee_milk';
+
+    const localized = `${base}_${lang}`;
+    if (this.scene?.textures && typeof this.scene.textures.exists === 'function') {
+      if (this.scene.textures.exists(localized)) return localized;
+      if (this.scene.textures.exists(base)) return base;
+    }
+    return localized;
+  }
+
+  resolveDrinkTexture(drinkType = this.requestedDrink) {
+    return this.getDrinkTexture(drinkType);
+  }
+
+  refreshLanguage() {
+    if (!this.isActive) return;
+    if (this.drinkSprite && this.requestedDrink) {
+      const textureKey = this.getDrinkTexture(this.requestedDrink);
+      this.drinkSprite.textureKey = textureKey;
+      if (typeof this.drinkSprite.setTexture === 'function') {
+        this.drinkSprite.setTexture(textureKey);
+      }
+    }
+    const acceptedCount = this.acceptedCookies ? this.acceptedCookies.length : (this.receivedCookiesCount || 0);
+    this.updateProgress(acceptedCount);
+  }
+
   drawOrderImage() {
     const cy = -188;
 
     if (this.requestedQuantity === 0) {
       // Drink-only order: draw only the drink, centered in the thought bubble
       if (this.requestedDrink) {
-        let drinkTexture = 'order_beverage_coffee';
-        if (this.requestedDrink === 'milk') drinkTexture = 'order_beverage_milk';
-        else if (this.requestedDrink === 'coffee_milk') drinkTexture = 'order_beverage_coffee_milk';
-
+        const drinkTexture = this.getDrinkTexture(this.requestedDrink);
         const drinkSprite = this.scene.add.image(0, cy, drinkTexture);
         drinkSprite.setDisplaySize(103, 103);
+        drinkSprite.textureKey = drinkTexture;
         this.container.add(drinkSprite);
+        this.drinkSprite = drinkSprite;
       }
       return;
     }
@@ -257,13 +294,12 @@ export default class Customer {
       this.container.add(plusText);
 
       // Determine drink texture key
-      let drinkTexture = 'order_beverage_coffee';
-      if (this.requestedDrink === 'milk') drinkTexture = 'order_beverage_milk';
-      else if (this.requestedDrink === 'coffee_milk') drinkTexture = 'order_beverage_coffee_milk';
-
+      const drinkTexture = this.getDrinkTexture(this.requestedDrink);
       const drinkSprite = this.scene.add.image(84, cy, drinkTexture);
       drinkSprite.setDisplaySize(94, 94);
+      drinkSprite.textureKey = drinkTexture;
       this.container.add(drinkSprite);
+      this.drinkSprite = drinkSprite;
     }
   }
 

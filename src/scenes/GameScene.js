@@ -238,12 +238,15 @@ export default class GameScene extends Phaser.Scene {
 
     // List of editable UI elements
     const { daySign, coinsSign, metaSign } = UI_CONFIG;
+    const stockOffsetYConfig = UI_CONFIG.drinkButtons?.stockOffsetY ?? -18;
     this.editableUIElements = [
       { key: 'daySign', bg: this.daySignImage, text: this.daySignText, textOffsetX: daySign.width / 2, textOffsetY: daySign.textOffsetY },
       { key: 'coinsSign', bg: this.coinsSignImage, text: this.coinsText, textOffsetX: 0, textOffsetY: coinsSign.textOffsetY },
       { key: 'metaSign', bg: this.metaSignImage, text: this.metaText, textOffsetX: -metaSign.width / 2, textOffsetY: metaSign.textOffsetY },
       { key: 'deliveryTray', bg: this.deliveryDragZone, text: this.deliveryTrayLabel, textOffsetX: 0, textOffsetY: -33 },
       { key: 'cupStack', bg: this.cupStackZone, text: null, textOffsetX: 0, textOffsetY: 0 },
+      { key: 'coffeeButton', bg: this.btnCoffeeZone, text: this.beansStockText, textOffsetX: 0, textOffsetY: stockOffsetYConfig },
+      { key: 'milkButton', bg: this.btnMilkZone, text: this.milkStockText, textOffsetX: 0, textOffsetY: stockOffsetYConfig },
       { key: 'musicButton', bg: this.musicBtnZone, text: this.musicButtonText, textOffsetX: 0, textOffsetY: 0 }
     ];
 
@@ -288,6 +291,16 @@ export default class GameScene extends Phaser.Scene {
           if (this.cupStackImage) {
             this.cupStackImage.x = dragX;
             this.cupStackImage.y = dragY;
+          }
+        } else if (element.key === 'coffeeButton') {
+          if (this.btnCoffeeImage) {
+            this.btnCoffeeImage.x = dragX;
+            this.btnCoffeeImage.y = dragY;
+          }
+        } else if (element.key === 'milkButton') {
+          if (this.btnMilkImage) {
+            this.btnMilkImage.x = dragX;
+            this.btnMilkImage.y = dragY;
           }
         } else if (element.key === 'musicButton') {
           if (this.musicButtonBg) {
@@ -436,8 +449,9 @@ export default class GameScene extends Phaser.Scene {
     // Column 3: Horno (Oven minigame) - Posición exacta Krita: X centro 1494, Y centro 429
     this.createOvenStation(1391, 504);
 
-    // Column 3.5: Bebidas (Drinks Station) - Posición exacta Krita: X centro 351, Y centro 507
-    this.createDrinkStation(351, 507);
+    // Column 3.5: Bebidas (Drinks Station) - Posición exacta desde ui-config.json o fallback (351, 488)
+    const machineConfig = UI_CONFIG.drinkMachine || { x: 351, y: 488, width: 314, height: 359 };
+    this.createDrinkStation(machineConfig.x ?? 351, machineConfig.y ?? 488);
 
     // Column 4: Decoración (Toppings)
     this.createToppingButtons(1669, 581);
@@ -964,12 +978,14 @@ export default class GameScene extends Phaser.Scene {
     this.updateExtractButtonState();
   }
 
-  createDrinkStation(startX, startY) {
+  createDrinkStation(startX = UI_CONFIG.drinkMachine?.x ?? 351, startY = UI_CONFIG.drinkMachine?.y ?? 488) {
+    const machineConfig = UI_CONFIG.drinkMachine || { x: 351, y: 488, width: 314, height: 359 };
+    const machineWidth = machineConfig.width ?? 314;
+    const machineHeight = machineConfig.height ?? 359;
 
-
-    // 2. Espresso Machine (New asset: cafeteteria_base.png) - 320x320 nativo 1:1 con Krita
+    // 2. Espresso Machine (New asset: cafeteteria_base.png) - 314x359 px
     this.drinkMachine = this.add.image(startX, startY, 'drink_machine')
-      .setDisplaySize(320, 320)
+      .setDisplaySize(machineWidth, machineHeight)
       .setDepth(2);
     
     // Set machine interactive to provide helpful hints on tap
@@ -986,44 +1002,68 @@ export default class GameScene extends Phaser.Scene {
     });
 
     // 4. Ingredient Click Zones directly on the machine panel (Coffee Beans at left, Milk at center-right)
-    const beansX = startX - 64;
-    const milkX = startX + 34;
-    const btnY = startY - 83;
-    const i18nInst = I18nManager.getInstance();
+    const drinkButtonsConfig = UI_CONFIG.drinkButtons || {};
+    const coffeeConfig = drinkButtonsConfig.coffee || { x: 275, y: 386, width: 82, height: 65 };
+    const milkConfig = drinkButtonsConfig.milk || { x: 380, y: 386, width: 82, height: 65 };
+    const stockOffsetY = drinkButtonsConfig.stockOffsetY ?? -18;
+    const stockFontSize = drinkButtonsConfig.fontSize ?? 15;
+    const stockFontColor = drinkButtonsConfig.fontColor ?? '#ffffff';
+    const stockStroke = drinkButtonsConfig.stroke ?? '#000000';
+    const stockStrokeThickness = drinkButtonsConfig.strokeThickness ?? 1;
 
-    // Coffee Button Image & Stock Text (integrated inside the new asset display box)
-    this.btnCoffeeImage = this.add.image(beansX, btnY, 'btn_coffee_asset')
-      .setDisplaySize(83, 68)
+    const beansX = coffeeConfig.x ?? (startX - 64);
+    const beansY = coffeeConfig.y ?? ((startY === 507) ? (startY - 83) : (startY - 64));
+    const coffeeW = coffeeConfig.width ?? 82;
+    const coffeeH = coffeeConfig.height ?? 65;
+
+    const milkX = milkConfig.x ?? (startX + 34);
+    const milkY = milkConfig.y ?? ((startY === 507) ? (startY - 85) : (startY - 66));
+    const milkW = milkConfig.width ?? 82;
+    const milkH = milkConfig.height ?? 65;
+
+    const i18nInst = I18nManager.getInstance();
+    const currentLang = i18nInst ? i18nInst.getLanguage() : 'es';
+    const initialCoffeeKey = currentLang === 'en' ? 'btn_coffee_en' : 'btn_coffee_es';
+    const initialMilkKey = currentLang === 'en' ? 'btn_milk_en' : 'btn_milk_es';
+
+    // Coffee Button Image & Stock Text (82x65 px)
+    this.btnCoffeeImage = this.add.image(beansX, beansY, initialCoffeeKey)
+      .setDisplaySize(coffeeW, coffeeH)
       .setDepth(3);
+    this.btnCoffeeImage.textureKey = initialCoffeeKey;
 
     const coffeeBaseScaleX = this.btnCoffeeImage.scaleX;
     const coffeeBaseScaleY = this.btnCoffeeImage.scaleY;
 
-    this.beansStockText = this.add.text(beansX, btnY + 11, i18nInst.t('game.stockUnit', { qty: 0 }), {
-      font: 'bold 21px "Outfit", sans-serif',
-      fill: '#2b2b2b'
+    this.beansStockText = this.add.text(beansX, beansY + stockOffsetY, i18nInst.t('game.stockUnit', { qty: 0 }), {
+      font: `bold ${stockFontSize}px "Outfit", sans-serif`,
+      fill: stockFontColor,
+      stroke: stockStroke,
+      strokeThickness: stockStrokeThickness
     }).setOrigin(0.5).setDepth(4);
 
-    const beansDragZone = this.add.rectangle(beansX, btnY, 83, 68, 0x000000, 0)
+    const beansDragZone = this.add.rectangle(beansX, beansY, coffeeW, coffeeH, 0x000000, 0)
       .setDepth(5);
     beansDragZone.setInteractive({ useHandCursor: true });
     this.btnCoffeeZone = beansDragZone;
 
-    // Milk Button Image & Stock Text (integrated inside the new asset display box)
-    const milkY = btnY - 2;
-    this.btnMilkImage = this.add.image(milkX, milkY, 'btn_milk_asset')
-      .setDisplaySize(83, 68)
+    // Milk Button Image & Stock Text (82x65 px)
+    this.btnMilkImage = this.add.image(milkX, milkY, initialMilkKey)
+      .setDisplaySize(milkW, milkH)
       .setDepth(3);
+    this.btnMilkImage.textureKey = initialMilkKey;
 
     const milkBaseScaleX = this.btnMilkImage.scaleX;
     const milkBaseScaleY = this.btnMilkImage.scaleY;
 
-    this.milkStockText = this.add.text(milkX, milkY + 11, i18nInst.t('game.stockUnit', { qty: 0 }), {
-      font: 'bold 21px "Outfit", sans-serif',
-      fill: '#2b2b2b'
+    this.milkStockText = this.add.text(milkX, milkY + stockOffsetY, i18nInst.t('game.stockUnit', { qty: 0 }), {
+      font: `bold ${stockFontSize}px "Outfit", sans-serif`,
+      fill: stockFontColor,
+      stroke: stockStroke,
+      strokeThickness: stockStrokeThickness
     }).setOrigin(0.5).setDepth(4);
 
-    const milkDragZone = this.add.rectangle(milkX, milkY, 83, 68, 0x000000, 0)
+    const milkDragZone = this.add.rectangle(milkX, milkY, milkW, milkH, 0x000000, 0)
       .setDepth(5);
     milkDragZone.setInteractive({ useHandCursor: true });
     this.btnMilkZone = milkDragZone;
@@ -1111,13 +1151,13 @@ export default class GameScene extends Phaser.Scene {
     const { cupStack } = UI_CONFIG;
     const cupStackX = cupStack ? cupStack.x : (startX + 52);
     const cupStackY = cupStack ? cupStack.y : (startY - 68);
-    const cupStackW = cupStack ? cupStack.width : 34;
-    const cupStackH = Math.round(cupStackW * (54 / 67));
+    const cupStackW = cupStack ? cupStack.width : 54;
+    const cupStackH = cupStack?.height ? cupStack.height : Math.round(cupStackW * (41 / 54));
 
     this.cupStackImage = this.add.image(cupStackX, cupStackY, 'beverage_empty_cup')
       .setDisplaySize(cupStackW, cupStackH)
       .setDepth(3)
-      .setAlpha(0.85);
+      .setAlpha(1.0);
 
     const stackBaseScaleX = this.cupStackImage.scaleX;
     const stackBaseScaleY = this.cupStackImage.scaleY;
@@ -1158,7 +1198,7 @@ export default class GameScene extends Phaser.Scene {
       tempDragCup = this.add.image(this.cupStackImage.x, this.cupStackImage.y, 'beverage_empty_cup')
         .setDisplaySize(cupStackW, cupStackH)
         .setDepth(30000)
-        .setAlpha(0.85);
+        .setAlpha(1.0);
     });
 
     this.cupStackZone.on('drag', (pointer, dragX, dragY) => {
@@ -1176,7 +1216,8 @@ export default class GameScene extends Phaser.Scene {
       if (!tempDragCup) return;
 
       const destX = startX;
-      const destY = startY + 75;
+      const cupOffsetY = UI_CONFIG.drinkMachine?.cupOffsetY ?? 101;
+      const destY = startY + cupOffsetY;
       const dist = Phaser.Math.Distance.Between(tempDragCup.x, tempDragCup.y, destX, destY);
 
       if (dist < 75) {
@@ -1259,17 +1300,21 @@ export default class GameScene extends Phaser.Scene {
       const progressBar = this.add.graphics().setDepth(21);
       
       // Update texture and alpha of the existing cup
-      const cupKey = type === 'coffee_beans' ? 'beverage_coffee' : 'beverage_milk';
+      const baseDrinkKey = type === 'coffee_beans' ? 'beverage_coffee' : 'beverage_milk';
+      const cupKey = this.getBeverageTextureKey(baseDrinkKey);
       const { cupStack } = UI_CONFIG;
-      const cupStackW = cupStack ? cupStack.width : 64;
-      const cupStackH = Math.round(cupStackW * (54 / 67));
+      const cupOffsetY = UI_CONFIG.drinkMachine?.cupOffsetY ?? 101;
+      const cupStackW = cupStack ? cupStack.width : 54;
+      const cupStackH = cupStack?.height ? cupStack.height : Math.round(cupStackW * (41 / 54));
       if (this.machineCupSprite) {
         this.machineCupSprite.setTexture(cupKey).setAlpha(0.4);
+        this.machineCupSprite.textureKey = cupKey;
       } else {
-        this.machineCupSprite = this.add.image(startX, startY + 75, cupKey)
+        this.machineCupSprite = this.add.image(startX, startY + cupOffsetY, cupKey)
           .setDisplaySize(cupStackW, cupStackH)
           .setAlpha(0.4)
           .setDepth(4);
+        this.machineCupSprite.textureKey = cupKey;
       }
 
       let elapsed = 0;
@@ -1343,7 +1388,9 @@ export default class GameScene extends Phaser.Scene {
       // Disable drag interaction while brewing second ingredient
       if (this.machineCupSprite) {
         this.machineCupSprite.disableInteractive();
-        this.machineCupSprite.setTexture('beverage_coffee_milk').setAlpha(0.4);
+        const mixedCupKey = this.getBeverageTextureKey('beverage_coffee_milk');
+        this.machineCupSprite.setTexture(mixedCupKey).setAlpha(0.4);
+        this.machineCupSprite.textureKey = mixedCupKey;
       }
 
       // Draw progress bar above the machine (Y = startY - 146)
@@ -1417,8 +1464,9 @@ export default class GameScene extends Phaser.Scene {
     this.machineCupSprite.setInteractive({ useHandCursor: true });
     this.input.setDraggable(this.machineCupSprite);
 
+    const cupOffsetY = UI_CONFIG.drinkMachine?.cupOffsetY ?? 101;
     this.machineCupSprite.setData('origX', startX);
-    this.machineCupSprite.setData('origY', startY + 75);
+    this.machineCupSprite.setData('origY', startY + cupOffsetY);
     const baseScaleX = this.machineCupSprite.scaleX;
     const baseScaleY = this.machineCupSprite.scaleY;
 
@@ -3546,6 +3594,14 @@ export default class GameScene extends Phaser.Scene {
           // Keep it interactive and draggable for gameplay
           element.bg.setInteractive({ useHandCursor: true });
           this.input.setDraggable(element.bg, true);
+        } else if (element.key === 'cupStack') {
+          // Keep cupStack interactive and draggable for gameplay
+          element.bg.setInteractive({ useHandCursor: true });
+          this.input.setDraggable(element.bg, true);
+        } else if (element.key === 'coffeeButton' || element.key === 'milkButton') {
+          // Keep coffee and milk interactive for clicking (not draggable in gameplay)
+          element.bg.setInteractive({ useHandCursor: true });
+          this.input.setDraggable(element.bg, false);
         } else {
           element.bg.disableInteractive();
           this.input.setDraggable(element.bg, false);
@@ -3631,8 +3687,19 @@ export default class GameScene extends Phaser.Scene {
 
     // Get current values from active sprites
     this.editableUIElements.forEach(element => {
-      // Find original config values to preserve textFontSize, textOffsetY, etc.
       const originalKey = element.key;
+      if (originalKey === 'coffeeButton' || originalKey === 'milkButton') {
+        if (!newConfig.drinkButtons) newConfig.drinkButtons = { ...UI_CONFIG.drinkButtons };
+        const subKey = originalKey === 'coffeeButton' ? 'coffee' : 'milk';
+        newConfig.drinkButtons[subKey] = {
+          x: Math.round(element.bg.x),
+          y: Math.round(element.bg.y),
+          width: Math.round(element.bg.displayWidth),
+          height: Math.round(element.bg.displayHeight)
+        };
+        return;
+      }
+
       const original = UI_CONFIG[originalKey];
 
       newConfig[originalKey] = {
@@ -3643,8 +3710,8 @@ export default class GameScene extends Phaser.Scene {
       };
 
       // Preserve special text properties if they exist
-      if (original.textFontSize !== undefined) newConfig[originalKey].textFontSize = original.textFontSize;
-      if (original.textOffsetY !== undefined) newConfig[originalKey].textOffsetY = original.textOffsetY;
+      if (original && original.textFontSize !== undefined) newConfig[originalKey].textFontSize = original.textFontSize;
+      if (original && original.textOffsetY !== undefined) newConfig[originalKey].textOffsetY = original.textOffsetY;
     });
 
     const jsonStr = JSON.stringify(newConfig, null, 2);
@@ -4022,14 +4089,16 @@ export default class GameScene extends Phaser.Scene {
     // Draw drinks
     if (this.deliveryTrayDrinks) {
       this.deliveryTrayDrinks.forEach((drinkType, index) => {
-        let key = 'beverage_coffee';
-        if (drinkType === 'milk') key = 'beverage_milk';
-        else if (drinkType === 'coffee_milk') key = 'beverage_coffee_milk';
+        let baseKey = 'beverage_coffee';
+        if (drinkType === 'milk') baseKey = 'beverage_milk';
+        else if (drinkType === 'coffee_milk') baseKey = 'beverage_coffee_milk';
 
+        const key = this.getBeverageTextureKey ? this.getBeverageTextureKey(baseKey) : baseKey;
         const x = startX + (cookiesCount + index) * spacing;
         const y = trayY - 8; // Shift up slightly to fit nicely
 
         const sprite = this.add.image(x, y, key).setDisplaySize(60, 60).setDepth(14);
+        sprite.textureKey = key;
         this.deliveryTraySprites.push(sprite);
       });
     }
@@ -4492,8 +4561,62 @@ export default class GameScene extends Phaser.Scene {
     closeZone.on('pointerout', () => closeText.setScale(1.0));
   }
 
+  getBeverageTextureKey(baseKey) {
+    const i18n = I18nManager.getInstance();
+    const lang = (i18n && typeof i18n.getLanguage === 'function') ? i18n.getLanguage() : 'es';
+    if (baseKey === 'beverage_empty_cup' || baseKey === 'taza_base' || baseKey === 'taza_sin_texto') {
+      return 'beverage_empty_cup';
+    }
+    const localizedKey = `${baseKey}_${lang}`;
+    if (this.textures && typeof this.textures.exists === 'function') {
+      if (this.textures.exists(localizedKey)) return localizedKey;
+      if (this.textures.exists(baseKey)) return baseKey;
+    }
+    return localizedKey;
+  }
+
+  updateMachineCupTexture() {
+    if (!this.machineCupSprite) return;
+    let baseKey = null;
+    if (this.machineState === 'empty') {
+      baseKey = 'beverage_empty_cup';
+    } else if (this.machineState === 'brewing_coffee' || this.machineState === 'ready_coffee') {
+      baseKey = 'beverage_coffee';
+    } else if (this.machineState === 'brewing_milk' || this.machineState === 'ready_milk') {
+      baseKey = 'beverage_milk';
+    } else if (this.machineState === 'brewing_coffee_milk' || this.machineState === 'ready_coffee_milk') {
+      baseKey = 'beverage_coffee_milk';
+    }
+    if (baseKey) {
+      const textureKey = this.getBeverageTextureKey(baseKey);
+      this.machineCupSprite.setTexture(textureKey);
+      this.machineCupSprite.textureKey = textureKey;
+    }
+  }
+
   refreshLocalizedTexts() {
     const i18n = I18nManager.getInstance();
+    const lang = (i18n && typeof i18n.getLanguage === 'function') ? i18n.getLanguage() : 'es';
+
+    // 1. Reactive button textures according to active language (ES -> cafe/leche, EN -> coffee/milk)
+    if (this.btnCoffeeImage) {
+      const coffeeKey = lang === 'en' ? 'btn_coffee_en' : 'btn_coffee_es';
+      const keyToUse = (this.textures && typeof this.textures.exists === 'function' && !this.textures.exists(coffeeKey)) ? 'btn_coffee_asset' : coffeeKey;
+      this.btnCoffeeImage.setTexture(keyToUse);
+      this.btnCoffeeImage.textureKey = keyToUse;
+    }
+    if (this.btnMilkImage) {
+      const milkKey = lang === 'en' ? 'btn_milk_en' : 'btn_milk_es';
+      const keyToUse = (this.textures && typeof this.textures.exists === 'function' && !this.textures.exists(milkKey)) ? 'btn_milk_asset' : milkKey;
+      this.btnMilkImage.setTexture(keyToUse);
+      this.btnMilkImage.textureKey = keyToUse;
+    }
+
+    // 2. Reactive machine cup & delivery tray drinks textures
+    this.updateMachineCupTexture();
+    this.drawDeliveryTray();
+
+    // 3. UI Signs & Labels
     if (this.daySignText) {
       this.daySignText.setText(i18n.t('hud.day', { day: this.day }));
     }
@@ -4508,8 +4631,14 @@ export default class GameScene extends Phaser.Scene {
     }
     this.updateStockTexts();
     this.updateDrinkStockTexts();
+
+    // 4. Reactive Customer Language Refresh
     if (this.currentCustomer) {
-      this.currentCustomer.updateProgress(this.currentCustomer.acceptedCookies ? this.currentCustomer.acceptedCookies.length : 0);
+      if (typeof this.currentCustomer.refreshLanguage === 'function') {
+        this.currentCustomer.refreshLanguage();
+      } else {
+        this.currentCustomer.updateProgress(this.currentCustomer.acceptedCookies ? this.currentCustomer.acceptedCookies.length : 0);
+      }
     }
   }
 

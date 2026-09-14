@@ -661,9 +661,9 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
         fish: mockGameScene.add.rectangle(723, 721, 109, 109)
       };
 
-      mockGameScene.cupStackZone = mockGameScene.add.rectangle(431, 347, 64, 51);
-      mockGameScene.btnCoffeeZone = mockGameScene.add.rectangle(287, 424, 83, 68);
-      mockGameScene.btnMilkZone = mockGameScene.add.rectangle(385, 422, 83, 68);
+      mockGameScene.cupStackZone = mockGameScene.add.rectangle(450, 298, 54, 41);
+      mockGameScene.btnCoffeeZone = mockGameScene.add.rectangle(275, 386, 82, 65);
+      mockGameScene.btnMilkZone = mockGameScene.add.rectangle(380, 386, 82, 65);
       mockGameScene.drinkMachine = mockGameScene.add.image(351, 507, 'drink_machine');
       mockGameScene.drinkMachine.width = 320;
       mockGameScene.drinkMachine.height = 320;
@@ -793,6 +793,14 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
       assert.ok(trayFallback);
       assert.equal(trayFallback.x, 1037);
       assert.equal(trayFallback.y, 675);
+
+      const cupFallback = resolveTargetBounds('drink_cup', null);
+      assert.ok(cupFallback);
+      assert.equal(cupFallback.x, 351);
+      assert.equal(cupFallback.y, 589);
+      assert.equal(cupFallback.width, 70);
+      assert.equal(cupFallback.height, 60);
+      assert.deepEqual(DEFAULT_TARGET_BOUNDS.drink_cup, { x: 351, y: 589, width: 70, height: 60, radius: 16 });
     });
 
     test('all 40 tutorial steps in TUTORIAL_STEPS resolve to valid calibrated bounds with 100% precision', () => {
@@ -1012,9 +1020,9 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
         fish: mockGameScene.add.rectangle(723, 721, 109, 109)
       };
 
-      mockGameScene.cupStackZone = mockGameScene.add.rectangle(431, 347, 64, 51);
-      mockGameScene.btnCoffeeZone = mockGameScene.add.rectangle(287, 424, 83, 68);
-      mockGameScene.btnMilkZone = mockGameScene.add.rectangle(385, 422, 83, 68);
+      mockGameScene.cupStackZone = mockGameScene.add.rectangle(450, 298, 54, 41);
+      mockGameScene.btnCoffeeZone = mockGameScene.add.rectangle(275, 386, 82, 65);
+      mockGameScene.btnMilkZone = mockGameScene.add.rectangle(380, 386, 82, 65);
       mockGameScene.drinkMachine = mockGameScene.add.image(351, 507, 'drink_machine');
       mockGameScene.drinkMachine.width = 320;
       mockGameScene.drinkMachine.height = 320;
@@ -1236,8 +1244,8 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
       const overlay = tm.overlay;
 
       // Fase 1: Pila de vasos en reposo
-      assert.equal(overlay.currentSpotlight.x, 431);
-      assert.equal(overlay.currentSpotlight.y, 347);
+      assert.equal(overlay.currentSpotlight.x, 450);
+      assert.equal(overlay.currentSpotlight.y, 298);
 
       // Fase 2: Arrastrando vaso -> Cafetera
       mockGameScene.events.emit('game:drag_start', { item: 'cup_stack' });
@@ -1949,13 +1957,13 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
 
       const btnMilkBounds = resolveTargetBounds('btn_milk', null);
       assert.ok(btnMilkBounds);
-      assert.strictEqual(btnMilkBounds.x, 385);
-      assert.strictEqual(btnMilkBounds.y, 422);
+      assert.strictEqual(btnMilkBounds.x, 380);
+      assert.strictEqual(btnMilkBounds.y, 386);
 
       // Resolution with GameScene getTutorialTarget fallback
       mockGameScene.getTutorialTarget = (key) => {
         if (key === 'topping_sprinkles') return { x: 1767, y: 660, displayWidth: 158, displayHeight: 158 };
-        if (key === 'btn_milk') return { x: 385, y: 422, displayWidth: 83, displayHeight: 68 };
+        if (key === 'btn_milk') return { x: 380, y: 386, displayWidth: 82, displayHeight: 65 };
         return null;
       };
 
@@ -1964,8 +1972,8 @@ describe('Tutorial Subsystem - Architecture, State Machine & Pedagogical Flow Ma
       assert.strictEqual(resolvedSprinkles.y, 660);
 
       const resolvedBtnMilk = resolveTargetBounds('btn_milk', mockGameScene);
-      assert.strictEqual(resolvedBtnMilk.x, 385);
-      assert.strictEqual(resolvedBtnMilk.y, 422);
+      assert.strictEqual(resolvedBtnMilk.x, 380);
+      assert.strictEqual(resolvedBtnMilk.y, 386);
     });
 
     test('step_topping_sprinkles advances ONLY on valid game:topping_applied payload', () => {
