@@ -539,4 +539,132 @@ describe('Tutorial Input & Action Gating - Conditional Validation Suite', () => 
     });
   });
 
+  describe('10. Oven Overcook Dynamic Threshold Matrix (Tutorial step_oven_bell)', () => {
+    test('GameScene overcook grace timer reduces to 2.5s strictly during step_oven_bell and remains 5.0s otherwise', () => {
+      const gameScenePath = path.resolve(process.cwd(), 'src/scenes/GameScene.js');
+      const content = fs.readFileSync(gameScenePath, 'utf8');
+
+      // 1. Source code audit: verify dynamic threshold calculation in GameScene.js
+      assert.ok(
+        content.includes("const overcookLimit = (this.tutorialManager?.isActive && this.tutorialManager.currentStep?.id === 'step_oven_bell') ? 2.5 : 5.0;"),
+        'GameScene must dynamically compute overcookLimit based on step_oven_bell'
+      );
+      assert.ok(
+        content.includes("if (this.ovenOvercookTimer >= overcookLimit && !this.hasOvercookedAlarm)"),
+        'GameScene must compare ovenOvercookTimer against dynamic overcookLimit'
+      );
+
+      // 2. Behavioral verification function simulating GameScene oven overcook loop
+      function simulateOvenOvercookStep(scene, deltaSec) {
+        if (scene.alarmPlayed) {
+          scene.ovenOvercookTimer += deltaSec;
+          const overcookLimit = (scene.tutorialManager?.isActive && scene.tutorialManager.currentStep?.id === 'step_oven_bell') ? 2.5 : 5.0;
+          if (scene.ovenOvercookTimer >= overcookLimit && !scene.hasOvercookedAlarm) {
+            scene.hasOvercookedAlarm = true;
+            scene.isBaking = false;
+            if (scene.cookiesInOven) {
+              scene.cookiesInOven.forEach(c => { c.bakedState = 'burnt'; });
+            }
+            scene.events.emit('game:cookie_burnt', { cookies: scene.cookiesInOven });
+          }
+        }
+      }
+
+      // Scenario A: Tutorial is active and currently on 'step_oven_bell'
+      {
+        const burntEvents = [];
+        const sceneA = {
+          alarmPlayed: true,
+          ovenOvercookTimer: 0,
+          hasOvercookedAlarm: false,
+          isBaking: true,
+          cookiesInOven: [{ bakedState: 'baked' }],
+          tutorialManager: { isActive: true, currentStep: { id: 'step_oven_bell' } },
+          events: {
+            emit: (event, data) => {
+              if (event === 'game:cookie_burnt') burntEvents.push(data);
+            }
+          }
+        };
+
+        // Advance to 2.4s -> cookie must NOT be burnt yet
+        simulateOvenOvercookStep(sceneA, 2.4);
+        assert.equal(sceneA.hasOvercookedAlarm, false);
+        assert.equal(sceneA.cookiesInOven[0].bakedState, 'baked');
+        assert.equal(burntEvents.length, 0);
+
+        // Advance to 2.5s -> cookie MUST be burnt and event emitted
+        simulateOvenOvercookStep(sceneA, 0.1);
+        assert.equal(sceneA.hasOvercookedAlarm, true);
+        assert.equal(sceneA.isBaking, false);
+        assert.equal(sceneA.cookiesInOven[0].bakedState, 'burnt');
+        assert.equal(burntEvents.length, 1);
+      }
+
+      // Scenario B: Tutorial is inactive (normal gameplay)
+      {
+        const burntEvents = [];
+        const sceneB = {
+          alarmPlayed: true,
+          ovenOvercookTimer: 0,
+          hasOvercookedAlarm: false,
+          isBaking: true,
+          cookiesInOven: [{ bakedState: 'baked' }],
+          tutorialManager: { isActive: false, currentStep: null },
+          events: {
+            emit: (event, data) => {
+              if (event === 'game:cookie_burnt') burntEvents.push(data);
+            }
+          }
+        };
+
+        // Advance to 2.5s -> in normal gameplay it must NOT be burnt
+        simulateOvenOvercookStep(sceneB, 2.5);
+        assert.equal(sceneB.hasOvercookedAlarm, false, 'At 2.5s in normal gameplay, cookie must NOT burn');
+        assert.equal(sceneB.cookiesInOven[0].bakedState, 'baked');
+        assert.equal(burntEvents.length, 0);
+
+        // Advance to 4.9s -> still NOT burnt
+        simulateOvenOvercookStep(sceneB, 2.4);
+        assert.equal(sceneB.hasOvercookedAlarm, false);
+        assert.equal(burntEvents.length, 0);
+
+        // Advance to 5.0s -> NOW it must be burnt
+        simulateOvenOvercookStep(sceneB, 0.1);
+        assert.equal(sceneB.hasOvercookedAlarm, true, 'At 5.0s in normal gameplay, cookie MUST burn');
+        assert.equal(sceneB.isBaking, false);
+        assert.equal(sceneB.cookiesInOven[0].bakedState, 'burnt');
+        assert.equal(burntEvents.length, 1);
+      }
+
+      // Scenario C: Tutorial is active but in a different step (e.g. step_oven_bake)
+      {
+        const burntEvents = [];
+        const sceneC = {
+          alarmPlayed: true,
+          ovenOvercookTimer: 0,
+          hasOvercookedAlarm: false,
+          isBaking: true,
+          cookiesInOven: [{ bakedState: 'baked' }],
+          tutorialManager: { isActive: true, currentStep: { id: 'step_oven_bake' } },
+          events: {
+            emit: (event, data) => {
+              if (event === 'game:cookie_burnt') burntEvents.push(data);
+            }
+          }
+        };
+
+        // At 2.5s it must NOT burn
+        simulateOvenOvercookStep(sceneC, 2.5);
+        assert.equal(sceneC.hasOvercookedAlarm, false);
+        assert.equal(burntEvents.length, 0);
+
+        // At 5.0s it burns
+        simulateOvenOvercookStep(sceneC, 2.5);
+        assert.equal(sceneC.hasOvercookedAlarm, true);
+        assert.equal(burntEvents.length, 1);
+      }
+    });
+  });
+
 });

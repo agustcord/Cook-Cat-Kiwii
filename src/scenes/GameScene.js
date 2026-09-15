@@ -3450,9 +3450,11 @@ export default class GameScene extends Phaser.Scene {
       }
 
       // Ventana de gracia de 5 segundos antes de quemarse (inicia tras sonar la alarma)
+      // En el tutorial (step_oven_bell) se reduce a 2.5s para dinamizar el paso didáctico
       else if (this.alarmPlayed) {
         this.ovenOvercookTimer += (delta / 1000);
-        if (this.ovenOvercookTimer >= 5.0 && !this.hasOvercookedAlarm) {
+        const overcookLimit = (this.tutorialManager?.isActive && this.tutorialManager.currentStep?.id === 'step_oven_bell') ? 2.5 : 5.0;
+        if (this.ovenOvercookTimer >= overcookLimit && !this.hasOvercookedAlarm) {
           this.hasOvercookedAlarm = true;
           this.isBaking = false;
           SoundManager.getInstance().stopOvenHum();
