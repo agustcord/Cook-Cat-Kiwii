@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import DeviceHelper from '../src/game/utils/DeviceHelper.js';
 import OrientationManager from '../src/game/utils/OrientationManager.js';
+import I18nManager from '../src/game/services/I18nManager.js';
 import en from '../src/locales/en.js';
 import es from '../src/locales/es.js';
 
@@ -51,12 +52,12 @@ describe('Mobile Frontend & Layout Matrix (T2, T7, T8)', () => {
   });
 
   describe('2. Task T7: Landscape Orientation Shield & Reactivity', () => {
-    test('index.html contains #landscape-overlay container with accessible bilingue content', () => {
+    test('index.html contains #landscape-overlay container with default English fallback content', () => {
       const content = fs.readFileSync(indexPath, 'utf8');
       assert.ok(content.includes('id="landscape-overlay"'), 'index.html must have #landscape-overlay');
       assert.ok(content.includes('class="orientation-shield"'), 'overlay must have class orientation-shield');
-      assert.ok(content.includes('Por favor, gira tu dispositivo a horizontal'), 'overlay must have Spanish notice');
-      assert.ok(content.includes('Please rotate device to landscape'), 'overlay must have English notice');
+      assert.ok(content.includes('Please rotate your device to landscape'), 'overlay must have English title fallback');
+      assert.ok(content.includes('Kiwipaw Bakehouse is designed for horizontal play'), 'overlay must have English subtitle fallback');
     });
 
     test('src/style.css defines .orientation-shield with display: none and .visible with display: flex', () => {
@@ -177,6 +178,155 @@ describe('Mobile Frontend & Layout Matrix (T2, T7, T8)', () => {
         content.includes('OrientationManager.init();'),
         'main.js must call OrientationManager.init()'
       );
+    });
+
+    test('OrientationManager grants total immunity to PC desktop environments even when window is portrait or narrow', () => {
+      // 1. Windows NT with narrow snapped window and maxTouchPoints = 10
+      const windowsNarrowEnv = {
+        windowObj: {
+          innerWidth: 400,
+          innerHeight: 900,
+          matchMedia: () => ({ matches: false })
+        },
+        navigatorObj: {
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          maxTouchPoints: 10
+        }
+      };
+      assert.equal(OrientationManager.shouldShowLandscapeWarning(windowsNarrowEnv), false);
+
+      // 2. macOS with narrow window and maxTouchPoints = 5
+      const macNarrowEnv = {
+        windowObj: {
+          innerWidth: 500,
+          innerHeight: 1000,
+          matchMedia: () => ({ matches: false })
+        },
+        navigatorObj: {
+          userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+          maxTouchPoints: 5
+        }
+      };
+      assert.equal(OrientationManager.shouldShowLandscapeWarning(macNarrowEnv), false);
+
+      // 3. Linux x86_64 desktop
+      const linuxNarrowEnv = {
+        windowObj: {
+          innerWidth: 600,
+          innerHeight: 1100,
+          matchMedia: () => ({ matches: false })
+        },
+        navigatorObj: {
+          userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          maxTouchPoints: 10
+        }
+      };
+      assert.equal(OrientationManager.shouldShowLandscapeWarning(linuxNarrowEnv), false);
+
+      // 4. Client Hints mobile === false
+      const clientHintsDesktopEnv = {
+        windowObj: {
+          innerWidth: 450,
+          innerHeight: 950,
+          matchMedia: () => ({ matches: false })
+        },
+        navigatorObj: {
+          userAgentData: { mobile: false },
+          maxTouchPoints: 10
+        }
+      };
+      assert.equal(OrientationManager.shouldShowLandscapeWarning(clientHintsDesktopEnv), false);
+    });
+
+    test('OrientationManager dynamically localizes overlay title and subtitle using I18nManager', () => {
+      let titleContent = '';
+      let subtitleContent = '';
+      const mockElement = {
+        querySelector: (selector) => {
+          if (selector === '.orientation-title') {
+            return {
+              get textContent() { return titleContent; },
+              set textContent(v) { titleContent = v; }
+            };
+          }
+          if (selector === '.orientation-subtitle') {
+            return {
+              get textContent() { return subtitleContent; },
+              set textContent(v) { subtitleContent = v; }
+            };
+          }
+          return null;
+        },
+        classList: { add() {}, remove() {} },
+        setAttribute() {}
+      };
+
+      const i18n = I18nManager.getInstance({ reset: true, language: 'en' });
+
+      // Sincronizar en inglés
+      OrientationManager.updateLanguage(mockElement);
+      assert.equal(titleContent, 'Please rotate your device to landscape');
+      assert.equal(subtitleContent, 'Kiwipaw Bakehouse is designed for horizontal play');
+
+      // Cambiar a español
+      i18n.setLanguage('es');
+      OrientationManager.updateLanguage(mockElement);
+      assert.equal(titleContent, 'Por favor, gira tu dispositivo a horizontal');
+      assert.equal(subtitleContent, 'Kiwipaw Bakehouse está diseñado para jugar en horizontal');
+
+      // Restaurar a inglés
+      i18n.setLanguage('en');
+    });
+
+    test('OrientationManager.init automatically updates overlay text when I18nManager language changes', () => {
+      let titleContent = '';
+      let subtitleContent = '';
+      const mockElement = {
+        querySelector: (selector) => {
+          if (selector === '.orientation-title') {
+            return {
+              get textContent() { return titleContent; },
+              set textContent(v) { titleContent = v; }
+            };
+          }
+          if (selector === '.orientation-subtitle') {
+            return {
+              get textContent() { return subtitleContent; },
+              set textContent(v) { subtitleContent = v; }
+            };
+          }
+          return null;
+        },
+        classList: { add() {}, remove() {} },
+        setAttribute() {}
+      };
+
+      const mockWindow = {
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        matchMedia: () => ({ matches: false })
+      };
+      const origWindow = globalThis.window;
+      globalThis.window = mockWindow;
+
+      try {
+        const i18n = I18nManager.getInstance({ reset: true, language: 'en' });
+        const cleanup = OrientationManager.init(mockElement);
+
+        assert.equal(titleContent, 'Please rotate your device to landscape');
+
+        // Al cambiar de idioma, el listener reactivo actualiza el texto de forma autónoma
+        i18n.setLanguage('es');
+        assert.equal(titleContent, 'Por favor, gira tu dispositivo a horizontal');
+
+        cleanup();
+
+        // Tras cleanup, ya no reacciona
+        i18n.setLanguage('en');
+        assert.equal(titleContent, 'Por favor, gira tu dispositivo a horizontal');
+      } finally {
+        globalThis.window = origWindow;
+      }
     });
   });
 

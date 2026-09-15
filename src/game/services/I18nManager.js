@@ -46,6 +46,19 @@ class I18nManager {
     }
 
     this.currentLanguage = options.language || (savedLang && this.locales[savedLang] ? savedLang : 'en');
+    this.listeners = new Set();
+  }
+
+  /**
+   * Registra un callback que se ejecuta al cambiar el idioma activo.
+   * @param {Function} callback (newLanguage) => void
+   * @returns {Function} Función cleanup para remover la suscripción
+   */
+  addListener(callback) {
+    if (typeof callback === 'function') {
+      this.listeners.add(callback);
+    }
+    return () => this.listeners.delete(callback);
   }
 
   /**
@@ -69,6 +82,15 @@ class I18nManager {
           this.storage.setItem(STORAGE_KEY, lang);
         } catch {
           // Ignorar error de sandbox
+        }
+      }
+      if (this.listeners) {
+        for (const listener of this.listeners) {
+          try {
+            listener(this.currentLanguage);
+          } catch {
+            // Ignorar errores en callbacks de listeners individuales
+          }
         }
       }
     }

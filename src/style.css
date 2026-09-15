@@ -128,11 +128,15 @@ canvas {
   color: #f5ebe0;
   line-height: 1.35;
   letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 
 .orientation-subtitle {
   font-size: 15px;
   font-weight: 600;
   color: #ddb892;
-  line-height: 1.4;
+  line-height: 1.45;
+  text-wrap: balance;
+  max-width: 310px;
 }
+

@@ -12,6 +12,10 @@ export default {
     langToggle: '🌐 Idioma: Español',
     langButton: '🌐 ES'
   },
+  orientation: {
+    title: 'Por favor, gira tu dispositivo a horizontal',
+    subtitle: 'Kiwipaw Bakehouse está diseñado para jugar en horizontal'
+  },
   hud: {
     day: 'DÍA {day}',
     coins: '{coins}',

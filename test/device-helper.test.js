@@ -144,4 +144,110 @@ describe('DeviceHelper - Modular & Cross-Platform Touch Input Detection Matrix',
     });
   });
 
+  describe('4. Desktop Detection & Desktop Touch Immunity Matrix', () => {
+    test('DeviceHelper.isDesktop identifies Windows NT as desktop', () => {
+      const env = {
+        navigatorObj: {
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+      };
+      assert.equal(DeviceHelper.isDesktop(env), true);
+    });
+
+    test('DeviceHelper.isDesktop identifies macOS / Macintosh as desktop', () => {
+      const env = {
+        navigatorObj: {
+          userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15'
+        }
+      };
+      assert.equal(DeviceHelper.isDesktop(env), true);
+    });
+
+    test('DeviceHelper.isDesktop identifies Linux x86_64 as desktop', () => {
+      const env = {
+        navigatorObj: {
+          userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+      };
+      assert.equal(DeviceHelper.isDesktop(env), true);
+    });
+
+    test('DeviceHelper.isDesktop respects navigator.userAgentData.mobile === false', () => {
+      const env = {
+        navigatorObj: {
+          userAgentData: { mobile: false }
+        }
+      };
+      assert.equal(DeviceHelper.isDesktop(env), true);
+    });
+
+    test('DeviceHelper.isDesktop returns false for Android mobile', () => {
+      const env = {
+        navigatorObj: {
+          userAgent: 'Mozilla/5.0 (Linux; Android 13; SM-S908B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+        }
+      };
+      assert.equal(DeviceHelper.isDesktop(env), false);
+    });
+
+    test('DeviceHelper.isDesktop returns false for iPhone / iOS mobile', () => {
+      const env = {
+        navigatorObj: {
+          userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/604.1'
+        }
+      };
+      assert.equal(DeviceHelper.isDesktop(env), false);
+    });
+
+    test('DeviceHelper.isDesktop returns false for navigator.userAgentData.mobile === true', () => {
+      const env = {
+        navigatorObj: {
+          userAgentData: { mobile: true }
+        }
+      };
+      assert.equal(DeviceHelper.isDesktop(env), false);
+    });
+
+    test('DeviceHelper.isDesktop respects Phaser game.device.os.desktop flags', () => {
+      assert.equal(DeviceHelper.isDesktop({ game: { device: { os: { desktop: true } } } }), true);
+      assert.equal(DeviceHelper.isDesktop({ game: { device: { os: { desktop: false } } } }), false);
+    });
+
+    test('DeviceHelper.isTouchInput returns false for Windows PC with maxTouchPoints > 0 (desktop touch immunity)', () => {
+      const options = {
+        override: 'auto',
+        windowObj: { matchMedia: () => ({ matches: false }) },
+        navigatorObj: {
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          maxTouchPoints: 10
+        }
+      };
+      assert.equal(DeviceHelper.isTouchInput(null, options), false);
+    });
+
+    test('DeviceHelper.isTouchInput returns false for Mac with maxTouchPoints > 0', () => {
+      const options = {
+        override: 'auto',
+        windowObj: { matchMedia: () => ({ matches: false }) },
+        navigatorObj: {
+          userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+          maxTouchPoints: 5
+        }
+      };
+      assert.equal(DeviceHelper.isTouchInput(null, options), false);
+    });
+
+    test('DeviceHelper.isTouchInput respects explicit override="touch" even on Windows PC with desktop user agent', () => {
+      const options = {
+        override: 'touch',
+        windowObj: { matchMedia: () => ({ matches: false }) },
+        navigatorObj: {
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          maxTouchPoints: 10
+        }
+      };
+      assert.equal(DeviceHelper.isTouchInput(null, options), true);
+    });
+  });
+
 });

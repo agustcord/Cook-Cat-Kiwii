@@ -12,6 +12,10 @@ export default {
     langToggle: '🌐 Language: English',
     langButton: '🌐 EN'
   },
+  orientation: {
+    title: 'Please rotate your device to landscape',
+    subtitle: 'Kiwipaw Bakehouse is designed for horizontal play'
+  },
   hud: {
     day: 'DAY {day}',
     coins: '{coins}',
