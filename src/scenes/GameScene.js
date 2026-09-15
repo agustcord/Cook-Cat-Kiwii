@@ -8,6 +8,7 @@ import I18nManager from '../game/services/I18nManager.js';
 import { getDayConfig } from '../game/EconomyManager.js';
 import SaveManager from '../game/services/SaveManager.js';
 import TutorialManager from '../game/tutorial/TutorialManager.js';
+import DeviceHelper from '../game/utils/DeviceHelper.js';
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -167,7 +168,12 @@ export default class GameScene extends Phaser.Scene {
     });
 
     // Custom Cat Paw Cursor Initialization
-    this.input.setDefaultCursor('none');
+    this.isTouchDevice = DeviceHelper.isTouchInput(this.game);
+    this.isTouchMode = this.isTouchDevice;
+
+    if (!this.isTouchMode) {
+      this.input.setDefaultCursor('none');
+    }
     this.shoulderX = width / 2;
     this.shoulderY = height + 90;
     this.pawX = width / 2;
@@ -180,16 +186,22 @@ export default class GameScene extends Phaser.Scene {
       .setOrigin(0.5, 0.55)
       .setDisplaySize(184, 184);
 
+    if (this.isTouchMode) {
+      this.catArmOutlineGraphics.setVisible(false);
+      this.catArmFillGraphics.setVisible(false);
+      this.catPawSprite.setVisible(false);
+    }
+
     // Track pointerdown/pointerup to trigger grab animation (texture swap)
     this.input.on('pointerdown', () => {
-      if (this.catPawSprite) {
+      if (this.catPawSprite && !this.isTouchMode) {
         this.catPawSprite.setTexture('cat_paw_closed');
         this.catPawSprite.setDisplaySize(184, 184);
         this.catPawSprite.setOrigin(0.5, 0.61);
       }
     });
     this.input.on('pointerup', () => {
-      if (this.catPawSprite) {
+      if (this.catPawSprite && !this.isTouchMode) {
         this.catPawSprite.setTexture('cat_paw_open');
         this.catPawSprite.setDisplaySize(184, 184);
         this.catPawSprite.setOrigin(0.5, 0.55);
@@ -576,7 +588,8 @@ export default class GameScene extends Phaser.Scene {
       });
 
       dragZone.on('drag', (pointer, dragX, dragY) => {
-        const clampedY = Math.max(338, dragY);
+        const offsetY = this.getDragOffsetY();
+        const clampedY = Math.max(338, dragY + offsetY);
         if (portionSprite) {
           portionSprite.x = dragX;
           portionSprite.y = clampedY;
@@ -600,6 +613,11 @@ export default class GameScene extends Phaser.Scene {
           dragZone.y = b.y;
           this.events.emit('game:drag_end', { item: 'dough', base: b.id, id: b.id });
           return;
+        }
+
+        const offsetY = this.getDragOffsetY();
+        if (offsetY !== 0) {
+          portionSprite.y -= offsetY;
         }
 
         const distDelivery = Phaser.Math.Distance.Between(
@@ -756,15 +774,22 @@ export default class GameScene extends Phaser.Scene {
         });
 
         dragZone.on('drag', (pointer, dragX, dragY) => {
+          const offsetY = this.getDragOffsetY();
+          const clampedY = Math.max(338, dragY + offsetY);
           dragZone.x = dragX;
-          dragZone.y = Math.max(338, dragY);
+          dragZone.y = clampedY;
           // Shift visual container to follow the drag zone
           container.x = dragX - 29;
-          container.y = Math.max(338, dragY) - 29;
+          container.y = clampedY - 29;
         });
 
         dragZone.on('dragend', () => {
           this.isHoldingItem = false;
+          const offsetY = this.getDragOffsetY();
+          if (offsetY !== 0) {
+            dragZone.y -= offsetY;
+            container.y -= offsetY;
+          }
           // Find closest cookie in prepTrayCookies that doesn't have a shape yet
           let closestCookie = null;
           let minDist = 99999;
@@ -1838,7 +1863,8 @@ export default class GameScene extends Phaser.Scene {
 
       dragZone.on('drag', (pointer, dragX, dragY) => {
         if (!jarClone) return;
-        const clampedY = Math.max(338, dragY);
+        const offsetY = this.getDragOffsetY();
+        const clampedY = Math.max(338, dragY + offsetY);
         jarClone.x = dragX;
         jarClone.y = clampedY;
 
@@ -1868,6 +1894,11 @@ export default class GameScene extends Phaser.Scene {
           dragZone.y = y;
           this.events.emit('game:drag_end', { item: 'topping', topping: t.id, id: t.id });
           return;
+        }
+
+        const offsetY = this.getDragOffsetY();
+        if (offsetY !== 0) {
+          jarClone.y -= offsetY;
         }
 
         const dist = Phaser.Math.Distance.Between(jarClone.x, jarClone.y, this.trayX, this.trayY);
@@ -2059,7 +2090,8 @@ export default class GameScene extends Phaser.Scene {
 
     this.prepTrayZone.on('drag', (pointer, dragX, dragY) => {
       if (this.isEditorMode) return;
-      const clampedY = Math.max(300, Math.min(1000, dragY));
+      const offsetY = this.getDragOffsetY();
+      const clampedY = Math.max(300, Math.min(1000, dragY + offsetY));
       this.prepTrayZone.x = dragX;
       this.prepTrayZone.y = clampedY;
 
@@ -2134,6 +2166,10 @@ export default class GameScene extends Phaser.Scene {
     this.prepTrayZone.on('dragend', () => {
       this.isHoldingItem = false;
       if (this.isEditorMode) return;
+      const offsetY = this.getDragOffsetY();
+      if (offsetY !== 0) {
+        this.prepTrayZone.y -= offsetY;
+      }
       this.prepTrayZone.setScale(1.0);
       this.prepTrayZone.setDepth(2.5);
       if (this.prepTrayBg) this.prepTrayBg.setDepth(2);
@@ -2364,7 +2400,8 @@ export default class GameScene extends Phaser.Scene {
         });
 
         sprite.on('drag', (pointer, dragX, dragY) => {
-          const clampedY = Math.max(338, dragY);
+          const offsetY = this.getDragOffsetY();
+          const clampedY = Math.max(338, dragY + offsetY);
           sprite.x = dragX;
           sprite.y = clampedY;
 
@@ -2399,7 +2436,7 @@ export default class GameScene extends Phaser.Scene {
           }
 
           // Check if hovering over oven
-          const distToOven = Phaser.Math.Distance.Between(dragX, Math.max(338, dragY), this.ovenX, this.ovenY);
+          const distToOven = Phaser.Math.Distance.Between(dragX, clampedY, this.ovenX, this.ovenY);
           if (distToOven < 225) {
             if (!this.ovenHighlighted) {
               this.ovenHighlighted = true;
@@ -2415,6 +2452,10 @@ export default class GameScene extends Phaser.Scene {
 
         sprite.on('dragend', () => {
           this.isHoldingItem = false;
+          const offsetY = this.getDragOffsetY();
+          if (offsetY !== 0) {
+            sprite.y -= offsetY;
+          }
           // Reset highlights
           if (this.trashHighlighted) {
             this.trashHighlighted = false;
@@ -3493,7 +3534,33 @@ export default class GameScene extends Phaser.Scene {
       this.scratchBlockedUntilPointerUp = false;
     }
 
-    if (pointer && this.catPawSprite && this.catArmOutlineGraphics && this.catArmFillGraphics) {
+    if (this.isTouchMode) {
+      // Modo Touch / Mobile: pata y brazo ocultos, omitir cómputo Bezier de 24 segmentos
+      if (pointer) {
+        this.pawX = pointer.x;
+        this.pawY = pointer.y;
+
+        // Desacople de rascado felino: evaluar distancia con pointer.x, pointer.y directos
+        if (
+          this.currentCustomer &&
+          this.currentCustomer.isActive &&
+          pointer.isDown &&
+          !this.scratchBlockedUntilPointerUp &&
+          !this.isHoldingItem &&
+          this.currentCustomer.container
+        ) {
+          const distToCustomer = Phaser.Math.Distance.Between(
+            pointer.x,
+            pointer.y,
+            this.currentCustomer.container.x,
+            this.currentCustomer.container.y + 75
+          );
+          if (distToCustomer < 178) {
+            this.scratchCustomer();
+          }
+        }
+      }
+    } else if (pointer && this.catPawSprite && this.catArmOutlineGraphics && this.catArmFillGraphics) {
       // Lerp paw position to pointer position with a Y clamp limit allowing access to oven buttons
       const clampedTargetY = Math.max(220, pointer.y);
       const lerpSpeed = 0.22;
@@ -3569,6 +3636,33 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
+  getDragOffsetY() {
+    return this.isTouchMode ? -45 : 0;
+  }
+
+  setTouchMode(enabled) {
+    this.isTouchMode = Boolean(enabled);
+    this.isTouchDevice = this.isTouchMode;
+    if (this.catPawSprite) {
+      this.catPawSprite.setVisible(!this.isTouchMode && !this.isEditorMode);
+    }
+    if (this.catArmOutlineGraphics) {
+      this.catArmOutlineGraphics.setVisible(!this.isTouchMode);
+      if (this.isTouchMode) this.catArmOutlineGraphics.clear();
+    }
+    if (this.catArmFillGraphics) {
+      this.catArmFillGraphics.setVisible(!this.isTouchMode);
+      if (this.isTouchMode) this.catArmFillGraphics.clear();
+    }
+    if (this.input) {
+      if (this.isTouchMode) {
+        this.input.setDefaultCursor('default');
+      } else if (!this.isEditorMode) {
+        this.input.setDefaultCursor('none');
+      }
+    }
+  }
+
   toggleEditorMode() {
     this.isEditorMode = !this.isEditorMode;
     
@@ -3580,8 +3674,10 @@ export default class GameScene extends Phaser.Scene {
       this.input.setDefaultCursor('default');
       if (this.catPawSprite) this.catPawSprite.setVisible(false);
     } else {
-      this.input.setDefaultCursor('none');
-      if (this.catPawSprite) this.catPawSprite.setVisible(true);
+      if (!this.isTouchMode) {
+        this.input.setDefaultCursor('none');
+        if (this.catPawSprite) this.catPawSprite.setVisible(true);
+      }
       this.selectElement(null);
     }
 
@@ -3812,8 +3908,9 @@ export default class GameScene extends Phaser.Scene {
 
     this.deliveryDragZone.on('drag', (pointer, dragX, dragY) => {
       if (this.isEditorMode) return;
+      const offsetY = this.getDragOffsetY();
       // Limit Y-axis to counter and customer area
-      const clampedY = Math.max(300, Math.min(844, dragY));
+      const clampedY = Math.max(300, Math.min(844, dragY + offsetY));
       this.deliveryDragZone.x = dragX;
       this.deliveryDragZone.y = clampedY;
 
@@ -3946,6 +4043,10 @@ export default class GameScene extends Phaser.Scene {
     this.deliveryDragZone.on('dragend', () => {
       this.isHoldingItem = false;
       if (this.isEditorMode) return;
+      const offsetY = this.getDragOffsetY();
+      if (offsetY !== 0) {
+        this.deliveryDragZone.y -= offsetY;
+      }
       setTimeout(() => { isDraggingTray = false; }, 50);
       this.deliveryDragZone.setScale(1.0);
       this.deliveryDragZone.setDepth(15);
