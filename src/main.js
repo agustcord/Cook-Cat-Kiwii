@@ -7,6 +7,12 @@ import SummaryScene from './scenes/SummaryScene.js';
 import ShopScene from './scenes/ShopScene.js';
 import GameOverScene from './scenes/GameOverScene.js';
 import VictoryScene from './scenes/VictoryScene.js';
+import OrientationManager from './game/utils/OrientationManager.js';
+
+// Initialize responsive Landscape orientation shield for mobile touch devices
+if (typeof window !== 'undefined') {
+  OrientationManager.init();
+}
 
 const config = {
   type: Phaser.AUTO,

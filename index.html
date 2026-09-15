@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Kiwipaw Bakehouse</title>
     <!-- CrazyGames SDK v3 -->
     <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
@@ -12,6 +12,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
   </head>
   <body>
+    <!-- Landscape Orientation Shield for Mobile Touch Devices -->
+    <div id="landscape-overlay" class="orientation-shield" aria-hidden="true">
+      <div class="orientation-card">
+        <div class="orientation-icon" aria-hidden="true">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="20" y="10" width="24" height="44" rx="4" stroke="#e6ccb2" stroke-width="3" fill="none" />
+            <circle cx="32" cy="48" r="2" fill="#e6ccb2" />
+            <path d="M48 24C52 28 52 36 48 40" stroke="#ddb892" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M44 40H49V35" stroke="#ddb892" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M16 40C12 36 12 28 16 24" stroke="#ddb892" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M20 24H15V29" stroke="#ddb892" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+        <h2 class="orientation-title">Por favor, gira tu dispositivo a horizontal</h2>
+        <p class="orientation-subtitle">Please rotate device to landscape</p>
+      </div>
+    </div>
     <div id="game-container"></div>
     <script type="module" src="/src/main.js"></script>
   </body>

@@ -135,7 +135,11 @@ export default {
     title: 'AJUSTES Y AUDIO',
     language: 'IDIOMA',
     langToggle: '🌐 Idioma: Español',
-    langButton: '🌐 ES'
+    langButton: '🌐 ES',
+    touchMode: 'MODO TÁCTIL',
+    touchModeAuto: 'Auto',
+    touchModeOn: 'Activado',
+    touchModeOff: 'Desactivado'
   },
   editor: {
     indicator: '🛠️ MODO EDITOR DE UI ACTIVO\n[Arrastra letreros / ⬆️⬇️⬅️➡️ para Redimensionar / S para Guardar / E para Salir]',

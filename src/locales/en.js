@@ -135,7 +135,11 @@ export default {
     title: 'SETTINGS & AUDIO',
     language: 'LANGUAGE',
     langToggle: '🌐 Language: English',
-    langButton: '🌐 EN'
+    langButton: '🌐 EN',
+    touchMode: 'TOUCH MODE',
+    touchModeAuto: 'Auto',
+    touchModeOn: 'Enabled',
+    touchModeOff: 'Disabled'
   },
   editor: {
     indicator: '🛠️ UI EDITOR MODE ACTIVE\n[Drag signs / ⬆️⬇️⬅️➡️ to Resize / S to Save / E to Exit]',
