@@ -424,6 +424,14 @@ export default class TutorialManager {
   }
 
   /**
+   * Getter de conveniencia para el paso activo actual o null si finalizó.
+   * @returns {Object|null}
+   */
+  get currentStep() {
+    return this.getCurrentStep();
+  }
+
+  /**
    * Avanza al siguiente micropaso pedagógico.
    */
   nextStep() {

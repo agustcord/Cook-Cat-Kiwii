@@ -3494,7 +3494,10 @@ export default class GameScene extends Phaser.Scene {
       // En el tutorial (step_oven_bell) se reduce a 2.5s para dinamizar el paso didáctico
       else if (this.alarmPlayed) {
         this.ovenOvercookTimer += (delta / 1000);
-        const overcookLimit = (this.tutorialManager?.isActive && this.tutorialManager.currentStep?.id === 'step_oven_bell') ? 2.5 : 5.0;
+        const currentStep = typeof this.tutorialManager?.getCurrentStep === 'function' 
+          ? this.tutorialManager.getCurrentStep() 
+          : this.tutorialManager?.currentStep;
+        const overcookLimit = (this.tutorialManager?.isActive && currentStep?.id === 'step_oven_bell') ? 2.5 : 5.0;
         if (this.ovenOvercookTimer >= overcookLimit && !this.hasOvercookedAlarm) {
           this.hasOvercookedAlarm = true;
           this.isBaking = false;
@@ -4411,7 +4414,7 @@ export default class GameScene extends Phaser.Scene {
 
     // 3. Panel Container Box
     const boxW = 638;
-    const boxH = 470;
+    const boxH = 550;
     const boxX = width / 2;
     const boxY = height / 2;
 
@@ -4423,7 +4426,7 @@ export default class GameScene extends Phaser.Scene {
     this.audioPanelContainer.add(panelBg);
 
     // 4. Title
-    const titleText = this.add.text(boxX, boxY - 170, i18n.t('settings.title'), {
+    const titleText = this.add.text(boxX, boxY - 205, i18n.t('settings.title'), {
       font: '36px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800'
@@ -4433,7 +4436,7 @@ export default class GameScene extends Phaser.Scene {
     // 5. Volume control bar indicator
     const volumeBarBg = this.add.graphics();
     volumeBarBg.fillStyle(0xe6ccb2, 1);
-    volumeBarBg.fillRoundedRect(boxX - 131, boxY - 95, 263, 26, 8);
+    volumeBarBg.fillRoundedRect(boxX - 131, boxY - 135, 263, 26, 8);
     this.audioPanelContainer.add(volumeBarBg);
 
     const volumeFill = this.add.graphics();
@@ -4443,12 +4446,12 @@ export default class GameScene extends Phaser.Scene {
       volumeFill.clear();
       if (this.musicMuted) return;
       volumeFill.fillStyle(0x38b000, 1); // Green fill
-      volumeFill.fillRoundedRect(boxX - 128, boxY - 91, 255 * this.musicVolume, 19, 6);
+      volumeFill.fillRoundedRect(boxX - 128, boxY - 131, 255 * this.musicVolume, 19, 6);
     };
     drawVolumeBar();
 
     // 6. Volume Percentage Text
-    const volumePercentText = this.add.text(boxX, boxY - 45, i18n.t('audio.volume', { percent: Math.round(this.musicVolume * 100) }), {
+    const volumePercentText = this.add.text(boxX, boxY - 82, i18n.t('audio.volume', { percent: Math.round(this.musicVolume * 100) }), {
       font: '24px "Outfit", sans-serif',
       fill: '#7f5539',
       fontWeight: '700'
@@ -4462,18 +4465,18 @@ export default class GameScene extends Phaser.Scene {
     const minusBtnBg = this.add.graphics();
     minusBtnBg.fillStyle(0xddb892, 1);
     minusBtnBg.lineStyle(4, 0x582f0e, 1);
-    minusBtnBg.fillCircle(boxX - 178, boxY - 82, btnSize / 2);
-    minusBtnBg.strokeCircle(boxX - 178, boxY - 82, btnSize / 2);
+    minusBtnBg.fillCircle(boxX - 178, boxY - 122, btnSize / 2);
+    minusBtnBg.strokeCircle(boxX - 178, boxY - 122, btnSize / 2);
     this.audioPanelContainer.add(minusBtnBg);
 
-    const minusText = this.add.text(boxX - 178, boxY - 82, '-', {
+    const minusText = this.add.text(boxX - 178, boxY - 122, '-', {
       font: '38px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800'
     }).setOrigin(0.5);
     this.audioPanelContainer.add(minusText);
 
-    const minusZone = this.add.circle(boxX - 178, boxY - 82, btnSize / 2, 0x000000, 0)
+    const minusZone = this.add.circle(boxX - 178, boxY - 122, btnSize / 2, 0x000000, 0)
       .setInteractive({ useHandCursor: true });
     this.audioPanelContainer.add(minusZone);
 
@@ -4481,30 +4484,30 @@ export default class GameScene extends Phaser.Scene {
     const plusBtnBg = this.add.graphics();
     plusBtnBg.fillStyle(0xddb892, 1);
     plusBtnBg.lineStyle(4, 0x582f0e, 1);
-    plusBtnBg.fillCircle(boxX + 178, boxY - 82, btnSize / 2);
-    plusBtnBg.strokeCircle(boxX + 178, boxY - 82, btnSize / 2);
+    plusBtnBg.fillCircle(boxX + 178, boxY - 122, btnSize / 2);
+    plusBtnBg.strokeCircle(boxX + 178, boxY - 122, btnSize / 2);
     this.audioPanelContainer.add(plusBtnBg);
 
-    const plusText = this.add.text(boxX + 178, boxY - 82, '+', {
+    const plusText = this.add.text(boxX + 178, boxY - 122, '+', {
       font: '38px "Outfit", sans-serif',
       fill: '#582f0e',
       fontWeight: '800'
     }).setOrigin(0.5);
     this.audioPanelContainer.add(plusText);
 
-    const plusZone = this.add.circle(boxX + 178, boxY - 82, btnSize / 2, 0x000000, 0)
+    const plusZone = this.add.circle(boxX + 178, boxY - 122, btnSize / 2, 0x000000, 0)
       .setInteractive({ useHandCursor: true });
     this.audioPanelContainer.add(plusZone);
 
     // 8. Mute / Unmute Button
     const muteBtnX = boxX;
-    const muteBtnY = boxY + 25;
+    const muteBtnY = boxY - 15;
 
     const muteBtnBg = this.add.graphics();
     muteBtnBg.fillStyle(0xb7b7a4, 1);
     muteBtnBg.lineStyle(5, 0x582f0e, 1);
-    muteBtnBg.fillRoundedRect(muteBtnX - 131, muteBtnY - 30, 263, 60, 15);
-    muteBtnBg.strokeRoundedRect(muteBtnX - 131, muteBtnY - 30, 263, 60, 15);
+    muteBtnBg.fillRoundedRect(muteBtnX - 131, muteBtnY - 28, 263, 56, 15);
+    muteBtnBg.strokeRoundedRect(muteBtnX - 131, muteBtnY - 28, 263, 56, 15);
     this.audioPanelContainer.add(muteBtnBg);
 
     const getMuteLabel = () => this.musicMuted ? i18n.t('audio.muted') : i18n.t('audio.unmuted');
@@ -4515,13 +4518,13 @@ export default class GameScene extends Phaser.Scene {
     }).setOrigin(0.5);
     this.audioPanelContainer.add(muteText);
 
-    const muteZone = this.add.rectangle(muteBtnX, muteBtnY, 263, 60, 0x000000, 0)
+    const muteZone = this.add.rectangle(muteBtnX, muteBtnY, 263, 56, 0x000000, 0)
       .setInteractive({ useHandCursor: true });
     this.audioPanelContainer.add(muteZone);
 
     // 9. Language Switcher Row
-    const langRowY = boxY + 120;
-    const langLabelText = this.add.text(boxX - 65, langRowY, i18n.t('settings.language'), {
+    const langRowY = boxY + 65;
+    const langLabelText = this.add.text(boxX - 70, langRowY, i18n.t('settings.language'), {
       font: 'bold 22px "Outfit", sans-serif',
       fill: '#582f0e'
     }).setOrigin(0.5);
@@ -4530,8 +4533,8 @@ export default class GameScene extends Phaser.Scene {
     const langBtnBg = this.add.graphics();
     langBtnBg.fillStyle(0xddb892, 1);
     langBtnBg.lineStyle(4, 0x582f0e, 1);
-    langBtnBg.fillRoundedRect(boxX + 55, langRowY - 24, 140, 48, 15);
-    langBtnBg.strokeRoundedRect(boxX + 55, langRowY - 24, 140, 48, 15);
+    langBtnBg.fillRoundedRect(boxX + 45, langRowY - 24, 160, 48, 15);
+    langBtnBg.strokeRoundedRect(boxX + 45, langRowY - 24, 160, 48, 15);
     this.audioPanelContainer.add(langBtnBg);
 
     const langBtnText = this.add.text(boxX + 125, langRowY, i18n.t('settings.langButton'), {
@@ -4540,11 +4543,43 @@ export default class GameScene extends Phaser.Scene {
     }).setOrigin(0.5);
     this.audioPanelContainer.add(langBtnText);
 
-    const langBtnZone = this.add.rectangle(boxX + 125, langRowY, 140, 48, 0x000000, 0)
+    const langBtnZone = this.add.rectangle(boxX + 125, langRowY, 160, 48, 0x000000, 0)
       .setInteractive({ useHandCursor: true });
     this.audioPanelContainer.add(langBtnZone);
 
-    // 10. Close Button (X)
+    // 10. Touch Mode Accessibility Switcher Row (T8)
+    const touchRowY = boxY + 145;
+    const touchLabelText = this.add.text(boxX - 70, touchRowY, i18n.t('settings.touchMode'), {
+      font: 'bold 22px "Outfit", sans-serif',
+      fill: '#582f0e'
+    }).setOrigin(0.5);
+    this.audioPanelContainer.add(touchLabelText);
+
+    const getTouchModeLabel = () => {
+      const mode = DeviceHelper.getTouchModeOverride();
+      if (mode === 'touch') return i18n.t('settings.touchModeOn');
+      if (mode === 'mouse') return i18n.t('settings.touchModeOff');
+      return i18n.t('settings.touchModeAuto');
+    };
+
+    const touchBtnBg = this.add.graphics();
+    touchBtnBg.fillStyle(0xddb892, 1);
+    touchBtnBg.lineStyle(4, 0x582f0e, 1);
+    touchBtnBg.fillRoundedRect(boxX + 45, touchRowY - 24, 160, 48, 15);
+    touchBtnBg.strokeRoundedRect(boxX + 45, touchRowY - 24, 160, 48, 15);
+    this.audioPanelContainer.add(touchBtnBg);
+
+    const touchBtnText = this.add.text(boxX + 125, touchRowY, getTouchModeLabel(), {
+      font: 'bold 20px "Outfit", sans-serif',
+      fill: '#582f0e'
+    }).setOrigin(0.5);
+    this.audioPanelContainer.add(touchBtnText);
+
+    const touchBtnZone = this.add.rectangle(boxX + 125, touchRowY, 160, 48, 0x000000, 0)
+      .setInteractive({ useHandCursor: true });
+    this.audioPanelContainer.add(touchBtnZone);
+
+    // 11. Close Button (X)
     const closeBtnX = boxX + boxW / 2 - 35;
     const closeBtnY = boxY - boxH / 2 + 35;
 
@@ -4637,6 +4672,26 @@ export default class GameScene extends Phaser.Scene {
       muteText.setText(getMuteLabel());
       langLabelText.setText(i18n.t('settings.language'));
       langBtnText.setText(i18n.t('settings.langButton'));
+      touchLabelText.setText(i18n.t('settings.touchMode'));
+      touchBtnText.setText(getTouchModeLabel());
+    });
+
+    // Touch Mode Toggle Interaction (T8)
+    touchBtnZone.on('pointerdown', () => {
+      soundMgr.playUiTap();
+      const currentMode = DeviceHelper.getTouchModeOverride();
+      let nextMode = 'auto';
+      if (currentMode === 'auto') {
+        nextMode = 'touch';
+      } else if (currentMode === 'touch') {
+        nextMode = 'mouse';
+      } else {
+        nextMode = 'auto';
+      }
+      DeviceHelper.setTouchModeOverride(nextMode);
+      const effectiveTouch = DeviceHelper.isTouchInput(this.game);
+      this.setTouchMode(effectiveTouch);
+      touchBtnText.setText(getTouchModeLabel());
     });
 
     // Close Button Interaction
@@ -4644,8 +4699,15 @@ export default class GameScene extends Phaser.Scene {
       soundMgr.playUiTap();
       this.isAudioPanelOpen = false;
       this.scratchBlockedUntilPointerUp = true; // Block scratching until user releases the mouse button
-      this.input.setDefaultCursor('none');
-      if (this.catPawSprite) this.catPawSprite.setVisible(true);
+      if (this.isTouchMode) {
+        this.input.setDefaultCursor('default');
+        if (this.catPawSprite) this.catPawSprite.setVisible(false);
+      } else {
+        if (!this.isEditorMode) {
+          this.input.setDefaultCursor('none');
+          if (this.catPawSprite) this.catPawSprite.setVisible(true);
+        }
+      }
 
       this.audioPanelContainer.destroy();
       this.audioPanelContainer = null;
@@ -4660,6 +4722,8 @@ export default class GameScene extends Phaser.Scene {
     muteZone.on('pointerout', () => muteText.setScale(1.0));
     langBtnZone.on('pointerover', () => langBtnText.setScale(1.08));
     langBtnZone.on('pointerout', () => langBtnText.setScale(1.0));
+    touchBtnZone.on('pointerover', () => touchBtnText.setScale(1.08));
+    touchBtnZone.on('pointerout', () => touchBtnText.setScale(1.0));
     closeZone.on('pointerover', () => closeText.setScale(1.2));
     closeZone.on('pointerout', () => closeText.setScale(1.0));
   }

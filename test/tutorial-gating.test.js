@@ -540,13 +540,41 @@ describe('Tutorial Input & Action Gating - Conditional Validation Suite', () => 
   });
 
   describe('10. Oven Overcook Dynamic Threshold Matrix (Tutorial step_oven_bell)', () => {
+    test('TutorialManager exposes currentStep getter identical to getCurrentStep()', () => {
+      const scene = createMockScene();
+      const manager = new TutorialManager(scene);
+
+      // Inactive: both null
+      assert.equal(manager.currentStep, null);
+      assert.equal(manager.getCurrentStep(), null);
+
+      // Active: first step
+      manager.start();
+      assert.notEqual(manager.currentStep, null);
+      assert.equal(manager.currentStep.id, manager.getCurrentStep().id);
+
+      // Specific step: step_oven_bell
+      manager.goToStep('step_oven_bell');
+      assert.equal(manager.currentStep.id, 'step_oven_bell');
+      assert.equal(manager.getCurrentStep().id, 'step_oven_bell');
+
+      // After completion: both null
+      manager.complete();
+      assert.equal(manager.currentStep, null);
+      assert.equal(manager.getCurrentStep(), null);
+    });
+
     test('GameScene overcook grace timer reduces to 2.5s strictly during step_oven_bell and remains 5.0s otherwise', () => {
       const gameScenePath = path.resolve(process.cwd(), 'src/scenes/GameScene.js');
       const content = fs.readFileSync(gameScenePath, 'utf8');
 
       // 1. Source code audit: verify dynamic threshold calculation in GameScene.js
       assert.ok(
-        content.includes("const overcookLimit = (this.tutorialManager?.isActive && this.tutorialManager.currentStep?.id === 'step_oven_bell') ? 2.5 : 5.0;"),
+        content.includes("const currentStep = typeof this.tutorialManager?.getCurrentStep === 'function'"),
+        'GameScene must query getCurrentStep as function or fallback to getter property'
+      );
+      assert.ok(
+        content.includes("const overcookLimit = (this.tutorialManager?.isActive && currentStep?.id === 'step_oven_bell') ? 2.5 : 5.0;"),
         'GameScene must dynamically compute overcookLimit based on step_oven_bell'
       );
       assert.ok(
@@ -558,7 +586,10 @@ describe('Tutorial Input & Action Gating - Conditional Validation Suite', () => 
       function simulateOvenOvercookStep(scene, deltaSec) {
         if (scene.alarmPlayed) {
           scene.ovenOvercookTimer += deltaSec;
-          const overcookLimit = (scene.tutorialManager?.isActive && scene.tutorialManager.currentStep?.id === 'step_oven_bell') ? 2.5 : 5.0;
+          const currentStep = typeof scene.tutorialManager?.getCurrentStep === 'function' 
+            ? scene.tutorialManager.getCurrentStep() 
+            : scene.tutorialManager?.currentStep;
+          const overcookLimit = (scene.tutorialManager?.isActive && currentStep?.id === 'step_oven_bell') ? 2.5 : 5.0;
           if (scene.ovenOvercookTimer >= overcookLimit && !scene.hasOvercookedAlarm) {
             scene.hasOvercookedAlarm = true;
             scene.isBaking = false;
@@ -570,16 +601,21 @@ describe('Tutorial Input & Action Gating - Conditional Validation Suite', () => 
         }
       }
 
-      // Scenario A: Tutorial is active and currently on 'step_oven_bell'
+      // Scenario A: Real TutorialManager instance active and at step_oven_bell
       {
         const burntEvents = [];
+        const mockScene = createMockScene();
+        const realManager = new TutorialManager(mockScene);
+        realManager.start();
+        realManager.goToStep('step_oven_bell');
+
         const sceneA = {
           alarmPlayed: true,
           ovenOvercookTimer: 0,
           hasOvercookedAlarm: false,
           isBaking: true,
           cookiesInOven: [{ bakedState: 'baked' }],
-          tutorialManager: { isActive: true, currentStep: { id: 'step_oven_bell' } },
+          tutorialManager: realManager,
           events: {
             emit: (event, data) => {
               if (event === 'game:cookie_burnt') burntEvents.push(data);
@@ -601,16 +637,20 @@ describe('Tutorial Input & Action Gating - Conditional Validation Suite', () => 
         assert.equal(burntEvents.length, 1);
       }
 
-      // Scenario B: Tutorial is inactive (normal gameplay)
+      // Scenario B: Real TutorialManager instance inactive (normal gameplay)
       {
         const burntEvents = [];
+        const mockScene = createMockScene();
+        const realManager = new TutorialManager(mockScene);
+        // Inactive by default
+
         const sceneB = {
           alarmPlayed: true,
           ovenOvercookTimer: 0,
           hasOvercookedAlarm: false,
           isBaking: true,
           cookiesInOven: [{ bakedState: 'baked' }],
-          tutorialManager: { isActive: false, currentStep: null },
+          tutorialManager: realManager,
           events: {
             emit: (event, data) => {
               if (event === 'game:cookie_burnt') burntEvents.push(data);
@@ -637,16 +677,21 @@ describe('Tutorial Input & Action Gating - Conditional Validation Suite', () => 
         assert.equal(burntEvents.length, 1);
       }
 
-      // Scenario C: Tutorial is active but in a different step (e.g. step_oven_bake)
+      // Scenario C: Real TutorialManager instance active but in a different step (e.g. step_oven_bake)
       {
         const burntEvents = [];
+        const mockScene = createMockScene();
+        const realManager = new TutorialManager(mockScene);
+        realManager.start();
+        realManager.goToStep('step_oven_bake');
+
         const sceneC = {
           alarmPlayed: true,
           ovenOvercookTimer: 0,
           hasOvercookedAlarm: false,
           isBaking: true,
           cookiesInOven: [{ bakedState: 'baked' }],
-          tutorialManager: { isActive: true, currentStep: { id: 'step_oven_bake' } },
+          tutorialManager: realManager,
           events: {
             emit: (event, data) => {
               if (event === 'game:cookie_burnt') burntEvents.push(data);
@@ -662,6 +707,28 @@ describe('Tutorial Input & Action Gating - Conditional Validation Suite', () => 
         // At 5.0s it burns
         simulateOvenOvercookStep(sceneC, 2.5);
         assert.equal(sceneC.hasOvercookedAlarm, true);
+        assert.equal(burntEvents.length, 1);
+      }
+
+      // Scenario D: Fallback support for objects with only getter or property currentStep
+      {
+        const burntEvents = [];
+        const sceneD = {
+          alarmPlayed: true,
+          ovenOvercookTimer: 0,
+          hasOvercookedAlarm: false,
+          isBaking: true,
+          cookiesInOven: [{ bakedState: 'baked' }],
+          tutorialManager: { isActive: true, currentStep: { id: 'step_oven_bell' } },
+          events: {
+            emit: (event, data) => {
+              if (event === 'game:cookie_burnt') burntEvents.push(data);
+            }
+          }
+        };
+
+        simulateOvenOvercookStep(sceneD, 2.5);
+        assert.equal(sceneD.hasOvercookedAlarm, true, 'Property fallback should also work correctly');
         assert.equal(burntEvents.length, 1);
       }
     });
