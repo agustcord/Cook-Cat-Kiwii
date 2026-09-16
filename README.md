@@ -30,13 +30,11 @@ Ejecuta directamente en tu navegador web (escritorio y dispositivos móviles) co
 
 ---
 
-## 🌟 Un Sueño Hecho Realidad: Mi Primer Videojuego
+## 🐾 Mi Primer Videojuego
 
-*Kiwipaw Bakehouse* no es un proyecto más: **es mi primer videojuego independiente**, la materialización de un anhelo de toda la vida y el fruto de incontables horas de dedicación, aprendizaje e ilusión por el desarrollo lúdico.
+*Kiwipaw Bakehouse* nació como un proyecto con un alcance deliberado y acotado: el desafío de desarrollar un primer videojuego completo de principio a fin en aproximadamente un mes.
 
-Desde el primer trazo conceptual en papel hasta la arquitectura de cada escena interactiva en Phaser 4, cada rincón de esta pastelería fue concebido con el corazón para transmitir ternura, calidez y un desafío accesible. Lograr que un jugador sienta la satisfacción táctil de amasar con una patita de gato, vigilar el punto exacto del horno y salvar el negocio familiar de la quiebra representa para mí la mayor alegría creativa como desarrollador independiente.
-
-Este videojuego refleja el valor de animarse a empezar desde cero, vencer el vértigo de la pantalla en blanco y transformar una chispa de inspiración en un mundo vivo, interactivo y acogedor que hoy podés disfrutar desde cualquier lugar del mundo con un solo clic.
+La meta principal fue recorrer cada etapa del ciclo de desarrollo independiente, desde la programación del core loop y las mecánicas en Phaser 4 hasta la creación de todo el apartado visual ilustrado a mano en Krita. El resultado es una experiencia sólida, funcional y cuidada, que cumple con el objetivo de dar un primer paso firme en el desarrollo de videojuegos sin perder de vista la jugabilidad y la coherencia estética.
 
 ---
 
@@ -176,9 +174,9 @@ npm run build
 > 🟢 **Beta Jugable de Punta a Punta:** El ciclo completo de juego está operativo (Menú → Días 1 a 4 con tutorial e incremento de dificultad → Pantallas de balance → Tienda → Victoria / Quiebra).
 
 **Próximas metas:**
-- Integración final de catálogo de SFX personalizados de ambientación cozy.
-- Expansión de catálogo de clientes con nuevas expresiones e ilustraciones.
-- Incorporación de recetas premium de repostería.
+- Ajustes finos de soporte, layout y experiencia táctil en dispositivos móviles.
+- Pequeños retoques y pulido gráfico general.
+- Actualización y diseño de la ambientación musical y efectos de sonido (SFX) finales.
 
 ---
 
