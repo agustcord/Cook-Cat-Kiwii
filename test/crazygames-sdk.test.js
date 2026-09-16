@@ -161,4 +161,97 @@ describe('CrazyGames SDK v3 Service & Lifecycle Hooks', () => {
     assert.equal(rewarded, true);
     assert.equal(adFinishedRestored, true);
   });
+
+  describe('Resilience against throwing getters (External Domain / Disabled SDK)', () => {
+    test('isAvailable returns false and lifecycle hooks do not throw when game getter throws', async () => {
+      const throwingSDK = {
+        init: async () => {}
+      };
+      Object.defineProperty(throwingSDK, 'game', {
+        get() {
+          throw new Error('CrazySDK is disabled on this domain. Check docs.crazygames.com for more info.');
+        }
+      });
+      Object.defineProperty(throwingSDK, 'ad', {
+        get() {
+          throw new Error('CrazySDK is disabled on this domain. Check docs.crazygames.com for more info.');
+        }
+      });
+
+      const sdk = CrazyGamesSDK.getInstance({ reset: true, sdk: throwingSDK });
+
+      assert.equal(sdk.isAvailable(), false);
+
+      // Verify none of these lifecycle methods throw when called
+      assert.doesNotThrow(() => sdk.loadingStart());
+      assert.doesNotThrow(() => sdk.loadingStop());
+      assert.doesNotThrow(() => sdk.gameplayStart());
+      assert.doesNotThrow(() => sdk.gameplayStop());
+      assert.doesNotThrow(() => sdk.happytime());
+      await assert.doesNotReject(async () => await sdk.init());
+    });
+
+    test('ad requests gracefully degrade and do not throw when ad getter throws', async () => {
+      const throwingSDK = {};
+      Object.defineProperty(throwingSDK, 'game', {
+        get() {
+          throw new Error('CrazySDK is disabled on this domain.');
+        }
+      });
+      Object.defineProperty(throwingSDK, 'ad', {
+        get() {
+          throw new Error('CrazySDK is disabled on this domain.');
+        }
+      });
+
+      const sdk = CrazyGamesSDK.getInstance({ reset: true, sdk: throwingSDK });
+
+      const midgameResult = await sdk.requestMidgameAd();
+      assert.equal(midgameResult, true);
+
+      let rewardCalled = false;
+      const rewardedResult = await sdk.requestRewardedAd(() => {
+        rewardCalled = true;
+      });
+      assert.equal(rewardedResult, true);
+      assert.equal(rewardCalled, true);
+    });
+
+    test('window.CrazyGames.SDK with throwing getters is handled safely without crashing', async () => {
+      const originalWindow = globalThis.window;
+      try {
+        const throwingSDK = {};
+        Object.defineProperty(throwingSDK, 'game', {
+          get() {
+            throw new Error('CrazySDK is disabled on this domain.');
+          }
+        });
+        Object.defineProperty(throwingSDK, 'ad', {
+          get() {
+            throw new Error('CrazySDK is disabled on this domain.');
+          }
+        });
+
+        globalThis.window = {
+          CrazyGames: {
+            SDK: throwingSDK
+          }
+        };
+
+        const sdk = CrazyGamesSDK.getInstance({ reset: true });
+        assert.equal(sdk.isAvailable(), false);
+        assert.doesNotThrow(() => sdk.loadingStart());
+        assert.doesNotThrow(() => sdk.loadingStop());
+        assert.doesNotThrow(() => sdk.gameplayStart());
+        assert.doesNotThrow(() => sdk.gameplayStop());
+        assert.doesNotThrow(() => sdk.happytime());
+
+        const midgameResult = await sdk.requestMidgameAd();
+        assert.equal(midgameResult, true);
+      } finally {
+        globalThis.window = originalWindow;
+      }
+    });
+  });
 });
+

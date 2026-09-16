@@ -44,15 +44,26 @@ class CrazyGamesSDK {
 
   /**
    * Determina si el SDK de CrazyGames está disponible y cargado.
+   * Tolerante a dominios no autorizados donde el SDK desactiva sus servicios
+   * y arroja errores al acceder a sus getters (ej. sdk.game, sdk.ad).
    * @returns {boolean}
    */
   isAvailable() {
-    if (this.sdk) return true;
-    if (typeof window !== 'undefined' && window.CrazyGames?.SDK) {
-      this.sdk = window.CrazyGames.SDK;
-      return true;
+    if (!this.sdk) {
+      if (typeof window !== 'undefined' && window.CrazyGames?.SDK) {
+        this.sdk = window.CrazyGames.SDK;
+      } else {
+        return false;
+      }
     }
-    return false;
+
+    try {
+      const _game = this.sdk.game;
+      const _ad = this.sdk.ad;
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -62,12 +73,12 @@ class CrazyGamesSDK {
   async init() {
     if (this.isInitialized) return;
 
-    if (this.isAvailable() && typeof this.sdk.init === 'function') {
-      try {
+    try {
+      if (this.isAvailable() && typeof this.sdk?.init === 'function') {
         await this.sdk.init();
-      } catch (err) {
-        // Fallback silencioso en desarrollo
       }
+    } catch {
+      // Fallback silencioso en desarrollo o dominio deshabilitado
     }
     this.isInitialized = true;
   }
@@ -77,12 +88,12 @@ class CrazyGamesSDK {
    * Debe llamarse al comenzar la precarga de la escena BootScene.
    */
   loadingStart() {
-    if (this.isAvailable() && typeof this.sdk.game?.loadingStart === 'function') {
-      try {
+    try {
+      if (this.isAvailable() && typeof this.sdk?.game?.loadingStart === 'function') {
         this.sdk.game.loadingStart();
-      } catch {
-        // Fallback silencioso
       }
+    } catch {
+      // Fallback silencioso
     }
   }
 
@@ -91,12 +102,12 @@ class CrazyGamesSDK {
    * Debe llamarse una vez finalizada la precarga y listo el menú.
    */
   loadingStop() {
-    if (this.isAvailable() && typeof this.sdk.game?.loadingStop === 'function') {
-      try {
+    try {
+      if (this.isAvailable() && typeof this.sdk?.game?.loadingStop === 'function') {
         this.sdk.game.loadingStop();
-      } catch {
-        // Fallback silencioso
       }
+    } catch {
+      // Fallback silencioso
     }
   }
 
@@ -105,12 +116,12 @@ class CrazyGamesSDK {
    * Debe llamarse al entrar a GameScene.
    */
   gameplayStart() {
-    if (this.isAvailable() && typeof this.sdk.game?.gameplayStart === 'function') {
-      try {
+    try {
+      if (this.isAvailable() && typeof this.sdk?.game?.gameplayStart === 'function') {
         this.sdk.game.gameplayStart();
-      } catch {
-        // Fallback silencioso
       }
+    } catch {
+      // Fallback silencioso
     }
   }
 
@@ -119,12 +130,12 @@ class CrazyGamesSDK {
    * Debe llamarse al pausar, terminar el día o cambiar de escena.
    */
   gameplayStop() {
-    if (this.isAvailable() && typeof this.sdk.game?.gameplayStop === 'function') {
-      try {
+    try {
+      if (this.isAvailable() && typeof this.sdk?.game?.gameplayStop === 'function') {
         this.sdk.game.gameplayStop();
-      } catch {
-        // Fallback silencioso
       }
+    } catch {
+      // Fallback silencioso
     }
   }
 
@@ -133,12 +144,12 @@ class CrazyGamesSDK {
    * como entrega perfecta de 3 estrellas o saldar el préstamo.
    */
   happytime() {
-    if (this.isAvailable() && typeof this.sdk.game?.happytime === 'function') {
-      try {
+    try {
+      if (this.isAvailable() && typeof this.sdk?.game?.happytime === 'function') {
         this.sdk.game.happytime();
-      } catch {
-        // Fallback silencioso
       }
+    } catch {
+      // Fallback silencioso
     }
   }
 
@@ -148,7 +159,11 @@ class CrazyGamesSDK {
    * @returns {Promise<boolean>} true si el anuncio se ejecutó con éxito o no había SDK, false si hubo error.
    */
   async requestMidgameAd() {
-    if (!this.isAvailable() || !this.sdk.ad?.requestAd) {
+    try {
+      if (!this.isAvailable() || typeof this.sdk?.ad?.requestAd !== 'function') {
+        return true;
+      }
+    } catch {
       return true;
     }
 
@@ -158,17 +173,27 @@ class CrazyGamesSDK {
       const finishAd = (success) => {
         if (!resolved) {
           resolved = true;
-          this.soundManager?.onAdFinished();
+          try {
+            this.soundManager?.onAdFinished();
+          } catch {
+            // Fallback silencioso
+          }
           resolve(success);
         }
       };
 
       try {
-        this.soundManager?.onAdStarted();
+        try {
+          this.soundManager?.onAdStarted();
+        } catch {
+          // Fallback silencioso
+        }
 
         this.sdk.ad.requestAd('midgame', {
           adStarted: () => {
-            this.soundManager?.onAdStarted();
+            try {
+              this.soundManager?.onAdStarted();
+            } catch {}
           },
           adFinished: () => {
             finishAd(true);
@@ -189,35 +214,54 @@ class CrazyGamesSDK {
    * @returns {Promise<boolean>} true si se otorgó la recompensa, false si se canceló o falló.
    */
   async requestRewardedAd(onReward) {
-    if (!this.isAvailable() || !this.sdk.ad?.requestAd) {
-      if (typeof onReward === 'function') onReward();
+    try {
+      if (!this.isAvailable() || typeof this.sdk?.ad?.requestAd !== 'function') {
+        if (typeof onReward === 'function') {
+          try {
+            onReward();
+          } catch {}
+        }
+        return true;
+      }
+    } catch {
+      if (typeof onReward === 'function') {
+        try {
+          onReward();
+        } catch {}
+      }
       return true;
     }
 
     return new Promise((resolve) => {
       let resolved = false;
-      let rewarded = false;
 
       const finishAd = (success) => {
         if (!resolved) {
           resolved = true;
-          this.soundManager?.onAdFinished();
+          try {
+            this.soundManager?.onAdFinished();
+          } catch {}
           if (success && typeof onReward === 'function') {
-            onReward();
+            try {
+              onReward();
+            } catch {}
           }
           resolve(success);
         }
       };
 
       try {
-        this.soundManager?.onAdStarted();
+        try {
+          this.soundManager?.onAdStarted();
+        } catch {}
 
         this.sdk.ad.requestAd('rewarded', {
           adStarted: () => {
-            this.soundManager?.onAdStarted();
+            try {
+              this.soundManager?.onAdStarted();
+            } catch {}
           },
           adFinished: () => {
-            rewarded = true;
             finishAd(true);
           },
           adError: () => {
