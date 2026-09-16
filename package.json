@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test test/*.test.js",
-    "process-paws": "node process-paws.js"
+    "process-paws": "node process-paws.js",
+    "package:crazygames": "node scripts/package-crazygames.js",
+    "verify:zip": "node scripts/verify-crazygames-zip.js release/kiwipaw-bakehouse-crazygames.zip"
   },
   "devDependencies": {
     "sharp": "^0.35.3",

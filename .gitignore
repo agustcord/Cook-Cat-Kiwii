@@ -34,3 +34,6 @@ scratch/
 # ── Configs de asistentes IA (Gemini/Antigravity, Agents) ──
 .gemini/
 .agents/
+
+# ── Prototipos aislados / rediseño conceptual ──
+cozy-cat-bakery-redesign/
