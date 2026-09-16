@@ -7,12 +7,13 @@
 
 **Un michi renunció a su gris trabajo de oficina para cumplir su sueño: abrir una pastelería artesanal. Ayudalo a amasar, hornear, decorar y pagar sus deudas antes de que el banco cierre el negocio.**
 
-[![Jugar ahora](https://img.shields.io/badge/🎮_JUGAR_AHORA-en_el_navegador-8CC84B?style=for-the-badge)](https://agustcord.github.io/Cook-Cat-Kiwii/)
+[![Jugar Ahora](https://img.shields.io/badge/🎮_JUGAR_AHORA-en_el_navegador-8CC84B?style=for-the-badge)](https://agustcord.github.io/Cook-Cat-Kiwii/)
 
+[![GitHub Pages](https://img.shields.io/badge/Deploy-GitHub_Pages-222222?style=flat-square&logo=githubpages&logoColor=white)](https://agustcord.github.io/Cook-Cat-Kiwii/)
 ![Phaser](https://img.shields.io/badge/Phaser_4-8CC84B?style=flat-square&logo=phaser&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite_8-646CFF?style=flat-square&logo=vite&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-ES_Modules-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
-![Tests](https://img.shields.io/badge/Tests-288_passing-success?style=flat-square)
+![Tests](https://img.shields.io/badge/Tests-454_passing-success?style=flat-square)
 ![Resolución](https://img.shields.io/badge/Resolución-1920x1080_FHD-blue?style=flat-square)
 ![CrazyGames](https://img.shields.io/badge/CrazyGames_SDK-v3_Ready-purple?style=flat-square)
 ![Estado](https://img.shields.io/badge/Estado-Beta_Jugable-orange?style=flat-square)
@@ -25,7 +26,53 @@
 
 👉 **[agustcord.github.io/Cook-Cat-Kiwii](https://agustcord.github.io/Cook-Cat-Kiwii/)**
 
-Ejecuta directamente en tu navegador (escritorio y móvil) sin descargas ni instalaciones requeridas.
+Ejecuta directamente en tu navegador web (escritorio y dispositivos móviles) con aceleración WebGL y renderizado Canvas nativo, carga instantánea y sin descargas ni registros requeridos.
+
+---
+
+## 🌟 Un Sueño Hecho Realidad: Mi Primer Videojuego
+
+*Kiwipaw Bakehouse* no es un proyecto más: **es mi primer videojuego independiente**, la materialización de un anhelo de toda la vida y el fruto de incontables horas de dedicación, aprendizaje e ilusión por el desarrollo lúdico.
+
+Desde el primer trazo conceptual en papel hasta la arquitectura de cada escena interactiva en Phaser 4, cada rincón de esta pastelería fue concebido con el corazón para transmitir ternura, calidez y un desafío accesible. Lograr que un jugador sienta la satisfacción táctil de amasar con una patita de gato, vigilar el punto exacto del horno y salvar el negocio familiar de la quiebra representa para mí la mayor alegría creativa como desarrollador independiente.
+
+Este videojuego refleja el valor de animarse a empezar desde cero, vencer el vértigo de la pantalla en blanco y transformar una chispa de inspiración en un mundo vivo, interactivo y acogedor que hoy podés disfrutar desde cualquier lugar del mundo con un solo clic.
+
+---
+
+## 🎨 Arte 100% Propio e Ilustración Artesanal
+
+Cada elemento visual que ves en pantalla fue **ilustrado digitalmente a mano en Krita**, prescindiendo por completo de bancos genéricos de assets o generadores automáticos. El juego se rige de forma estricta por nuestra **Biblia de Arte** (`art-bible.md`), consolidando una identidad artística propia, orgánica y memorable:
+
+- 🐾 **Estilo Chibi Cozy Orgánico:** Personajes y elementos dibujados con proporciones adorables, líneas suaves y contornos cálidos en marrón chocolate (`#4e3629`), erradicando deliberadamente el negro puro artificial.
+- 🎨 **Paleta Pastel Armónica:** Tonos cuidadosamente balanceados para brindar confort visual y evitar fatiga ocular (crema base `#fdfbf7`, trigo tostado `#caa689`, lavanda relajante `#d6c7ff`, rosa fresa `#ffccd5` y madera natural `#ddb892`).
+- 🪵 **Mesa y Mostrador Ilustrado al Detalle:** Lienzo interactivo continuo de madera con textura orgánica, diseñado con ergonomía milimétrica para ubicar todas las estaciones de preparación sin colisiones visuales.
+- 🖼️ **Pared de Fondo Panorámica 1080p (`fondo_pared.png`):** Fondo nativo Full HD (1920x1080) con iluminación cálida difusa y ambientación pastel.
+- 🥐 **Estaciones Interactivas Multicapa:** Horno analógico con cristal refractario reactivo (encendido/apagado), máquina de bebidas humeante, tarros de toppings y cortadores de galletas con volumen visual tangible.
+- 🐱 **Patita Felina Táctil y Expresiva:** Cursor diegético animado con cinemática inversa que reproduce el brazo y la garrita del chef gato, reaccionando al toque y al arrastre con animación de agarre (`cat_paw_closed` / `cat_paw_open`).
+
+---
+
+## 🖼️ Galería Visual
+
+### 🎬 Jugabilidad en Vivo
+<div align="center">
+  <img src="docs/screenshots/gameplay.gif" alt="Kiwipaw Bakehouse - Animación de gameplay con patita felina" width="800" />
+  <p><em>Cinemática de juego en tiempo real: interacción táctil con patita animada, preparación en estaciones y guía interactiva con el Chef Mentor Kiwii.</em></p>
+</div>
+
+### 📸 Capturas del Juego en Alta Definición (Full HD 1080p)
+
+| 🏠 Menú Principal Cozy | 🥐 Cocina & Mostrador Artesanal |
+| :---: | :---: |
+| <img src="docs/screenshots/01_menu_principal.png" alt="Menú Principal con selector de idioma" width="450" /> | <img src="docs/screenshots/02_cocina_y_estaciones.png" alt="Cocina y estaciones de trabajo" width="450" /> |
+| *Selector bilingüe dinámico [EN \| ES], música sintética y ambientación cálida.* | *Mesa de madera ilustrada en Krita con estaciones de masa, corte, horneado y café.* |
+
+<div align="center">
+  <h4>🐾 Pedagogía Lúdica & Tutorial Asistido</h4>
+  <img src="docs/screenshots/03_gameplay_tutorial_michi.png" alt="Tutorial interactivo con el Mentor Michi" width="750" />
+  <p><em>Sistema de tutoría en dos fases con input gating estricto, guía direccional y diálogos responsivos que no obstruyen el área de trabajo.</em></p>
+</div>
 
 ---
 
@@ -36,20 +83,6 @@ Michi trabajaba como analista en una corporación gris: planillas infinitas, reu
 Un lunes cualquiera tomó valor: renunció a la oficina, solicitó un **préstamo inicial de 200 monedas** y abrió su propia pastelería. Para conservar su sueño debe hornear contra reloj, satisfacer a clientes exigentes y administrar cuidadosamente sus ingresos diarios para cubrir alquiler, insumos y la cuota del banco.
 
 Si el saldo no alcanza al cerrar el día, el negocio cae en **quiebra**. Si logra sostener la pastelería durante los 4 días y saldar la deuda, *Kiwipaw Bakehouse* será suyo para siempre. 🎉
-
----
-
-## 🎨 Identidad Visual: Transición Integral a Arte Propio Ilustrado
-
-El proyecto ha dado un salto cualitativo reemplazando progresivamente casi la totalidad de prototipos y formas vectoriales por **arte propio original ilustrado digitalmente en Krita**, rigurosamente gobernado por nuestra **Biblia de Arte** (`art-bible.md`):
-
-- 🪵 **Mesa y Mostrador Ilustrado a Mano:** Un lienzo continuo y detallado con textura de madera cálida, calibrado al píxel para albergar con ergonomía orgánica todas las estaciones de trabajo.
-- 🖼️ **Pared de Fondo Panorámica 1080p (`fondo_pared.png`):** Fondo nativo en resolución Full HD (1920x1080) con iluminación pastel, profundidad calibrada en capa defensiva (`depth -100`) y perfecta integración con el mostrador.
-- 🗑️ **Basurero Ilustrado a Escala 1:1:** Sprite reactivo que reemplaza al viejo marcador vectorial, con detección de arrastre, feedback de proximidad y animación de descarte.
-- 🥐 **Horno Multicapa Interactivo:** Estación ilustrada con cristal dinámico de horneado (encendido/apagado), perillas mecánicas de cocción y botones analógicos de control.
-- 🪧 **Cartelería HUD de Madera:** Placas colgantes de madera para el seguimiento de día (`daySign`), monedas (`coinsSign`), meta de ventas (`metaSign`) y botón ergonómico de finalización de jornada.
-- 🐾 **Patas Felinas Interactivas (`paws`):** Sprites de patitas de gato animadas para sostener, amasar y servir los pedidos con inmersión táctil.
-- 🎨 **Biblia de Estilo Cozy:** Paleta pastel desaturada (crema base `#fdfbf7`, tostado `#caa689`, lavanda `#d6c7ff`, rosa `#ffccd5`, madera `#ddb892`), contornos cálidos sin negro puro (`#4e3629`) y acabado *flat* con *cel-shading* suave.
 
 ---
 
@@ -107,7 +140,7 @@ Atendés clientes felinos y humanos contra reloj, completando recetas paso a pas
 - **Motor:** [Phaser 4](https://phaser.io/) (v4.2.0 *Giedi*) en resolución nativa 1920x1080 (16:9 Full HD) con auto-escalado `Scale.FIT`.
 - **Bundler & Dev Server:** [Vite 8](https://vitejs.dev/) con compilación ultrarrápida.
 - **Procesamiento de Sprites:** Pipeline propio en Node.js impulsado por [Sharp](https://sharp.pixelplumbing.com/).
-- **Testing Automatizado:** Suite de **288 pruebas unitarias en 14 suites** con el Node.js Test Runner nativo (`npm test`).
+- **Testing Automatizado:** Suite de **454 pruebas unitarias en 112 suites** con el Node.js Test Runner nativo (`npm test`), garantizando máxima estabilidad en la máquina de estados, el tutorial interactivo y el balance económico.
 - **CI/CD:** Despliegue automatizado a GitHub Pages vía GitHub Actions en cada actualización a `main`.
 
 ---
@@ -129,7 +162,7 @@ npm install
 # Iniciar servidor de desarrollo local
 npm run dev
 
-# Ejecutar la suite completa de pruebas unitarias (288 tests)
+# Ejecutar la suite completa de pruebas unitarias (454 tests)
 npm test
 
 # Compilar para producción
