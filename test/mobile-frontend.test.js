@@ -51,282 +51,92 @@ describe('Mobile Frontend & Layout Matrix (T2, T7, T8)', () => {
     });
   });
 
-  describe('2. Task T7: Landscape Orientation Shield & Reactivity', () => {
-    test('index.html contains #landscape-overlay container with default English fallback content', () => {
+  describe('2. Task T7: Clean Mobile Boot & Absence of Orientation Overlay', () => {
+    test('index.html does not contain #landscape-overlay container or orientation-shield class', () => {
       const content = fs.readFileSync(indexPath, 'utf8');
-      assert.ok(content.includes('id="landscape-overlay"'), 'index.html must have #landscape-overlay');
-      assert.ok(content.includes('class="orientation-shield"'), 'overlay must have class orientation-shield');
-      assert.ok(content.includes('Please rotate your device to landscape'), 'overlay must have English title fallback');
-      assert.ok(content.includes('Kiwipaw Bakehouse is designed for horizontal play'), 'overlay must have English subtitle fallback');
+      assert.ok(!content.includes('id="landscape-overlay"'), 'index.html must not have #landscape-overlay');
+      assert.ok(!content.includes('orientation-shield'), 'index.html must not have orientation-shield');
+      assert.ok(!content.includes('Please rotate your device'), 'index.html must not have orientation warning text');
     });
 
-    test('src/style.css defines .orientation-shield with display: none and .visible with display: flex', () => {
+    test('src/style.css contains no .orientation-shield or rotation overlay rules', () => {
       const content = fs.readFileSync(stylePath, 'utf8');
-      assert.ok(content.includes('.orientation-shield {'), 'Must have .orientation-shield class');
-      assert.ok(content.includes('.orientation-shield.visible {'), 'Must have .orientation-shield.visible class');
-      assert.ok(content.includes('prefers-reduced-motion'), 'Must support prefers-reduced-motion');
+      assert.ok(!content.includes('.orientation-shield'), 'style.css must not have .orientation-shield class');
+      assert.ok(!content.includes('phone-rotate'), 'style.css must not have phone-rotate animation');
+      assert.ok(!content.includes('.orientation-card'), 'style.css must not have .orientation-card');
     });
 
-    test('OrientationManager activates overlay ONLY when window.innerWidth < window.innerHeight on touch devices', () => {
-      // 1. Mobile in portrait (width 390 < height 844, touch coarse) -> SHOW
-      const portraitTouchEnv = {
-        windowObj: {
-          innerWidth: 390,
-          innerHeight: 844,
-          matchMedia: (q) => ({ matches: q === '(pointer: coarse)' })
-        },
-        navigatorObj: { maxTouchPoints: 5 }
-      };
-      assert.equal(OrientationManager.shouldShowLandscapeWarning(portraitTouchEnv), true);
+    test('OrientationManager is inert and does not activate overlays or listeners', () => {
+      assert.equal(OrientationManager.shouldShowLandscapeWarning(), false);
+      assert.equal(OrientationManager.updateOverlay(), false);
 
-      // 2. Mobile in landscape (width 844 > height 390, touch coarse) -> HIDE
-      const landscapeTouchEnv = {
-        windowObj: {
-          innerWidth: 844,
-          innerHeight: 390,
-          matchMedia: (q) => ({ matches: q === '(pointer: coarse)' })
-        },
-        navigatorObj: { maxTouchPoints: 5 }
-      };
-      assert.equal(OrientationManager.shouldShowLandscapeWarning(landscapeTouchEnv), false);
-
-      // 3. Desktop resized narrow (width 500 < height 900, but mouse pointer) -> HIDE
-      const desktopNarrowEnv = {
-        windowObj: {
-          innerWidth: 500,
-          innerHeight: 900,
-          matchMedia: () => ({ matches: false })
-        },
-        navigatorObj: { maxTouchPoints: 0 }
-      };
-      assert.equal(OrientationManager.shouldShowLandscapeWarning(desktopNarrowEnv), false);
+      const cleanup = OrientationManager.init();
+      assert.equal(typeof cleanup, 'function');
+      assert.doesNotThrow(() => cleanup());
     });
 
-    test('OrientationManager updateOverlay toggles visible class and aria-hidden on DOM element', () => {
-      const classes = new Set();
-      const attributes = new Map();
-      const mockElement = {
-        classList: {
-          add: (c) => classes.add(c),
-          remove: (c) => classes.delete(c)
-        },
-        setAttribute: (k, v) => attributes.set(k, v)
-      };
-
-      const portraitTouchEnv = {
-        windowObj: {
-          innerWidth: 400,
-          innerHeight: 800,
-          matchMedia: () => ({ matches: true })
-        },
-        navigatorObj: { maxTouchPoints: 2 }
-      };
-
-      // Show
-      OrientationManager.updateOverlay(mockElement, portraitTouchEnv);
-      assert.ok(classes.has('visible'), 'Must add visible class');
-      assert.equal(attributes.get('aria-hidden'), 'false');
-
-      // Rotate to landscape
-      const landscapeTouchEnv = {
-        windowObj: {
-          innerWidth: 800,
-          innerHeight: 400,
-          matchMedia: () => ({ matches: true })
-        },
-        navigatorObj: { maxTouchPoints: 2 }
-      };
-      OrientationManager.updateOverlay(mockElement, landscapeTouchEnv);
-      assert.ok(!classes.has('visible'), 'Must remove visible class');
-      assert.equal(attributes.get('aria-hidden'), 'true');
-    });
-
-    test('OrientationManager init registers and cleanup deregisters event listeners', () => {
-      const listeners = new Map();
-      const mockWindow = {
-        innerWidth: 800,
-        innerHeight: 600,
-        addEventListener: (event, fn) => listeners.set(event, fn),
-        removeEventListener: (event) => listeners.delete(event),
-        matchMedia: () => ({ matches: false })
-      };
-
-      // Temporarily attach mockWindow to globalThis
-      const originalWindow = globalThis.window;
-      globalThis.window = mockWindow;
-
-      try {
-        const cleanup = OrientationManager.init({ classList: { add() {}, remove() {} }, setAttribute() {} });
-        assert.ok(listeners.has('resize'), 'Must register resize listener');
-        assert.ok(listeners.has('orientationchange'), 'Must register orientationchange listener');
-
-        cleanup();
-        assert.ok(!listeners.has('resize'), 'Must remove resize listener on cleanup');
-        assert.ok(!listeners.has('orientationchange'), 'Must remove orientationchange listener on cleanup');
-      } finally {
-        globalThis.window = originalWindow;
-      }
-    });
-
-    test('src/main.js imports OrientationManager and initializes it', () => {
+    test('src/main.js does not import OrientationManager and implements resilient bootGame', () => {
       const content = fs.readFileSync(mainPath, 'utf8');
       assert.ok(
-        content.includes("import OrientationManager from './game/utils/OrientationManager.js';"),
-        'main.js must import OrientationManager'
+        !content.includes("import OrientationManager"),
+        'main.js must not import OrientationManager'
       );
       assert.ok(
-        content.includes('OrientationManager.init();'),
-        'main.js must call OrientationManager.init()'
+        !content.includes('OrientationManager.init()'),
+        'main.js must not call OrientationManager.init()'
+      );
+      assert.ok(
+        content.includes('function bootGame()'),
+        'main.js must define bootGame()'
+      );
+      assert.ok(
+        content.includes('window.__KIWI_GAME_BOOTED__'),
+        'bootGame must guard with window.__KIWI_GAME_BOOTED__'
+      );
+      assert.ok(
+        content.includes("document.readyState === 'complete' || document.readyState === 'interactive'"),
+        'main.js must check document.readyState for early execution'
+      );
+      assert.ok(
+        content.includes("window.addEventListener('DOMContentLoaded', bootGame);"),
+        'main.js must listen for DOMContentLoaded'
+      );
+      assert.ok(
+        content.includes("window.addEventListener('load', bootGame);"),
+        'main.js must listen for load event'
       );
     });
 
-    test('OrientationManager grants total immunity to PC desktop environments even when window is portrait or narrow', () => {
-      // 1. Windows NT with narrow snapped window and maxTouchPoints = 10
-      const windowsNarrowEnv = {
-        windowObj: {
-          innerWidth: 400,
-          innerHeight: 900,
-          matchMedia: () => ({ matches: false })
-        },
-        navigatorObj: {
-          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          maxTouchPoints: 10
-        }
-      };
-      assert.equal(OrientationManager.shouldShowLandscapeWarning(windowsNarrowEnv), false);
-
-      // 2. macOS with narrow window and maxTouchPoints = 5
-      const macNarrowEnv = {
-        windowObj: {
-          innerWidth: 500,
-          innerHeight: 1000,
-          matchMedia: () => ({ matches: false })
-        },
-        navigatorObj: {
-          userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
-          maxTouchPoints: 5
-        }
-      };
-      assert.equal(OrientationManager.shouldShowLandscapeWarning(macNarrowEnv), false);
-
-      // 3. Linux x86_64 desktop
-      const linuxNarrowEnv = {
-        windowObj: {
-          innerWidth: 600,
-          innerHeight: 1100,
-          matchMedia: () => ({ matches: false })
-        },
-        navigatorObj: {
-          userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          maxTouchPoints: 10
-        }
-      };
-      assert.equal(OrientationManager.shouldShowLandscapeWarning(linuxNarrowEnv), false);
-
-      // 4. Client Hints mobile === false
-      const clientHintsDesktopEnv = {
-        windowObj: {
-          innerWidth: 450,
-          innerHeight: 950,
-          matchMedia: () => ({ matches: false })
-        },
-        navigatorObj: {
-          userAgentData: { mobile: false },
-          maxTouchPoints: 10
-        }
-      };
-      assert.equal(OrientationManager.shouldShowLandscapeWarning(clientHintsDesktopEnv), false);
-    });
-
-    test('OrientationManager dynamically localizes overlay title and subtitle using I18nManager', () => {
-      let titleContent = '';
-      let subtitleContent = '';
-      const mockElement = {
-        querySelector: (selector) => {
-          if (selector === '.orientation-title') {
-            return {
-              get textContent() { return titleContent; },
-              set textContent(v) { titleContent = v; }
-            };
-          }
-          if (selector === '.orientation-subtitle') {
-            return {
-              get textContent() { return subtitleContent; },
-              set textContent(v) { subtitleContent = v; }
-            };
-          }
-          return null;
-        },
-        classList: { add() {}, remove() {} },
-        setAttribute() {}
-      };
-
-      const i18n = I18nManager.getInstance({ reset: true, language: 'en' });
-
-      // Sincronizar en inglés
-      OrientationManager.updateLanguage(mockElement);
-      assert.equal(titleContent, 'Please rotate your device to landscape');
-      assert.equal(subtitleContent, 'Kiwipaw Bakehouse is designed for horizontal play');
-
-      // Cambiar a español
-      i18n.setLanguage('es');
-      OrientationManager.updateLanguage(mockElement);
-      assert.equal(titleContent, 'Por favor, gira tu dispositivo a horizontal');
-      assert.equal(subtitleContent, 'Kiwipaw Bakehouse está diseñado para jugar en horizontal');
-
-      // Restaurar a inglés
-      i18n.setLanguage('en');
-    });
-
-    test('OrientationManager.init automatically updates overlay text when I18nManager language changes', () => {
-      let titleContent = '';
-      let subtitleContent = '';
-      const mockElement = {
-        querySelector: (selector) => {
-          if (selector === '.orientation-title') {
-            return {
-              get textContent() { return titleContent; },
-              set textContent(v) { titleContent = v; }
-            };
-          }
-          if (selector === '.orientation-subtitle') {
-            return {
-              get textContent() { return subtitleContent; },
-              set textContent(v) { subtitleContent = v; }
-            };
-          }
-          return null;
-        },
-        classList: { add() {}, remove() {} },
-        setAttribute() {}
-      };
-
+    test('bootGame logic is resilient and idempotent against duplicate calls', () => {
       const mockWindow = {
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        matchMedia: () => ({ matches: false })
+        __KIWI_GAME_BOOTED__: false,
+        __PHASER_GAME__: null,
+        game: null
       };
-      const origWindow = globalThis.window;
-      globalThis.window = mockWindow;
-
-      try {
-        const i18n = I18nManager.getInstance({ reset: true, language: 'en' });
-        const cleanup = OrientationManager.init(mockElement);
-
-        assert.equal(titleContent, 'Please rotate your device to landscape');
-
-        // Al cambiar de idioma, el listener reactivo actualiza el texto de forma autónoma
-        i18n.setLanguage('es');
-        assert.equal(titleContent, 'Por favor, gira tu dispositivo a horizontal');
-
-        cleanup();
-
-        // Tras cleanup, ya no reacciona
-        i18n.setLanguage('en');
-        assert.equal(titleContent, 'Por favor, gira tu dispositivo a horizontal');
-      } finally {
-        globalThis.window = origWindow;
+      let phaserInstantiations = 0;
+      class MockPhaserGame {
+        constructor() {
+          phaserInstantiations++;
+        }
       }
+
+      function testBootGame(win) {
+        if (win.__KIWI_GAME_BOOTED__) return win.__PHASER_GAME__;
+        win.__KIWI_GAME_BOOTED__ = true;
+        win.__PHASER_GAME__ = win.game = new MockPhaserGame();
+        return win.__PHASER_GAME__;
+      }
+
+      // First run: boots game
+      const instance1 = testBootGame(mockWindow);
+      assert.equal(phaserInstantiations, 1);
+      assert.equal(mockWindow.__KIWI_GAME_BOOTED__, true);
+      assert.ok(instance1 instanceof MockPhaserGame);
+
+      // Duplicate run (e.g. DOMContentLoaded and then load event): idempotent
+      const instance2 = testBootGame(mockWindow);
+      assert.equal(phaserInstantiations, 1);
+      assert.equal(instance1, instance2);
     });
   });
 
