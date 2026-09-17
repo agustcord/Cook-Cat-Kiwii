@@ -186,6 +186,16 @@ export default class BootScene extends Phaser.Scene {
     // Notify CrazyGames SDK of loading stop
     CrazyGamesSDK.getInstance().loadingStop();
 
+    // Soporte para query param directo de escenas (?scene=ShopScene)
+    if (typeof window !== 'undefined' && window.location) {
+      const params = new URLSearchParams(window.location.search);
+      const sceneParam = params.get('scene');
+      if (sceneParam === 'ShopScene') {
+        this.scene.start('ShopScene', { day: 1, coins: 65 });
+        return;
+      }
+    }
+
     // Go directly to the main menu
     this.scene.start('MainMenuScene');
   }

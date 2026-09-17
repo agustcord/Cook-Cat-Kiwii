@@ -167,6 +167,23 @@ export default {
       msgGood: 'Good job! You were very close to the sales goal.',
       msgTight: 'Quiet day. Goal was not reached, but the business remains solvent.'
     },
+    chefDialogue: {
+      name: 'Chef Kiwi 🐾',
+      bankruptcySupplies: "Oh no... we ran out of dough and have no coins to restock! We can't bake tomorrow without dough... 🙀",
+      bankruptcyDebt: "Oh no... today's sales weren't enough to cover our bakery's fixed expenses... 😿",
+      stars3: "Purr-fect day! Our customers loved every single treat! Let's hit the shop and keep the ovens warm! 🐾✨",
+      stars2: "Great work today! The bakery is running smoothly. A quick restock and we'll be ready for tomorrow! 🐱",
+      stars1: "A tight day, but our ovens are still warm! Check the pantry and let's shop wisely before opening! 🐾"
+    },
+    pantry: {
+      title: 'PANTRY & BANK LOAN STATUS',
+      doughHeader: '🥖 Dough Stocks (Required to Open):',
+      doughReady: '✓ Ready to bake tomorrow ({count} total units)',
+      doughWarning: '⚠️ No dough left! Buy at least 1 pack in the Shop',
+      suppliesHeader: '✨ Toppings & Coffee Supplies:',
+      loanHeader: '🏦 Bank Loan Amortization',
+      loanPaid: 'Paid'
+    },
     sub: {
       goal: 'Goal: {meta}',
       earnings: "•   Today's Sales: {earnings}"
@@ -200,6 +217,13 @@ export default {
     title: 'KIWI BAKEHOUSE SHOP',
     subtitle: 'Restock your ingredients before Day {day}!',
     availableCoins: '🪙 Available Coins: {coins}',
+    header: {
+      suppliesPill: 'Restock',
+      beforeDayPill: 'Before Day {day}',
+      signTitle: 'KIWI BAKEHOUSE SHOP',
+      signSubtitle: "THE BAKER KITTY'S PANTRY",
+      coinsLabel: 'AVAILABLE COINS'
+    },
     tabs: {
       supplies: 'Kitchen Supplies',
       decorations: 'Café Decoration'
@@ -209,6 +233,51 @@ export default {
       dough: 'DOUGH',
       toppings: 'TOPPINGS',
       drinks: 'DRINKS'
+    },
+    rail: {
+      title: 'CATEGORIES',
+      spentToday: '✓ Spent today: {spent} 🪙',
+      subtitles: {
+        mold: 'Shapes & Cutters',
+        dough: 'Bakery Dough Base',
+        topping: 'Glazes & Sprinkles',
+        drink: 'Coffee & Fresh Milk',
+        decor: 'Bakery Upgrades'
+      }
+    },
+    basket: {
+      title: '🧺 DAILY BASKET',
+      kiwiName: 'Shopkeeper Kiwi 🐱',
+      openSign: 'Open for Business! 🐾',
+      empty: 'The basket is empty.\nChoose dough to open tomorrow.',
+      clear: 'Clear Basket 🗑️',
+      totalSpent: 'Total spent',
+      doughTomorrow: 'Dough for tomorrow',
+      pantryReady: '✓ Pantry ready to open Day {day}.',
+      pantryWarning: '⚠️ Cannot open without dough. Buy at least 1 pack of Classic Dough.',
+      doughReadyTitle: '✓ {count} Doughs Ready for Day {day}',
+      doughReadySub: 'Pantry has enough flour to open shop safely.',
+      doughWarningTitle: '⚠️ NO DOUGH IN PANTRY!',
+      doughWarningSub: 'Must buy at least 1 Classic Dough pack to open!',
+      spent: 'Spent in shop: 🪙 {coins}',
+      noPurchases: 'No purchases yet this visit',
+      lastPurchase: 'Last item added: + {name} (🪙 {cost})',
+      itemsCount: '{count} items'
+    },
+    dialogue: {
+      welcome: 'Welcome to my shop! Fresh ingredients make the tastiest cookies. Stock up!',
+      welcomeNoDough: "Welcome! We're out of dough. Be sure to pick up some Classic Dough before opening!",
+      noCoins: "Meow! You don't have enough coins for that!",
+      boughtMold: 'A new cookie cutter! Customers will love new shapes!',
+      boughtDough: "Fresh dough in the pantry! We're all set to bake tomorrow.",
+      boughtTopping: 'Sweet toppings! Those cookies are gonna look gorgeous.',
+      boughtDrink: 'Drinks ready! Coffee and milk make customers so cheerful.',
+      comingSoon: 'Those cozy lights are coming in a future update! 🔒',
+      noCoinsDecor: 'Meow! You need more coins to redecorate the bakery.',
+      boughtDecor: 'Wow, stunning decoration! Our café looks so much cozier now!',
+      warnNoDough: "Wait! We can't open without dough! Buy at least 1 pack of Classic Dough.",
+      itemRefunded: 'Item returned! Coins refunded to cashbox.',
+      cartCleared: 'Cart cleared! Items returned to the shelves.'
     },
     decorHeader: 'Customize your bakery atmosphere with cozy upgrades!',
     items: {
@@ -223,6 +292,22 @@ export default {
       toppingGlazing: 'Sweet Glaze',
       drinkCoffee: 'Coffee Beans',
       drinkMilk: 'Milk Carton'
+    },
+    itemDescs: {
+      moldHeart: 'Unlocks Heart shape: favorite of customers in love.',
+      moldCat: 'Kitty face on every cookie. Brightens up the entire room.',
+      moldFish: 'Premium shape unlocking demanding customer orders.',
+      doughClassic: 'Classic vanilla. Each pack yields 5 cookie portions.',
+      doughChocolate: 'Rich cocoa. Required for chocolate flavor orders.',
+      doughOat: 'Toasted oats, the favorite of early riser customers.',
+      toppingSprinkles: 'Basic topping: completes orders asking for sprinkles.',
+      toppingChoco: 'Bits of chocolate for cookies with chocolate topping.',
+      toppingGlazing: 'The prettiest finish that leaves the best tips.',
+      drinkCoffee: 'Five coffees for the machine. Drink orders pay extra.',
+      drinkMilk: 'Five cups. Add to coffee to serve café au lait.',
+      decor_window: 'Wood with garden view. Customers wait happier.',
+      decor_bunting: 'Pastel garland that dresses the bakery in celebration.',
+      decor_lights: 'Warm fairy lights for the bakery. Coming in the next update.'
     },
     decorItems: {
       decor_window: {
@@ -247,23 +332,25 @@ export default {
       }
     },
     units: {
-      permanent: 'Permanent',
-      pack5: 'Pack x5',
-      unlocked: 'Unlocked',
-      locked: 'Locked',
-      stock: 'Stock: {qty} u.',
-      ready: 'READY',
-      comingSoon: 'COMING SOON',
+      permanent: 'PERMANENT',
+      pack5: 'PACK ×5',
+      unlocked: 'IN BAKERY',
+      locked: 'TO UNLOCK',
+      stock: 'YOU HAVE {qty} U.',
+      ready: '✓ READY',
+      owned: 'Owned',
+      comingSoon: '🔒 COMING SOON',
       costLabel: 'Cost: 🪙 {cost}'
     },
     feedback: {
       unlocked: 'Unlocked! ✨',
       bought: '+5 {name} 🛒',
       decorUnlocked: 'Renovation Installed! ✨',
-      comingSoonNotice: 'Available in upcoming updates! 🔒'
+      comingSoonNotice: 'Available in upcoming updates! 🔒',
+      refunded: 'Refunded 🪙'
     },
-    warningDough: '⚠️ Warning! You have no dough to open the bakery. Buy at least 1 pack of Classic Dough.',
-    startNextDay: 'START NEXT DAY ☕'
+    startNextDay: 'Start Day {day} ☕',
+    warningDough: 'Cannot open without dough! Buy at least 1 pack.'
   },
   gameOver: {
     title: 'BANKRUPTCY',

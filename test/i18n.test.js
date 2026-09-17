@@ -219,4 +219,55 @@ describe('I18nManager - Localization Engine & English Default Matrix', () => {
     assert.ok(pillSwitcherContent.includes("'ES'"), "PillSwitcher.js must contain decoupled 'ES' label");
     assert.ok(pillSwitcherContent.includes("fontFamily: 'Outfit, sans-serif'"), 'PillSwitcher.js must use structured Outfit font stack');
   });
+
+  test('validates 100% bilingual symmetry and diegetic voice for Balance and Shop redesign', () => {
+    const i18n = I18nManager.getInstance({ reset: true, language: 'en' });
+
+    // Summary / Chef Dialogue keys
+    const chefKeys = ['name', 'bankruptcySupplies', 'bankruptcyDebt', 'stars3', 'stars2', 'stars1'];
+    chefKeys.forEach(k => {
+      assert.ok(en.summary.chefDialogue[k], `Missing EN summary.chefDialogue.${k}`);
+      assert.ok(es.summary.chefDialogue[k], `Missing ES summary.chefDialogue.${k}`);
+      assert.ok(en.summary.chefDialogue[k].length > 0);
+      assert.ok(es.summary.chefDialogue[k].length > 0);
+    });
+
+    // Summary / Pantry keys
+    const pantryKeys = ['title', 'doughHeader', 'doughReady', 'doughWarning', 'suppliesHeader', 'loanHeader', 'loanPaid'];
+    pantryKeys.forEach(k => {
+      assert.ok(en.summary.pantry[k], `Missing EN summary.pantry.${k}`);
+      assert.ok(es.summary.pantry[k], `Missing ES summary.pantry.${k}`);
+    });
+
+    // Shop / Rail keys
+    assert.ok(en.shop.rail.title);
+    assert.ok(es.shop.rail.title);
+    ['mold', 'dough', 'topping', 'drink', 'decor'].forEach(cat => {
+      assert.ok(en.shop.rail.subtitles[cat], `Missing EN shop.rail.subtitles.${cat}`);
+      assert.ok(es.shop.rail.subtitles[cat], `Missing ES shop.rail.subtitles.${cat}`);
+    });
+
+    // Shop / Basket keys
+    const basketKeys = ['title', 'kiwiName', 'openSign', 'doughReadyTitle', 'doughReadySub', 'doughWarningTitle', 'doughWarningSub', 'spent', 'noPurchases', 'lastPurchase'];
+    basketKeys.forEach(k => {
+      assert.ok(en.shop.basket[k], `Missing EN shop.basket.${k}`);
+      assert.ok(es.shop.basket[k], `Missing ES shop.basket.${k}`);
+    });
+
+    // Shop / Dialogue keys
+    const dialogueKeys = ['welcome', 'welcomeNoDough', 'noCoins', 'boughtMold', 'boughtDough', 'boughtTopping', 'comingSoon', 'noCoinsDecor', 'boughtDecor', 'warnNoDough'];
+    dialogueKeys.forEach(k => {
+      assert.ok(en.shop.dialogue[k], `Missing EN shop.dialogue.${k}`);
+      assert.ok(es.shop.dialogue[k], `Missing ES shop.dialogue.${k}`);
+    });
+
+    // Shop / Units owned key
+    assert.equal(en.shop.units.owned, 'Owned');
+    assert.equal(es.shop.units.owned, 'Adquirido');
+
+    // Interpolation check
+    assert.equal(i18n.t('shop.basket.spent', { coins: 50 }), 'Spent in shop: 🪙 50');
+    i18n.setLanguage('es');
+    assert.equal(i18n.t('shop.basket.spent', { coins: 50 }), 'Inversión en tienda: 🪙 50');
+  });
 });

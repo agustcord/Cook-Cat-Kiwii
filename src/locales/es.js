@@ -167,6 +167,23 @@ export default {
       msgGood: '¡Buen trabajo! Estuviste muy cerca de la meta comercial.',
       msgTight: 'Día tranquilo. No se alcanzó la meta, pero el negocio sigue en pie y solvente.'
     },
+    chefDialogue: {
+      name: 'Chef Kiwi 🐾',
+      bankruptcySupplies: '¡Oh no! Nos quedamos sin masa y no tenemos fondos para reponer. ¡Sin masa no podemos hornear mañana! 🙀',
+      bankruptcyDebt: '¡Oh no! Las ventas no alcanzaron para pagar los gastos fijos del local... 😿',
+      stars3: '¡Día miau-ravilloso! ¡Los clientes devoraron cada dulce! ¡Vamos a la tienda a abastecer la cocina! 🐾✨',
+      stars2: '¡Gran trabajo hoy! La pastelería marcha sobre ruedas. ¡Repongamos ingredientes para la próxima jornada! 🐱',
+      stars1: 'Un día ajustado, pero el horno sigue encendido. ¡Revisa la despensa y compremos con astucia! 🐾'
+    },
+    pantry: {
+      title: 'ESTADO DE DESPENSA Y PRÉSTAMO',
+      doughHeader: '🥖 Existencias de Masa (Para Abrir):',
+      doughReady: '✓ Listo para hornear mañana ({count} masas en total)',
+      doughWarning: '⚠️ ¡Sin masa en despensa! Compra al menos 1 pack en la tienda',
+      suppliesHeader: '✨ Toppings y Bebidas en Stock:',
+      loanHeader: '🏦 Amortización del Préstamo Bancario',
+      loanPaid: 'Saldado'
+    },
     sub: {
       goal: 'Meta: {meta}',
       earnings: "•   Ventas Hoy: {earnings}"
@@ -200,6 +217,13 @@ export default {
     title: 'TIENDA KIWI BAKERY',
     subtitle: '¡Abastece tus ingredientes antes del Día {day}!',
     availableCoins: '🪙 Monedas Disponibles: {coins}',
+    header: {
+      suppliesPill: 'Abastecimiento',
+      beforeDayPill: 'Antes del Día {day}',
+      signTitle: 'TIENDA KIWI BAKERY',
+      signSubtitle: 'EL ALMACÉN DEL MICHI REPOSTERO',
+      coinsLabel: 'MONEDAS DISPONIBLES'
+    },
     tabs: {
       supplies: 'Suministros de Cocina',
       decorations: 'Decoración del Café'
@@ -209,6 +233,51 @@ export default {
       dough: 'MASAS',
       toppings: 'TOPPINGS',
       drinks: 'BEBIDAS'
+    },
+    rail: {
+      title: 'CATEGORÍAS',
+      spentToday: '✓ Gastado hoy: {spent} 🪙',
+      subtitles: {
+        mold: 'Cortadores únicos',
+        dough: 'Harinas y base',
+        topping: 'Chispas y glaseados',
+        drink: 'Cafetería y leche',
+        decor: 'Mejoras del local'
+      }
+    },
+    basket: {
+      title: '🧺 CESTA DEL DÍA',
+      kiwiName: 'Tendero Kiwi 🐱',
+      openSign: '¡Cocina Abierta! 🐾',
+      empty: 'La cesta está vacía.\nElige masas para poder abrir mañana.',
+      clear: 'Limpiar Cesta 🗑️',
+      totalSpent: 'Total gastado',
+      doughTomorrow: 'Masa para mañana',
+      pantryReady: '✓ Despensa lista para abrir el Día {day}.',
+      pantryWarning: '⚠️ Sin masa no podemos abrir. Compra al menos 1 pack de Masa Clásica.',
+      doughReadyTitle: '✓ {count} masas listas para el Día {day}',
+      doughReadySub: 'Hay harina suficiente para hornear y abrir el local.',
+      doughWarningTitle: '⚠️ ¡SIN MASA EN DESPENSA!',
+      doughWarningSub: '¡Compra al menos 1 pack de Masa Clásica para abrir!',
+      spent: 'Inversión en tienda: 🪙 {coins}',
+      noPurchases: 'Aún no has comprado ingredientes',
+      lastPurchase: 'Último añadido: + {name} (🪙 {cost})',
+      itemsCount: '{count} ítems'
+    },
+    dialogue: {
+      welcome: '¡Bienvenido a mi almacén! Con buenos insumos las galletas son deliciosas. ¡Mira las novedades!',
+      welcomeNoDough: '¡Bienvenido! No nos queda masa. ¡Recuerda comprar Masa Clásica antes de abrir!',
+      noCoins: '¡Miau! No te alcanzan las monedas para comprar eso.',
+      boughtMold: '¡Un molde nuevo! Ahora podremos hornear más formas deliciosas.',
+      boughtDough: '¡Buena harina! Tenemos masa suficiente para abrir mañana.',
+      boughtTopping: '¡Dulces toppings! Las galletas van a lucir hermosas.',
+      boughtDrink: '¡Bebidas listas! El café y la leche alegran a los clientes.',
+      comingSoon: '¡Esas luces acogedoras llegarán en una futura actualización! 🔒',
+      noCoinsDecor: '¡Miau! Necesitas más monedas para redecorar el local.',
+      boughtDecor: '¡Qué hermosa decoración! La pastelería se ve tan acogedora.',
+      warnNoDough: '¡Espera! No podemos abrir si no hay masa en la cocina. Compra al menos 1 pack.',
+      itemRefunded: '¡Devuelto! Monedas reintegradas a la caja.',
+      cartCleared: '¡Cesta vacía! Hemos devuelto todas las compras a los estantes.'
     },
     decorHeader: '¡Personaliza el ambiente de tu pastelería con mejoras acogedoras!',
     items: {
@@ -223,6 +292,22 @@ export default {
       toppingGlazing: 'Glaseado Dulce',
       drinkCoffee: 'Granos Café',
       drinkMilk: 'Cartón Leche'
+    },
+    itemDescs: {
+      moldHeart: 'Desbloquea la forma Corazón: la favorita de los clientes enamorados.',
+      moldCat: 'Carita de michi en cada galleta. Sube el ánimo de todo el salón.',
+      moldFish: 'Forma premium que desbloquea pedidos de clientes exigentes.',
+      doughClassic: 'Vainilla de siempre. Cada pack rinde 5 porciones de galleta.',
+      doughChocolate: 'Cacao. Necesaria para los pedidos de sabor chocolate.',
+      doughOat: 'Avena tostada, la favorita de los clientes madrugadores.',
+      toppingSprinkles: 'Topping básico: completa los pedidos que piden chispas.',
+      toppingChoco: 'Trocitos de chocolate para las galletas de topping choco.',
+      toppingGlazing: 'El acabado más bonito y el que mejores propinas deja.',
+      drinkCoffee: 'Cinco cafés para la cafetera. Los pedidos de bebida pagan extra.',
+      drinkMilk: 'Cinco vasos. Súmalo al café para servir café con leche.',
+      decor_window: 'Madera con vista al jardín. Los clientes esperan más contentos.',
+      decor_bunting: 'Guirnalda pastel que viste el salón de fiesta permanente.',
+      decor_lights: 'Luces cálidas para la pastelería. Llega en la próxima actualización.'
     },
     decorItems: {
       decor_window: {
@@ -247,23 +332,25 @@ export default {
       }
     },
     units: {
-      permanent: 'Permanente',
-      pack5: 'Pack x5',
-      unlocked: 'Desbloqueado',
-      locked: 'Bloqueado',
-      stock: 'Stock: {qty} u.',
-      ready: 'LISTO',
-      comingSoon: 'PRÓXIMAMENTE',
+      permanent: 'PERMANENTE',
+      pack5: 'PACK ×5',
+      unlocked: 'EN EL LOCAL',
+      locked: 'POR DESBLOQUEAR',
+      stock: 'TIENES {qty} U.',
+      ready: '✓ LISTO',
+      owned: 'Adquirido',
+      comingSoon: '🔒 PRÓXIMAMENTE',
       costLabel: 'Costo: 🪙 {cost}'
     },
     feedback: {
       unlocked: '¡Desbloqueado! ✨',
       bought: '+5 {name} 🛒',
       decorUnlocked: '¡Remodelación Instalada! ✨',
-      comingSoonNotice: '¡Disponible en próximas actualizaciones! 🔒'
+      comingSoonNotice: '¡Disponible en próximas actualizaciones! 🔒',
+      refunded: 'Reintegrado 🪙'
     },
-    warningDough: '⚠️ ¡Atención! No tienes masa para abrir la panadería. Compra al menos 1 pack de Masa Clásica.',
-    startNextDay: 'EMPEZAR SIGUIENTE DÍA ☕'
+    startNextDay: 'Empezar Día {day} ☕',
+    warningDough: '¡Sin masa no podemos abrir! Compra al menos 1 pack.'
   },
   gameOver: {
     title: 'BANCARROTA',
